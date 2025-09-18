@@ -1,0 +1,467 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Exception;
+use App\Models\StatusHistory;
+use Illuminate\Support\Facades\Log;
+use App\Models\Surat;
+use App\Models\Prodi;
+use App\Models\Fakultas;
+use App\Models\JenisSurat;
+use App\Models\StatusSurat;
+use App\Models\Jabatan;
+use App\Models\Tracking;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
+
+class SuratController extends Controller
+{
+    /**
+     * Display a listing of the resource.
+     */
+    public function index()
+{
+    return $this->staffIndex();
+}
+
+    /**
+     * Show the form for creating a new resource.
+     */
+    public function create()
+    {
+        return view('staff.surat.create');
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(Request $request)
+    {
+        // Logic moved to Livewire component CreateSuratForm
+    }
+
+    /**
+     * Display the specified resource.
+     */
+    public function show($id)
+    {
+        $user = Auth::user();
+        $user->load('role', 'jabatan', 'prodi');
+        
+        // Find the surat with relationships
+        $surat = Surat::with([
+            'jenisSurat', 
+            'currentStatus', 
+            'createdBy.jabatan',
+            'createdBy.prodi',
+            'tujuanJabatan',
+            'prodi',
+            'tracking'
+        ])->findOrFail($id);
+        
+        // Authorization logic
+        $canView = false;
+        
+        // Admin and super admin can view all
+        if ($user->hasRole(['admin', 'super_admin'])) {
+            $canView = true;
+        }
+        // Staff prodi can view surat they created or from their prodi
+        elseif ($user->hasRole('staff_prodi')) {
+            if ($surat->created_by === $user->id || $surat->prodi_id === $user->prodi_id) {
+                $canView = true;
+            }
+        }
+        // Kaprodi can view surat from their prodi
+        elseif ($user->hasRole('kaprodi')) {
+            if ($surat->prodi_id === $user->prodi_id) {
+                $canView = true;
+                Log::info('Kaprodi accessing surat', [
+                    'user_id' => $user->id,
+                    'surat_id' => $surat->id,
+                    'user_prodi' => $user->prodi_id,
+                    'surat_prodi' => $surat->prodi_id
+                ]);
+            }
+        }
+        // Staff fakultas can view surat from their fakultas
+        elseif ($user->hasRole('staff_fakultas')) {
+            if ($surat->fakultas_id === $user->fakultas_id) {
+                $canView = true;
+            }
+        }
+        // Other roles with specific jabatan
+        elseif ($user->jabatan) {
+            $allowedJabatans = [
+                'Dekan',
+                'Wakil Dekan Bidang Akademik',
+                'Wakil Dekan Bidang Keuangan',
+                'Wakil Dekan Bidang Kemahasiswaan',
+                'Kepala Bagian TU'
+            ];
+            
+            if (in_array($user->jabatan->nama_jabatan, $allowedJabatans)) {
+                $canView = true;
+            }
+        }
+        
+        if (!$canView) {
+            Log::warning('Unauthorized surat access attempt', [
+                'user_id' => $user->id,
+                'user_role' => $user->role->name ?? 'none',
+                'user_jabatan' => $user->jabatan->nama_jabatan ?? 'none',
+                'surat_id' => $surat->id,
+                'surat_prodi' => $surat->prodi_id,
+                'user_prodi' => $user->prodi_id
+            ]);
+            abort(403, 'Anda tidak memiliki akses untuk melihat surat ini.');
+        }
+        
+        // Prepare view data
+        $allStatuses = StatusSurat::orderBy('urutan')->get();
+        $draftStatusId = StatusSurat::where('kode_status', 'draft')->first()->id ?? null;
+        $needsRevisionStatusId = StatusSurat::where('kode_status', 'needs_revision')->first()->id ?? null;
+        
+        return view('staff.surat.show', compact('surat', 'allStatuses', 'draftStatusId', 'needsRevisionStatusId'));
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     */
+    public function edit(Surat $surat)
+    {
+        $user = Auth::user()->load('jabatan', 'prodi.fakultas');
+        $prodis = Prodi::all();
+        $fakultas = Fakultas::all();
+        $sifatSuratOptions = ['Biasa', 'Segera', 'Rahasia'];
+        $tujuanJabatanOptions = Jabatan::whereIn('nama_jabatan', [
+            'Dekan', 'Wakil Dekan Bidang Akademik', 'Wakil Dekan Bidang Keuangan', 'Wakil Dekan Bidang Kemahasiswaan', 'Kepala Bagian TU'
+        ])->get();
+
+        $selectedProdiId = null;
+        $selectedFakultasId = null;
+
+        if ($user->jabatan?->nama_jabatan === 'Staff Program Studi' && $user->prodi) {
+            $selectedProdiId = $user->prodi->id;
+            $selectedFakultasId = $user->prodi->fakultas_id;
+        } elseif ($user->jabatan?->nama_jabatan === 'Staff Fakultas' && $user->prodi?->fakultas) {
+            $selectedFakultasId = $user->prodi->fakultas->id;
+        }
+
+        return view('staff.surat.edit', compact('surat', 'prodis', 'fakultas', 'sifatSuratOptions', 'tujuanJabatanOptions', 'selectedProdiId', 'selectedFakultasId'));
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    
+    /**
+     * Show the form for editing the specified surat.
+     */
+    
+
+
+public function update(Request $request, Surat $surat)
+    {
+        $user = Auth::user();
+
+        $request->validate([
+            'perihal' => 'required|string|max:255',
+            'tujuan_jabatan_id' => 'required|exists:jabatan,id',
+            'lampiran' => 'nullable|string|max:255',
+            'prodi_id' => 'required|exists:prodi,id',
+            'fakultas_id' => 'required|exists:fakultas,id',
+            'tanggal_surat' => 'required|date',
+            'sifat_surat' => 'required|in:Biasa,Segera,Rahasia',
+            'file_surat' => 'nullable|file|mimes:pdf|max:10240',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $filePath = $surat->file_surat; // Keep existing file path by default
+            if ($request->hasFile('file_surat')) {
+                // Delete old file if exists
+                if ($filePath) {
+                    Storage::disk('public')->delete($filePath);
+                }
+                $filePath = $request->file('file_surat')->store('surat_pdfs', 'public');
+            }
+
+            $nomorSurat = $surat->nomor_surat;
+            $ditolakUmumStatus = StatusSurat::where('kode_status', 'ditolak_umum')->first();
+
+            // Only check for revision if the status is NOT 'ditolak_umum'
+            if (!$ditolakUmumStatus || $surat->status_id !== $ditolakUmumStatus->id) {
+                $needsRevision = false;
+                // Check if any significant fields changed that require a revision number
+                if ($surat->perihal !== $request->perihal || 
+                    $surat->tujuan_jabatan_id !== (int)$request->tujuan_jabatan_id || 
+                    $surat->sifat_surat !== $request->sifat_surat ||
+                    $surat->tanggal_surat->format('Y-m-d') !== $request->tanggal_surat ||
+                    ($request->hasFile('file_surat') && $request->file('file_surat')->isValid()))
+                {
+                    $needsRevision = true;
+                }
+
+                if ($needsRevision) {
+                    // This logic is likely only for edge cases outside the main workflow now.
+                    // The primary revision number is generated upon rejection in StaffSuratTable.
+                    $suratModel = new Surat();
+                    $nomorSurat = $suratModel->generateNomorSurat($request->fakultas_id, $request->prodi_id, $surat->tanggal_surat->year, $surat->nomor_surat, true);
+                }
+            }
+
+            $surat->update([
+                'nomor_surat' => $nomorSurat,
+                'perihal' => $request->perihal,
+                'tujuan_jabatan_id' => $request->tujuan_jabatan_id,
+                'lampiran' => $request->lampiran,
+                'prodi_id' => $request->prodi_id,
+                'fakultas_id' => $request->fakultas_id,
+                'tanggal_surat' => $request->tanggal_surat,
+                'sifat_surat' => $request->sifat_surat,
+                'file_surat' => $filePath,
+                'updated_by' => $user->id,
+            ]);
+
+            DB::commit();
+            return redirect()->route('surat.show', $surat->id)->with('success', 'Surat berhasil diperbarui!');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            // If a new file was uploaded and transaction failed, delete it
+            if ($request->hasFile('file_surat') && $filePath && $filePath !== $surat->file_surat) {
+                Storage::disk('public')->delete($filePath);
+            }
+            return back()->withInput()->with('error', 'Gagal memperbarui surat: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(Surat $surat)
+    {
+        //
+    }
+
+    public function submit(Request $request, $id)
+    {
+        $surat = Surat::findOrFail($id);
+
+        $user = Auth::user();
+        $reviewKaprodiStatus = StatusSurat::where('kode_status', 'review_kaprodi')->firstOrFail();
+        $draftStatus = StatusSurat::where('kode_status', 'draft')->firstOrFail();
+        $revisiOpsionalStatus = StatusSurat::where('kode_status', 'revisi_opsional')->firstOrFail();
+
+        // Only allow submission if the current status is draft or revisi_opsional
+        if (!in_array($surat->status_id, [$draftStatus->id, $revisiOpsionalStatus->id])) {
+            return back()->with('error', 'Surat tidak dapat disubmit karena statusnya bukan draft atau perlu revisi.');
+        }
+
+        DB::beginTransaction();
+        try {
+            $surat->update([
+                'status_id' => $reviewKaprodiStatus->id,
+                'updated_by' => $user->id,
+            ]);
+
+            Tracking::create([
+                'surat_id' => $surat->id,
+                'user_id' => $user->id,
+                'action' => 'submitted',
+                'keterangan' => 'Surat disubmit untuk review Kaprodi oleh ' . $user->nama,
+                'data_after' => $surat->toArray(),
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+            ]);
+
+            DB::commit();
+            return back()->with('success', 'Surat berhasil disubmit untuk review Kaprodi.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Gagal submit surat: ' . $e->getMessage());
+        }
+    }
+
+    public function approvalList()
+    {
+        $user = Auth::user();
+        // Ensure the user is a Kaprodi
+        if (!$user->hasRole('kaprodi')) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $reviewKaprodiStatus = StatusSurat::where('kode_status', 'review_kaprodi')->firstOrFail();
+
+        $surats = Surat::with(['jenisSurat', 'currentStatus', 'createdBy', 'tujuanJabatan'])
+                        ->where('status_id', $reviewKaprodiStatus->id)
+                        ->where('prodi_id', $user->prodi_id) // Filter by Kaprodi's prodi
+                        ->latest()
+                        ->paginate(10);
+
+        return view('kaprodi.surat.approval', compact('surats'));
+    }
+
+    /**
+     * Approve a surat
+     */
+    public function approve(Request $request, $id)
+{
+    $user = Auth::user();
+    $surat = Surat::findOrFail($id);
+    
+    // Authorization check
+    if (!$user->hasRole('kaprodi')) {
+        abort(403, 'Unauthorized');
+    }
+    
+    if ($surat->prodi_id !== $user->prodi_id) {
+        abort(403, 'Anda hanya dapat menyetujui surat dari prodi Anda');
+    }
+    
+    // Get approved status
+    $approvedStatus = StatusSurat::where('kode_status', 'disetujui_kaprodi')->first();
+    
+    if (!$approvedStatus) {
+        return back()->with('error', 'Status tidak ditemukan');
+    }
+    
+    // Update status
+    $surat->update(['status_id' => $approvedStatus->id]);
+    
+    return back()->with('success', 'Surat berhasil disetujui');
+}
+
+    /**
+     * Reject a surat
+     */
+    public function reject(Request $request, $id)
+    {
+        $request->validate([
+            'keterangan' => 'required|string|max:500'
+        ]);
+        
+        $user = Auth::user();
+        $surat = Surat::findOrFail($id);
+        
+        // Authorization check
+        if (!$user->hasRole('kaprodi')) {
+            abort(403, 'Unauthorized');
+        }
+        
+        // Kaprodi can only reject surat from their prodi
+        if ($surat->prodi_id !== $user->prodi_id) {
+            abort(403, 'Anda hanya dapat menolak surat dari prodi Anda');
+        }
+        
+        // Get rejected status
+        $rejectedStatus = StatusSurat::where('kode_status', 'ditolak_kaprodi')->first();
+        
+        if (!$rejectedStatus) {
+            // Try alternative status names
+            $rejectedStatus = StatusSurat::where('kode_status', 'ditolak')->first();
+        }
+        
+        if (!$rejectedStatus) {
+            return back()->with('error', 'Status penolakan tidak ditemukan');
+        }
+        
+        try {
+            DB::transaction(function () use ($surat, $rejectedStatus, $user, $request) {
+                // Update surat status
+                $surat->update([
+                    'status_id' => $rejectedStatus->id
+                ]);
+                
+                // Create status history
+                if (class_exists('App\Models\StatusHistory')) {
+                    StatusHistory::create([
+                        'surat_id' => $surat->id,
+                        'status_id' => $rejectedStatus->id,
+                        'user_id' => $user->id,
+                        'keterangan' => $request->input('keterangan')
+                    ]);
+                }
+                
+                // Log the rejection
+                Log::info('Surat rejected by Kaprodi', [
+                    'surat_id' => $surat->id,
+                    'user_id' => $user->id,
+                    'reason' => $request->input('keterangan')
+                ]);
+            });
+            
+            return back()->with('success', 'Surat berhasil ditolak');
+            
+        } catch (Exception $e) {
+            Log::error('Failed to reject surat', [
+                'surat_id' => $surat->id,
+                'error' => $e->getMessage()
+            ]);
+            
+            return back()->with('error', 'Gagal menolak surat: ' . $e->getMessage());
+        }
+    }
+
+/**
+ * Display surat index for staff and kaprodi
+ * Replace the entire staffIndex() method with this corrected version
+ */
+public function staffIndex()
+{
+    $user = Auth::user();
+    $user->load('role', 'prodi');
+    
+    // Allow both staff_prodi and kaprodi to access this
+    if (!$user->hasRole('staff_prodi') && !$user->hasRole('kaprodi')) {
+        abort(403, 'Unauthorized - Only staff prodi and kaprodi can access this page');
+    }
+    
+    // Build query based on role
+    $query = Surat::with(['jenisSurat', 'currentStatus', 'tujuanJabatan', 'prodi']);
+    
+    if ($user->prodi_id) {
+        if ($user->hasRole('kaprodi')) {
+            // Kaprodi sees all surat from their prodi
+            $query->where('prodi_id', $user->prodi_id);
+        } else {
+            // Staff sees surat they created or from their prodi
+            $query->where(function($q) use ($user) {
+                $q->where('created_by', $user->id)
+                  ->orWhere('prodi_id', $user->prodi_id);
+            });
+        }
+    }
+    
+    // Order by latest first
+    $surats = $query->orderBy('created_at', 'desc')->paginate(10);
+    
+    // Get all statuses for filters
+    $allStatuses = StatusSurat::all();
+    
+    // Get specific status IDs
+    $draftStatusId = StatusSurat::where('kode_status', 'draft')->first()->id ?? null;
+    $needsRevisionStatusId = StatusSurat::where('kode_status', 'ditolak_umum')->first()->id ?? null;
+    
+    // Get jenis surat for filter
+    $jenis = JenisSurat::all();
+    
+    return view('staff.surat.index', compact('surats', 'allStatuses', 'draftStatusId', 'needsRevisionStatusId', 'jenis'));
+}
+
+    public function tracking($id)
+    {
+        $surat = Surat::with(['currentStatus', 'createdBy'])->findOrFail($id);
+        return view('staff.surat.tracking', compact('surat'));
+    }
+
+    public function download($id)
+    {
+        $surat = Surat::findOrFail($id);
+        // Implement download logic here
+        return response()->download('path/to/surat.pdf');
+    }
+}

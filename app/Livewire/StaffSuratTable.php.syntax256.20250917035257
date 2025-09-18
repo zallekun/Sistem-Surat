@@ -1,0 +1,295 @@
+<?php
+
+namespace App\Livewire;
+
+use Livewire\Component;
+use App\Models\Surat;
+use Illuminate\Support\Facades\Auth;
+use Livewire\WithPagination;
+use App\Models\StatusSurat;
+use App\Models\Tracking;
+use App\Models\Jabatan;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use App\Notifications\VerificationCompleteNotification;
+use App\Notifications\SuratRejectedNotification; // Import Notification class
+
+class StaffSuratTable extends Component
+{
+    use WithPagination;
+
+    public $search = '';
+    public $sortField = 'tanggal_surat';
+    public $sortDirection = 'desc';
+    public $filterStatus = '';
+    public $filterTujuanJabatan = '';
+
+    protected $listeners = ['suratSubmitted' => '$refresh'];
+
+    public function sortBy($field)
+    {
+        if ($this->sortField === $field) {
+            $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            $this->sortDirection = 'asc';
+        }
+
+        $this->sortField = $field;
+    }
+
+    public function submitSurat($suratId)
+    {
+        $user = Auth::user();
+
+        // Support both custom role relationship and Spatie permissions
+        $roleName = $user->role->name ?? null;
+        $hasKaprodiRole = ($roleName === 'kaprodi') || $user->hasRole('kaprodi');
+        $hasStaffProdiRole = ($roleName === 'staff_prodi') || $user->hasRole('staff_prodi');
+        $hasStaffFakultasRole = ($roleName === 'staff_fakultas') || $user->hasRole('staff_fakultas');
+        $hasAdminRole = ($roleName === 'admin') || $user->hasRole('admin') || 
+                        ($roleName === 'super_admin') || $user->hasRole('super_admin');
+
+        $surat = Surat::findOrFail($suratId);
+        $reviewKaprodiStatus = StatusSurat::where('kode_status', 'review_kaprodi')->firstOrFail();
+        $draftStatus = StatusSurat::where('kode_status', 'draft')->firstOrFail();
+
+        // Only allow submission if the current status is draft or revisi_opsional
+        if (!in_array($surat->status_id, [$draftStatus->id, StatusSurat::where('kode_status', 'revisi_opsional')->firstOrFail()->id])) {
+            session()->flash('error', 'Surat tidak dapat disubmit karena statusnya bukan draft atau perlu revisi.');
+            return;
+        }
+
+        DB::beginTransaction();
+        try {
+            $surat->update([
+                'status_id' => $reviewKaprodiStatus->id,
+                'updated_by' => $user->id,
+            ]);
+
+            Tracking::create([
+                'surat_id' => $surat->id,
+                'user_id' => $user->id,
+                'action' => 'submitted',
+                'keterangan' => 'Surat disubmit untuk review Kaprodi oleh ' . $user->nama,
+                'data_after' => $surat->toArray(),
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+            ]);
+
+            DB::commit();
+            session()->flash('success', 'Surat berhasil disubmit untuk review Kaprodi.');
+            $this->dispatch('suratSubmitted');
+        } catch (
+Exception $e) {
+            DB::rollBack();
+            session()->flash('error', 'Gagal submit surat: ' . $e->getMessage());
+        }
+    }
+
+    public function approveSurat($suratId)
+    {
+        $user = Auth::user();
+        $surat = Surat::findOrFail($suratId);
+        $disposisiPimpinanStatus = StatusSurat::where('kode_status', 'disposisi_pimpinan')->firstOrFail();
+        $verifikasiUmumStatus = StatusSurat::where('kode_status', 'verifikasi_umum')->firstOrFail();
+
+        if ($surat->status_id !== $verifikasiUmumStatus->id) {
+            session()->flash('error', 'Surat tidak dalam status verifikasi umum.');
+            return;
+        }
+
+        DB::beginTransaction();
+        try {
+            $surat->update([
+                'status_id' => $disposisiPimpinanStatus->id,
+                'updated_by' => $user->id,
+            ]);
+
+            Tracking::create([
+                'surat_id' => $surat->id,
+                'user_id' => $user->id,
+                'action' => 'approved',
+                'keterangan' => 'Surat disetujui oleh Bagian Umum oleh ' . $user->nama,
+                'data_after' => $surat->toArray(),
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+            ]);
+
+            // Notify the creator of the surat
+            $surat->createdBy->notify(new VerificationCompleteNotification($surat));
+
+            DB::commit();
+            session()->flash('success', 'Surat berhasil disetujui.');
+            $this->dispatch('suratSubmitted');
+        } catch (
+Exception $e) {
+            DB::rollBack();
+            session()->flash('error', 'Gagal menyetujui surat: ' . $e->getMessage());
+            Log::error('Error approving surat: ' . $e->getMessage());
+        }
+    }
+
+    public function rejectSurat($suratId, $keterangan = null)
+    {
+        $user = Auth::user();
+        $surat = Surat::findOrFail($suratId);
+        $ditolakUmumStatus = StatusSurat::where('kode_status', 'ditolak_umum')->firstOrFail();
+        $verifikasiUmumStatus = StatusSurat::where('kode_status', 'verifikasi_umum')->firstOrFail();
+
+        if ($surat->status_id !== $verifikasiUmumStatus->id) {
+            session()->flash('error', 'Surat tidak dalam status verifikasi umum.');
+            return;
+        }
+
+        DB::beginTransaction();
+        try {
+            // Generate revision number
+            $originalNomorSurat = $surat->nomor_surat;
+            $suratModel = new Surat();
+            $newNomorSurat = $suratModel->generateNomorSurat(
+                $surat->fakultas_id,
+                $surat->prodi_id, 
+                $surat->tanggal_surat->year, 
+                $originalNomorSurat, 
+                true // Indicate it's a revision
+            );
+
+            $surat->update([
+                'status_id' => $ditolakUmumStatus->id,
+                'nomor_surat' => $newNomorSurat, // Update with new revision number
+                'updated_by' => $user->id,
+            ]);
+
+            Tracking::create([
+                'surat_id' => $surat->id,
+                'user_id' => $user->id,
+                'action' => 'rejected',
+                'keterangan' => 'Surat ditolak oleh Bagian Umum oleh ' . $user->nama . ($keterangan ? ': ' . $keterangan : ''),
+                'data_after' => $surat->toArray(),
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+            ]);
+
+            // Notify the creator of the surat about rejection
+            $surat->createdBy->notify(new SuratRejectedNotification($surat, $keterangan));
+
+            DB::commit();
+            session()->flash('success', 'Surat berhasil ditolak dan nomor revisi dibuat.');
+            $this->dispatch('suratSubmitted');
+        } catch (
+Exception $e) {
+            DB::rollBack();
+            session()->flash('error', 'Gagal menolak surat: ' . $e->getMessage());
+            Log::error('Error rejecting surat: ' . $e->getMessage());
+        }
+    }
+
+    public function render()
+    {
+        $user = Auth::user()->load('jabatan', 'prodi.fakultas', 'role'); // Add 'role' here
+        $userJabatan = $user->jabatan->nama_jabatan ?? null;
+
+        Log::info('StaffSuratTable render for user: ' . $user->email . ' (ID: ' . $user->id . ', Role: ' . ($user->role->name ?? 'N/A') . ', Jabatan: ' . $userJabatan . ', Prodi ID: ' . ($user->prodi_id ?? 'N/A') . ', Fakultas ID: ' . ($user->fakultas_id ?? 'N/A') . ')'); // Change nama_role to name
+
+        $draftStatusId = StatusSurat::where('kode_status', 'draft')->first()->id ?? null;
+        $needsRevisionStatusId = StatusSurat::where('kode_status', 'ditolak_umum')->first()->id ?? null;
+
+        $suratsQuery = Surat::with(['jenisSurat', 'currentStatus', 'createdBy', 'tujuanJabatan']);
+
+        // Apply authorization logic based on roles
+        // Support both custom role relationship and Spatie permissions
+        $roleName = $user->role->name ?? null;
+        $hasKaprodiRole = ($roleName === 'kaprodi') || $user->hasRole('kaprodi');
+        $hasStaffProdiRole = ($roleName === 'staff_prodi') || $user->hasRole('staff_prodi');
+        $hasStaffFakultasRole = ($roleName === 'staff_fakultas') || $user->hasRole('staff_fakultas');
+        $hasAdminRole = ($roleName === 'admin') || $user->hasRole('admin') || 
+                        ($roleName === 'super_admin') || $user->hasRole('super_admin');
+        
+        if ($hasAdminRole) {
+            Log::info('No filter applied for Admin/Super Admin');
+            // Admin/Super Admin can see all surat
+        } elseif ($hasStaffProdiRole) {
+            Log::info('Applying filter for Staff Prodi: prodi_id = ' . $user->prodi_id . ' and created_by = ' . $user->id);
+            $suratsQuery->where('prodi_id', $user->prodi_id)
+                        ->where('created_by', $user->id);
+        } elseif ($hasStaffFakultasRole) {
+            Log::info('Applying filter for Staff Fakultas: fakultas_id = ' . $user->fakultas_id . ' and created_by = ' . $user->id);
+            $suratsQuery->where('fakultas_id', $user->fakultas_id)
+                        ->where('created_by', $user->id);
+        } elseif ($hasKaprodiRole) {
+            // Kaprodi can see:
+            // 1. Surat waiting for their review (status: review_kaprodi)
+            // 2. Surat they have already processed (status: disetujui_kaprodi, ditolak_kaprodi)
+            $reviewKaprodiStatus = \App\Models\StatusSurat::where('kode_status', 'review_kaprodi')->first();
+            $approvedKaprodiStatus = \App\Models\StatusSurat::where('kode_status', 'disetujui_kaprodi')->first();
+            $rejectedKaprodiStatus = \App\Models\StatusSurat::where('kode_status', 'ditolak_kaprodi')->first();
+            
+            $allowedStatusIds = [];
+            if ($reviewKaprodiStatus) $allowedStatusIds[] = $reviewKaprodiStatus->id;
+            if ($approvedKaprodiStatus) $allowedStatusIds[] = $approvedKaprodiStatus->id;
+            if ($rejectedKaprodiStatus) $allowedStatusIds[] = $rejectedKaprodiStatus->id;
+            
+            Log::info('Applying filter for Kaprodi: prodi_id = ' . $user->prodi_id . ' with statuses: ' . implode(',', $allowedStatusIds));
+            $suratsQuery->where('prodi_id', $user->prodi_id);
+            
+            if (!empty($allowedStatusIds)) {
+                $suratsQuery->whereIn('status_id', $allowedStatusIds);
+            } else {
+                Log::warning('No valid status found for Kaprodi filter');
+                $suratsQuery->whereRaw('0 = 1'); // No results if no valid status
+            }
+        } else {
+            Log::info('Applying filter for other roles: no surat shown (whereRaw(\'0 = 1\')).');
+            $suratsQuery->whereRaw('0 = 1'); // Default: no surat shown for other roles
+        }
+            $reviewKaprodiStatus = \App\Models\StatusSurat::where('kode_status', 'review_kaprodi')->first();
+            Log::info('Applying filter for Kaprodi: prodi_id = ' . $user->prodi_id . ' and status = review_kaprodi');
+            $suratsQuery->where('prodi_id', $user->prodi_id);
+            
+            if ($reviewKaprodiStatus) {
+                $suratsQuery->where('status_id', $reviewKaprodiStatus->id);
+                Log::info('Filtering by status_id: ' . $reviewKaprodiStatus->id);
+            } else {
+                Log::warning('Status review_kaprodi not found in database');
+            }
+            $suratsQuery->where('prodi_id', $user->prodi_id);
+        } else {
+            Log::info('Applying filter for other roles: no surat shown (whereRaw(\'0 = 1\')).');
+            $suratsQuery->whereRaw('0 = 1'); // Default: no surat shown for other roles
+        }
+
+        // Log the generated query for debugging
+        Log::info('Surats query before execution: ' . $suratsQuery->toSql());
+        Log::info('Surats query bindings: ' . json_encode($suratsQuery->getBindings()));
+
+        $surats = $suratsQuery
+            ->when($this->search, function ($query) {
+                $query->where('nomor_surat', 'like', '%'.$this->search.'%')
+                      ->orWhere('perihal', 'like', '%'.$this->search.'%')
+                      ->orWhereHas('tujuanJabatan', fn($q) => $q->where('nama_jabatan', 'like', '%'.$this->search.'%'));
+            })
+            ->when($this->filterStatus, function ($query) {
+                $query->where('status_id', $this->filterStatus);
+            })
+            ->when($this->filterTujuanJabatan, function ($query) {
+                $query->where('tujuan_jabatan_id', $this->filterTujuanJabatan);
+            })
+            ->orderBy($this->sortField, $this->sortDirection)
+            ->paginate(10);
+
+        Log::info('Total surat found: ' . $surats->total());
+
+        $allStatuses = StatusSurat::all();
+        $tujuanJabatans = Jabatan::whereIn('nama_jabatan', [
+            'Dekan', 'Wakil Dekan Bidang Akademik', 'Wakil Dekan Bidang Keuangan', 'Wakil Dekan Bidang Kemahasiswaan', 'Kepala Bagian TU', 'Kepala Program Studi'
+        ])->get();
+
+        return view('livewire.staff-surat-table', [
+            'surats' => $surats,
+            'draftStatusId' => $draftStatusId,
+            'needsRevisionStatusId' => $needsRevisionStatusId,
+            'allStatuses' => $allStatuses,
+            'tujuanJabatans' => $tujuanJabatans,
+        ]);
+    }
+}

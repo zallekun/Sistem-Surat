@@ -1,0 +1,131 @@
+<?php
+
+// routes/web.php
+
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\FakultasController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\SuratController;
+use App\Http\Controllers\DisposisiController;
+use Illuminate\Support\Facades\Route;
+
+/*
+|--------------------------------------------------------------------------
+| Public Routes
+|--------------------------------------------------------------------------
+*/
+Route::get('/', function () {
+
+Route::get('/surat/{id}', [SuratController::class, 'show'])->name('surat.show');
+Route::get('/surat/{id}/edit', [SuratController::class, 'edit'])->name('surat.edit');
+Route::put('/surat/{id}', [SuratController::class, 'update'])->name('surat.update');
+Route::post('/surat/{id}/approve', [SuratController::class, 'approve'])->name('surat.approve');
+Route::post('/surat/{id}/reject', [SuratController::class, 'reject'])->name('surat.reject');
+    return view('welcome');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Authenticated Routes
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth', 'verified'])->group(function () {
+    
+    // Dashboard untuk semua user
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    
+    // Profile routes
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    
+    /*
+    |--------------------------------------------------------------------------
+    | Admin Routes
+    |--------------------------------------------------------------------------
+    */
+    Route::middleware(['role:admin'])->prefix('admin')->name('admin.')->group(function () {
+        Route::get('/dashboard', [DashboardController::class, 'adminDashboard'])->name('dashboard');
+        Route::resource('users', UserController::class);
+        Route::resource('fakultas', FakultasController::class);
+        Route::resource('prodi', ProdiController::class);
+        Route::resource('jabatan', JabatanController::class);
+    });
+    
+    /*
+    |--------------------------------------------------------------------------
+    | Pimpinan Routes (Dekan, WD)
+    |--------------------------------------------------------------------------
+    */
+    Route::middleware(['jabatan:Dekan,Wakil Dekan Bidang Akademik,Wakil Dekan Bidang Keuangan,Wakil Dekan Bidang Kemahasiswaan'])->prefix('pimpinan')->name('pimpinan.')->group(function () {
+        Route::get('/dashboard', [DashboardController::class, 'pimpinanDashboard'])->name('dashboard');
+        Route::get('/surat/disposisi', function () {
+            return view('pimpinan.surat.index');
+        })->name('surat.disposisi');
+        Route::post('/surat/{id}/disposisi', [DisposisiController::class, 'store'])->name('disposisi.store');
+        Route::get('/surat/ttd', function () {
+            return view('pimpinan.surat.index'); // Assuming the same table will show TTD letters
+        })->name('surat.ttd');
+        Route::post('/surat/{id}/ttd', [SuratController::class, 'tandaTangan'])->name('surat.ttd');
+    });
+    
+    /*
+    |--------------------------------------------------------------------------
+    | Kabag TU Routes
+    |--------------------------------------------------------------------------
+    */
+    Route::middleware(['jabatan:Kepala Bagian TU'])->prefix('kabag')->name('kabag.')->group(function () {
+        Route::get('/surat', function () {
+            return view('kabag.surat.index');
+        })->name('surat.index');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Divisi Routes
+    |--------------------------------------------------------------------------
+    */
+    Route::middleware(['jabatan:Divisi Akademik,Divisi Keuangan,Divisi Kerjasama,Divisi Kemahasiswaan,Divisi Umum & Perlengkapan'])->prefix('divisi')->name('divisi.')->group(function () {
+        Route::get('/surat', function () {
+            return view('divisi.surat.index');
+        })->name('surat.index');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Kaprodi Routes
+    |--------------------------------------------------------------------------
+    */
+    Route::middleware(['jabatan:Kepala Program Studi'])->prefix('kaprodi')->name('kaprodi.')->group(function () {
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+        Route::get('/surat/approval', [SuratController::class, 'approvalList'])->name('surat.approval');
+//         Route::post('/surat/{id}/approve', [SuratController::class, 'approve'])->name('surat.approve'); // Duplicate route - commented out
+//         Route::post('/surat/{id}/reject', [SuratController::class, 'reject'])->name('surat.reject'); // Duplicate route - commented out
+    });
+    
+    /*
+    |--------------------------------------------------------------------------
+    | Staff Routes (Staff Prodi & Staff Fakultas)
+    |--------------------------------------------------------------------------
+    */
+    Route::middleware(['jabatan:Staff Program Studi,Staff Fakultas,Kaprodi'])->prefix('staff')->name('staff.')->group(function () {
+        Route::get('/dashboard', [DashboardController::class, 'staffDashboard'])->name('dashboard');
+//         Route::resource('surat', SuratController::class); // Commented out - conflicts with individual routes
+        Route::post('/surat/{id}/submit', [SuratController::class, 'submit'])->name('surat.submit');
+        Route::get('/surat/{id}/tracking', [SuratController::class, 'tracking'])->name('surat.tracking');
+        Route::get('/surat/{id}/download', [SuratController::class, 'download'])->name('surat.download');
+    });
+    
+    /*
+    |--------------------------------------------------------------------------
+    | Shared Routes (All authenticated users)
+    |--------------------------------------------------------------------------
+    */
+    Route::get('/surat', [SuratController::class, 'index'])->name('surat.index');
+//     Route::get('/surat/{id}', [SuratController::class, 'show'])->name('surat.show'); // Duplicate route - commented out
+    Route::get('/tracking/{nomor}', [TrackingController::class, 'search'])->name('tracking.search');
+});
+
+// Include auth routes from Breeze
+require __DIR__.'/auth.php';

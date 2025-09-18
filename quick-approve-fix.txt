@@ -1,0 +1,28 @@
+// QUICK FIX: Replace your approve() method with this simple version
+
+public function approve(Request $request, $id)
+{
+    $user = Auth::user();
+    $surat = Surat::findOrFail($id);
+    
+    // Authorization check
+    if (!$user->hasRole('kaprodi')) {
+        abort(403, 'Unauthorized');
+    }
+    
+    if ($surat->prodi_id !== $user->prodi_id) {
+        abort(403, 'Anda hanya dapat menyetujui surat dari prodi Anda');
+    }
+    
+    // Get approved status
+    $approvedStatus = StatusSurat::where('kode_status', 'disetujui_kaprodi')->first();
+    
+    if (!$approvedStatus) {
+        return back()->with('error', 'Status tidak ditemukan');
+    }
+    
+    // Update status
+    $surat->update(['status_id' => $approvedStatus->id]);
+    
+    return back()->with('success', 'Surat berhasil disetujui');
+}

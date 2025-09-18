@@ -1,0 +1,205 @@
+<div class="container-fluid">
+    <!-- Search and Filters -->
+    <div class="row mb-3">
+        <div class="col-md-4">
+            <input type="text" wire:model.live="search" class="form-control" placeholder="Cari nomor surat atau perihal...">
+        </div>
+        <div class="col-md-3">
+            <select wire:model.live="statusFilter" class="form-control">
+                <option value="">Semua Status</option>
+                @foreach(($allStatuses ?? []) as $status)
+                    <option value="{{ $status->id }}">{{ $status->nama_status }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div class="col-md-3">
+            <select wire:model.live="filterTujuanJabatan" class="form-control">
+                <option value="">Semua Tujuan Jabatan</option>
+                @foreach(($tujuanJabatans ?? []) as $jabatan)
+                    <option value="{{ $jabatan->id }}">{{ $jabatan->nama_jabatan }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div class="col-md-2">
+            <button wire:click="exportUsers" class="btn btn-success btn-block">
+                Export Excel
+            </button>
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Daftar Surat</h3>
+        </div>
+
+        <div class="card-body table-responsive p-0">
+            <table class="table table-hover text-nowrap">
+                <thead>
+                    <tr>
+                        <th>
+                            <a href="#" wire:click="sortBy('nomor_surat')" class="text-decoration-none">
+                                Nomor Surat
+                                @if(($sortField ?? 'created_at') === 'nomor_surat')
+                                    @if(($sortDirection ?? 'desc') === 'asc')
+                                        <i class="fas fa-sort-up"></i>
+                                    @else
+                                        <i class="fas fa-sort-down"></i>
+                                    @endif
+                                @else
+                                    <i class="fas fa-sort"></i>
+                                @endif
+                            </a>
+                        </th>
+                        <th>Perihal</th>
+                        <th>Jenis Surat</th>
+                        <th>Tujuan</th>
+                        <th>
+                            <a href="#" wire:click="sortBy('created_at')" class="text-decoration-none">
+                                Status
+                                @if(($sortField ?? 'created_at') === 'created_at')
+                                    @if(($sortDirection ?? 'desc') === 'asc')
+                                        <i class="fas fa-sort-up"></i>
+                                    @else
+                                        <i class="fas fa-sort-down"></i>
+                                    @endif
+                                @else
+                                    <i class="fas fa-sort"></i>
+                                @endif
+                            </a>
+                        </th>
+                        <th>Tanggal Dibuat</th>
+                        <th>Pengaju</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse(($surats ?? []) as $surat)
+                    <tr>
+                        <td>{{ $surat->nomor_surat ?? '-' }}</td>
+                        <td>{{ $surat->perihal ?? '-' }}</td>
+                        <td>{{ $surat->jenisSurat->nama_jenis ?? '-' }}</td>
+                        <td>{{ $surat->tujuanJabatan->nama_jabatan ?? '-' }}</td>
+                        <td>
+                            @php
+                                $statusCode = $surat->currentStatus->kode_status ?? '';
+                                $badgeClass = 'secondary';
+                                if ($statusCode === 'review_kaprodi') $badgeClass = 'warning';
+                                elseif ($statusCode === 'disetujui_kaprodi') $badgeClass = 'success';
+                                elseif ($statusCode === 'ditolak_kaprodi') $badgeClass = 'danger';
+                                elseif ($statusCode === 'draft') $badgeClass = 'info';
+                            @endphp
+                            <span class="badge badge-{{ $badgeClass }}">
+                                {{ $surat->currentStatus->nama_status ?? 'N/A' }}
+                            </span>
+                        </td>
+                        <td>{{ $surat->created_at ? $surat->created_at->format('d/m/Y H:i') : '-' }}</td>
+                        <td>{{ $surat->createdBy->nama ?? '-' }}</td>
+                        <td>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <!-- View Button -->
+                                <a href="{{ route('surat.show', $surat->id) }}" class="btn btn-info btn-sm" title="Lihat Detail">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                
+                                <!-- Approve/Reject untuk Kaprodi -->
+                                @if(Auth::user()->role->name === 'kaprodi' && ($surat->currentStatus->kode_status ?? '') === 'review_kaprodi')
+                                    <button type="button" class="btn btn-success btn-sm" 
+                                            onclick="approveSurat({{ $surat->id }})" title="Setujui">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-danger btn-sm" 
+                                            onclick="rejectSurat({{ $surat->id }})" title="Tolak">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                @endif
+
+                                <!-- Edit untuk Staff Prodi -->
+                                @if(Auth::user()->role->name === 'staff_prodi' && 
+                                    in_array($surat->currentStatus->kode_status ?? '', ['draft', 'ditolak_umum']))
+                                    <a href="{{ route('surat.edit', $surat->id) }}" class="btn btn-warning btn-sm" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                @endif
+                            </div>
+                        </td>
+                    </tr>
+                    @empty
+                    <tr>
+                        <td colspan="8" class="text-center py-4">
+                            <div class="text-muted">
+                                <i class="fas fa-inbox fa-2x mb-2"></i>
+                                <p>Tidak ada surat ditemukan</p>
+                            </div>
+                        </td>
+                    </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+
+        @if(isset($surats) && $surats->hasPages())
+        <div class="card-footer">
+            {{ $surats->links() }}
+        </div>
+        @endif
+    </div>
+</div>
+
+<!-- JavaScript untuk approve/reject -->
+<script>
+function approveSurat(id) {
+    if (confirm('Apakah Anda yakin ingin menyetujui surat ini?')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/surat/${id}/approve`;
+        
+        const csrfToken = document.createElement('input');
+        csrfToken.type = 'hidden';
+        csrfToken.name = '_token';
+        csrfToken.value = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        
+        form.appendChild(csrfToken);
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+function rejectSurat(id) {
+    const reason = prompt('Masukkan alasan penolakan:');
+    if (reason && reason.trim() !== '') {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/surat/${id}/reject`;
+        
+        const csrfToken = document.createElement('input');
+        csrfToken.type = 'hidden';
+        csrfToken.name = '_token';
+        csrfToken.value = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        
+        const reasonInput = document.createElement('input');
+        reasonInput.type = 'hidden';
+        reasonInput.name = 'keterangan';
+        reasonInput.value = reason;
+        
+        form.appendChild(csrfToken);
+        form.appendChild(reasonInput);
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+
+<style>
+.btn-group-sm > .btn {
+    margin: 0 1px;
+}
+
+.badge {
+    font-size: 0.875em;
+}
+
+.text-decoration-none:hover {
+    text-decoration: none !important;
+}
+</style>

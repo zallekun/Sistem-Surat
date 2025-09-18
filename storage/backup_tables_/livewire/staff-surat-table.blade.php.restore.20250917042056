@@ -1,0 +1,351 @@
+<div class="container-fluid">
+    <!-- Search and Filters Row -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Filter & Pencarian</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <label class="form-label">Pencarian</label>
+                            <input type="text" wire:model.live="search" class="form-control" placeholder="Cari nomor surat atau perihal...">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Status</label>
+                            <select wire:model.live="statusFilter" class="form-control">
+                                <option value="">Semua Status</option>
+                                @foreach(($allStatuses ?? []) as $status)
+                                    <option value="{{ $status->id }}">{{ $status->nama_status }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Tujuan Jabatan</label>
+                            <select wire:model.live="filterTujuanJabatan" class="form-control">
+                                <option value="">Semua Tujuan Jabatan</option>
+                                @foreach(($tujuanJabatans ?? []) as $jabatan)
+                                    <option value="{{ $jabatan->id }}">{{ $jabatan->nama_jabatan }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">&nbsp;</label>
+                            <button wire:click="exportUsers" class="btn btn-success btn-block">
+                                <i class="fas fa-file-excel"></i> Export Excel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-envelope"></i> Daftar Surat
+                    </h3>
+                    <div class="card-tools">
+                        @if(isset($surats) && $surats->total() > 0)
+                            <span class="badge badge-info">{{ $surats->total() }} surat</span>
+                        @endif
+                    </div>
+                </div>
+
+                <div class="card-body table-responsive p-0">
+                    <table class="table table-hover table-striped">
+                        <thead class="table-dark">
+                            <tr>
+                                <th style="width: 150px;">
+                                    <a href="#" wire:click="sortBy('nomor_surat')" class="text-white text-decoration-none">
+                                        Nomor Surat
+                                        @if(($sortField ?? 'created_at') === 'nomor_surat')
+                                            @if(($sortDirection ?? 'desc') === 'asc')
+                                                <i class="fas fa-sort-up text-warning"></i>
+                                            @else
+                                                <i class="fas fa-sort-down text-warning"></i>
+                                            @endif
+                                        @else
+                                            <i class="fas fa-sort text-muted"></i>
+                                        @endif
+                                    </a>
+                                </th>
+                                <th>Perihal</th>
+                                <th style="width: 120px;">Jenis Surat</th>
+                                <th style="width: 120px;">Tujuan</th>
+                                <th style="width: 120px;">
+                                    <a href="#" wire:click="sortBy('status_id')" class="text-white text-decoration-none">
+                                        Status
+                                        @if(($sortField ?? 'created_at') === 'status_id')
+                                            @if(($sortDirection ?? 'desc') === 'asc')
+                                                <i class="fas fa-sort-up text-warning"></i>
+                                            @else
+                                                <i class="fas fa-sort-down text-warning"></i>
+                                            @endif
+                                        @else
+                                            <i class="fas fa-sort text-muted"></i>
+                                        @endif
+                                    </a>
+                                </th>
+                                <th style="width: 120px;">
+                                    <a href="#" wire:click="sortBy('created_at')" class="text-white text-decoration-none">
+                                        Tanggal Dibuat
+                                        @if(($sortField ?? 'created_at') === 'created_at')
+                                            @if(($sortDirection ?? 'desc') === 'asc')
+                                                <i class="fas fa-sort-up text-warning"></i>
+                                            @else
+                                                <i class="fas fa-sort-down text-warning"></i>
+                                            @endif
+                                        @else
+                                            <i class="fas fa-sort text-muted"></i>
+                                        @endif
+                                    </a>
+                                </th>
+                                <th style="width: 100px;">Pengaju</th>
+                                <th style="width: 120px;" class="text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse(($surats ?? []) as $surat)
+                            <tr>
+                                <td class="font-weight-bold">{{ $surat->nomor_surat ?? '-' }}</td>
+                                <td>
+                                    <div class="text-truncate" style="max-width: 300px;" title="{{ $surat->perihal ?? '-' }}">
+                                        {{ $surat->perihal ?? '-' }}
+                                    </div>
+                                </td>
+                                <td>
+                                    <small class="text-muted">{{ $surat->jenisSurat->nama_jenis ?? '-' }}</small>
+                                </td>
+                                <td>
+                                    <small class="text-muted">{{ $surat->tujuanJabatan->nama_jabatan ?? '-' }}</small>
+                                </td>
+                                <td>
+                                    @php
+                                        $statusCode = $surat->currentStatus->kode_status ?? '';
+                                        $badgeClass = 'secondary';
+                                        $badgeIcon = 'fas fa-question';
+                                        
+                                        if ($statusCode === 'review_kaprodi') {
+                                            $badgeClass = 'warning';
+                                            $badgeIcon = 'fas fa-clock';
+                                        } elseif ($statusCode === 'disetujui_kaprodi') {
+                                            $badgeClass = 'success';
+                                            $badgeIcon = 'fas fa-check';
+                                        } elseif ($statusCode === 'ditolak_kaprodi') {
+                                            $badgeClass = 'danger';
+                                            $badgeIcon = 'fas fa-times';
+                                        } elseif ($statusCode === 'draft') {
+                                            $badgeClass = 'info';
+                                            $badgeIcon = 'fas fa-edit';
+                                        }
+                                    @endphp
+                                    <span class="badge badge-{{ $badgeClass }} d-flex align-items-center">
+                                        <i class="{{ $badgeIcon }} me-1"></i>
+                                        {{ $surat->currentStatus->nama_status ?? 'N/A' }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <small class="text-muted">
+                                        {{ $surat->created_at ? $surat->created_at->format('d/m/Y') : '-' }}
+                                        <br>
+                                        {{ $surat->created_at ? $surat->created_at->format('H:i') : '' }}
+                                    </small>
+                                </td>
+                                <td>
+                                    <small class="text-muted">{{ $surat->createdBy->nama ?? '-' }}</small>
+                                </td>
+                                <td class="text-center">
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <!-- View Button -->
+                                        <a href="{{ route('surat.show', $surat->id) }}" 
+                                           class="btn btn-outline-info btn-sm" 
+                                           title="Lihat Detail">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        
+                                        <!-- Approve/Reject untuk Kaprodi -->
+                                        @if(Auth::user()->role->name === 'kaprodi' && ($surat->currentStatus->kode_status ?? '') === 'review_kaprodi')
+                                            <button type="button" 
+                                                    class="btn btn-outline-success btn-sm" 
+                                                    onclick="approveSurat({{ $surat->id }})" 
+                                                    title="Setujui">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                            <button type="button" 
+                                                    class="btn btn-outline-danger btn-sm" 
+                                                    onclick="rejectSurat({{ $surat->id }})" 
+                                                    title="Tolak">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        @endif
+
+                                        <!-- Edit untuk Staff Prodi -->
+                                        @if(Auth::user()->role->name === 'staff_prodi' && 
+                                            in_array($surat->currentStatus->kode_status ?? '', ['draft', 'ditolak_umum']))
+                                            <a href="{{ route('surat.edit', $surat->id) }}" 
+                                               class="btn btn-outline-warning btn-sm" 
+                                               title="Edit">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                        @endif
+                                    </div>
+                                </td>
+                            </tr>
+                            @empty
+                            <tr>
+                                <td colspan="8" class="text-center py-5">
+                                    <div class="text-muted">
+                                        <i class="fas fa-inbox fa-3x mb-3 text-secondary"></i>
+                                        <h5>Tidak ada surat ditemukan</h5>
+                                        <p class="mb-0">Coba ubah filter pencarian atau buat surat baru</p>
+                                    </div>
+                                </td>
+                            </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+
+                @if(isset($surats) && $surats->hasPages())
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="text-muted">
+                            Menampilkan {{ $surats->firstItem() ?? 0 }} - {{ $surats->lastItem() ?? 0 }} 
+                            dari {{ $surats->total() ?? 0 }} surat
+                        </div>
+                        <div>
+                            {{ $surats->links() }}
+                        </div>
+                    </div>
+                </div>
+                @endif
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Functions -->
+    <script>
+    window.approveSurat = function(id) {
+        Swal.fire({
+            title: 'Setujui Surat?',
+            text: 'Apakah Anda yakin ingin menyetujui surat ini?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#28a745',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Ya, Setujui',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `/surat/${id}/approve`;
+                
+                const csrfToken = document.createElement('input');
+                csrfToken.type = 'hidden';
+                csrfToken.name = '_token';
+                csrfToken.value = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                
+                form.appendChild(csrfToken);
+                document.body.appendChild(form);
+                form.submit();
+            }
+        });
+    }
+
+    window.rejectSurat = function(id) {
+        Swal.fire({
+            title: 'Tolak Surat',
+            text: 'Masukkan alasan penolakan:',
+            input: 'textarea',
+            inputPlaceholder: 'Alasan penolakan...',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Tolak Surat',
+            cancelButtonText: 'Batal',
+            inputValidator: (value) => {
+                if (!value || value.trim() === '') {
+                    return 'Alasan penolakan harus diisi!';
+                }
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `/surat/${id}/reject`;
+                
+                const csrfToken = document.createElement('input');
+                csrfToken.type = 'hidden';
+                csrfToken.name = '_token';
+                csrfToken.value = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                
+                const reasonInput = document.createElement('input');
+                reasonInput.type = 'hidden';
+                reasonInput.name = 'keterangan';
+                reasonInput.value = result.value;
+                
+                form.appendChild(csrfToken);
+                form.appendChild(reasonInput);
+                document.body.appendChild(form);
+                form.submit();
+            }
+        });
+    }
+    </script>
+
+    <!-- Enhanced Styling -->
+    <style>
+    .table th {
+        border-top: none;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+
+    .table td {
+        vertical-align: middle;
+        font-size: 0.9rem;
+    }
+
+    .btn-group-sm > .btn {
+        margin: 0 1px;
+        border-radius: 0.25rem;
+    }
+
+    .badge {
+        font-size: 0.75em;
+        padding: 0.5em 0.75em;
+    }
+
+    .text-decoration-none:hover {
+        text-decoration: none !important;
+    }
+
+    .table-hover tbody tr:hover {
+        background-color: rgba(0,0,0,.075);
+    }
+
+    .card-header {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .form-label {
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: #495057;
+    }
+
+    .text-truncate {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    </style>
+</div>

@@ -1,0 +1,109 @@
+<?php
+
+namespace App\Livewire;
+
+use Livewire\Component;
+use Livewire\WithPagination;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use App\Models\Surat;
+use App\Models\StatusSurat;
+use App\Models\Jabatan;
+
+class StaffSuratTable extends Component
+{
+    use WithPagination;
+    
+    public $search = '';
+    public $statusFilter;
+
+    public function render()
+    {
+        $user = Auth::user();
+        $user->load('jabatan', 'prodi', 'role');
+
+        Log::info('StaffSuratTable render for user: ' . $user->email . ' (Role: ' . ($user->role->name ?? 'N/A') . ')');
+
+        $suratsQuery = Surat::with(['jenisSurat', 'currentStatus', 'createdBy', 'tujuanJabatan']);
+
+        // Simple role-based filtering
+        $roleName = $user->role->name ?? null;
+
+        switch ($roleName) {
+            case 'admin':
+            case 'super_admin':
+                // Admin can see all
+                Log::info('No filter applied for Admin/Super Admin');
+                break;
+                
+            case 'staff_prodi':
+                Log::info('Applying filter for Staff Prodi');
+                $suratsQuery->where('prodi_id', $user->prodi_id)
+                           ->where('created_by', $user->id);
+                break;
+                
+            case 'staff_fakultas':
+                Log::info('Applying filter for Staff Fakultas');
+                $suratsQuery->where('fakultas_id', $user->fakultas_id)
+                           ->where('created_by', $user->id);
+                break;
+                
+            case 'kaprodi':
+                // Kaprodi sees: review_kaprodi, disetujui_kaprodi, ditolak_kaprodi
+                Log::info('Applying filter for Kaprodi with tracking');
+                
+                $statusIds = [];
+                
+                $reviewStatus = StatusSurat::where('kode_status', 'review_kaprodi')->first();
+                if ($reviewStatus) $statusIds[] = $reviewStatus->id;
+                
+                $approvedStatus = StatusSurat::where('kode_status', 'disetujui_kaprodi')->first();
+                if ($approvedStatus) $statusIds[] = $approvedStatus->id;
+                
+                $rejectedStatus = StatusSurat::where('kode_status', 'ditolak_kaprodi')->first();
+                if ($rejectedStatus) $statusIds[] = $rejectedStatus->id;
+                
+                $suratsQuery->where('prodi_id', $user->prodi_id);
+                
+                if (!empty($statusIds)) {
+                    $suratsQuery->whereIn('status_id', $statusIds);
+                    Log::info('Kaprodi filter applied: prodi_id = ' . $user->prodi_id . ', status_ids = ' . implode(',', $statusIds));
+                } else {
+                    $suratsQuery->whereRaw('0 = 1');
+                    Log::warning('No valid status for Kaprodi found');
+                }
+                break;
+                
+            default:
+                Log::info('Applying filter for other roles: no surat shown');
+                $suratsQuery->whereRaw('0 = 1');
+                break;
+        }
+
+        // Apply search
+        if ($this->search) {
+            $suratsQuery->where(function($query) {
+                $query->where('nomor_surat', 'like', '%' . $this->search . '%')
+                      ->orWhere('perihal', 'like', '%' . $this->search . '%');
+            });
+        }
+
+        // Apply status filter
+        if ($this->statusFilter) {
+            $suratsQuery->where('status_id', $this->statusFilter);
+        }
+
+        $surats = $suratsQuery->orderBy('created_at', 'desc')->paginate(10);
+        $allStatuses = StatusSurat::orderBy('urutan')->get();
+
+        Log::info('Total surat found: ' . $surats->total());
+
+        return view('livewire.staff-surat-table', [
+            'surats' => $surats,
+            'allStatuses' => $allStatuses,
+            'draftStatusId' => StatusSurat::where('kode_status', 'draft')->first()->id ?? null,
+            'needsRevisionStatusId' => StatusSurat::where('kode_status', 'ditolak_umum')->first()->id ?? null,
+        ,
+            'tujuanJabatans' => \App\Models\Jabatan::orderBy('nama_jabatan')->get()]);
+    }
+}
