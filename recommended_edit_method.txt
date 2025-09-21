@@ -1,0 +1,44 @@
+
+public function edit($id)
+{
+    $surat = Surat::with([
+        'fakultas',
+        'prodi', 
+        'jenisSurat',
+        'createdBy.jabatan',
+        'createdBy.prodi.fakultas',
+        'currentStatus',
+        'tujuanJabatan'
+    ])->findOrFail($id);
+    
+    // Check authorization
+    if ($surat->created_by !== auth()->id() || $surat->currentStatus->kode_status !== 'draft') {
+        return redirect()->route('staff.surat.index')
+            ->with('error', 'Anda tidak dapat mengedit surat ini.');
+    }
+    
+    // Get form options - jabatan level 1-3 (Dekan, Wadek, Kaprodi, Kabag)
+    $tujuanJabatanOptions = \App\Models\Jabatan::whereIn('level', [1, 2, 3])
+        ->orderBy('level')
+        ->orderBy('nama_jabatan')
+        ->get();
+        
+    $fakultas = \App\Models\Fakultas::orderBy('nama_fakultas')->get();
+    $prodis = \App\Models\Prodi::orderBy('nama_prodi')->get();
+    $sifatSuratOptions = ['biasa', 'segera', 'sangat_segera', 'rahasia'];
+    
+    // Auto-select based on user
+    $user = auth()->user();
+    $selectedFakultasId = $user->jabatan?->prodi?->fakultas_id ?? null;
+    $selectedProdiId = $user->jabatan?->prodi_id ?? null;
+    
+    return view('staff.surat.edit', compact(
+        'surat',
+        'tujuanJabatanOptions',
+        'fakultas',
+        'prodis',
+        'sifatSuratOptions',
+        'selectedFakultasId',
+        'selectedProdiId'
+    ));
+}

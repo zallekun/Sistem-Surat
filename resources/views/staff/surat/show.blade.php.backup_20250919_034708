@@ -174,7 +174,7 @@
                 <div class="flex flex-wrap gap-2 mt-3">
                     {{-- Edit button for draft --}}
                     @if($surat->currentStatus->kode_status === 'draft' && $surat->created_by === Auth::id())
-                    <a href="{{ route('staff.surat.edit', $surat->id) }}" 
+                    <a href="{{ route('surat.edit', $surat->id) }}" 
                        class="inline-flex items-center px-4 py-2 bg-yellow-100 text-yellow-700 rounded-lg hover:bg-yellow-200 transition-colors">
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
@@ -183,7 +183,7 @@
                     </a>
                     
                     {{-- Submit button for draft --}}
-                    <form action="{{ route('staff.surat.submit', $surat->id) }}" method="POST" class="inline-block">
+                    <form action="{{ route('surat.submit', $surat->id) }}" method="POST" class="inline-block">
                         @csrf
                         <button type="submit" 
                                 onclick="return confirm('Kirim surat ini ke Kaprodi untuk review?')"
@@ -198,7 +198,7 @@
                     
                     {{-- Approve/Reject for kaprodi --}}
                     @if(Auth::user()->hasRole('kaprodi') && in_array($surat->currentStatus->kode_status, ['review_kaprodi', 'diajukan']))
-                    <form action="{{ route('staff.surat.approve', $surat->id) }}" method="POST" class="inline-block">
+                    <form action="{{ route('surat.approve', $surat->id) }}" method="POST" class="inline-block">
                         @csrf
                         <button type="submit" 
                                 onclick="return confirm('Setujui surat ini?')"
@@ -229,7 +229,7 @@
                     </button>
                     
                     {{-- Back button --}}
-                    <a href="{{ route('staff.surat.index') }}" 
+                    <a href="{{ route('surat.index') }}" 
                        class="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>

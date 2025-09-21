@@ -1,0 +1,30 @@
+/* Zebra Table Styling for Livewire */
+.zebra-table tbody tr:nth-child(odd) {
+    background-color: #ffffff !important;
+}
+
+.zebra-table tbody tr:nth-child(even) {
+    background-color: #f9fafb !important;
+}
+
+.zebra-table tbody tr {
+    transition: none !important;
+}
+
+.zebra-table tbody tr:hover {
+    background-color: inherit !important;
+}
+
+.zebra-table thead {
+    background: linear-gradient(to right, #3b82f6, #2563eb) !important;
+}
+
+.zebra-table thead th {
+    color: white !important;
+    font-weight: 700 !important;
+}
+
+/* Override any Livewire default styles */
+[wire\:loading], [wire\:loading\.delay], [wire\:loading\.inline-block], [wire\:loading\.inline], [wire\:loading\.block], [wire\:loading\.flex], [wire\:loading\.table], [wire\:loading\.grid] {
+    /* Keep zebra styling even during loading */
+}

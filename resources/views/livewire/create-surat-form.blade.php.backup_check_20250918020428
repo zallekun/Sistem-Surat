@@ -164,30 +164,6 @@
                 
 
                 
-            
-                
-            
-                <!-- Action Buttons -->
-                <div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid #e5e7eb;">
-                    <div style="display: flex; justify-content: flex-end; gap: 12px;">
-                        <a href="{{ route('staff.surat.index') }}" 
-                           style="padding: 8px 16px; background-color: #6b7280; color: white; text-decoration: none; border-radius: 6px; display: inline-block;">
-                            Batal
-                        </a>
-                        
-                        <button type="button"
-                                wire:click="saveDraft"
-                                style="padding: 8px 16px; background-color: #4b5563; color: white; border: none; border-radius: 6px; cursor: pointer;">
-                            Simpan Draft
-                        </button>
-                        
-                        <button type="button"
-                                wire:click="confirmSubmit"
-                                style="padding: 8px 16px; background-color: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer;">
-                            Kirim ke Kaprodi
-                        </button>
-                    </div>
-                </div>
             </form>
         </div>
     </div>

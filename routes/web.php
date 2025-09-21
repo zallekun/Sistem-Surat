@@ -9,9 +9,8 @@ use App\Http\Controllers\ProdiController;
 use App\Http\Controllers\JabatanController;
 use App\Http\Controllers\DisposisiController;
 use App\Http\Controllers\TrackingController;
-use Illuminate\Foundation\Application;
+use App\Http\Controllers\PublicSuratController;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 
 /*
 |--------------------------------------------------------------------------
@@ -23,116 +22,113 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-// Authentication Routes (handled by Breeze)
-Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['auth', 'verified'])->name('dashboard');
+// Dashboard
+Route::get('/dashboard', [DashboardController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard');
 
+// Profile Routes
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-// Surat Routes - Main functionality
-Route::middleware(['auth'])->group(function () {
-    // Core surat routes
-    Route::get('/surat/{id}', [SuratController::class, 'show'])->name('surat.show');
-    Route::get('/surat/{id}/edit', [SuratController::class, 'edit'])->name('surat.edit');
-    Route::put('/surat/{id}', [SuratController::class, 'update'])->name('surat.update');
-    Route::post('/surat/{id}/approve', [SuratController::class, 'approve'])->name('surat.approve');
-    Route::post('/surat/{id}/reject', [SuratController::class, 'reject'])->name('surat.reject');
+// Public Routes (No Auth Required)
+Route::middleware(['throttle:30,1'])->group(function () {
+    // Form pengajuan surat mahasiswa
+    Route::get('/pengajuan-surat', [PublicSuratController::class, 'create'])
+        ->name('public.pengajuan.create');
     
-    // Additional surat functionality
-    Route::get('/surat', [SuratController::class, 'index'])->name('surat.index');
-    Route::post('/surat/{id}/submit', [SuratController::class, 'submit'])->name('surat.submit');
-    Route::get('/surat/{id}/tracking', [SuratController::class, 'tracking'])->name('surat.tracking');
-    Route::get('/surat/{id}/download', [SuratController::class, 'download'])->name('surat.download');
+    Route::post('/pengajuan-surat', [PublicSuratController::class, 'store'])
+        ->name('public.pengajuan.store');
+    
+    // Public tracking
+    Route::get('/tracking/{token?}', [PublicSuratController::class, 'tracking'])
+        ->name('tracking.public');
+    
+    Route::post('/tracking/api', [PublicSuratController::class, 'trackingApi'])
+        ->name('tracking.api');
 });
 
-// Staff Surat Routes
-Route::middleware(['auth', 'role:staff_prodi,kaprodi'])->group(function () {
-    Route::get('/staff/surat', [App\Http\Controllers\SuratController::class, 'staffIndex'])->name('staff.surat.index');
-    Route::get('/staff/surat/create', [App\Http\Controllers\SuratController::class, 'create'])->name('staff.surat.create');
-    Route::post('/staff/surat', [App\Http\Controllers\SuratController::class, 'store'])->name('staff.surat.store');
-    Route::get('/staff/surat/{id}', [App\Http\Controllers\SuratController::class, 'show'])->name('staff.surat.show');
-    Route::get('/staff/surat/{id}/edit', [App\Http\Controllers\SuratController::class, 'edit'])->name('staff.surat.edit');
-    Route::put('/staff/surat/{id}', [App\Http\Controllers\SuratController::class, 'update'])->name('staff.surat.update');
-    Route::delete('/staff/surat/{id}', [App\Http\Controllers\SuratController::class, 'destroy'])->name('staff.surat.destroy');
+Route::get('/debug-alpine', function() {
+    return view('debug.alpine');
 });
 
-
-// Role-specific routes
+// Authenticated Routes
 Route::middleware(['auth'])->group(function () {
-    // Pimpinan routes
-    Route::prefix('pimpinan')->name('pimpinan.')->group(function () {
+    
+    // General Surat Routes
+    Route::prefix('surat')->name('surat.')->group(function () {
+        Route::get('/', [SuratController::class, 'index'])->name('index');
+        Route::get('/{id}', [SuratController::class, 'show'])->name('show');
+        Route::get('/{id}/edit', [SuratController::class, 'edit'])->name('edit');
+        Route::put('/{id}', [SuratController::class, 'update'])->name('update');
+        Route::post('/{id}/approve', [SuratController::class, 'approve'])->name('approve');
+        Route::post('/{id}/reject', [SuratController::class, 'reject'])->name('reject');
+        Route::post('/{id}/submit', [SuratController::class, 'submit'])->name('submit');
+        Route::get('/{id}/tracking', [SuratController::class, 'tracking'])->name('tracking');
+        Route::get('/{id}/download', [SuratController::class, 'download'])->name('download');
+    });
+
+    // Staff Routes
+    Route::middleware(['role:staff_prodi,staff_fakultas'])->prefix('staff')->name('staff.')->group(function () {
+        // Surat Management
+        Route::get('/surat', [SuratController::class, 'staffIndex'])->name('surat.index');
+        Route::get('/surat/create', [SuratController::class, 'create'])->name('surat.create');
+        Route::post('/surat', [SuratController::class, 'store'])->name('surat.store');
+        Route::get('/surat/{id}', [SuratController::class, 'show'])->name('surat.show');
+        Route::get('/surat/{id}/edit', [SuratController::class, 'edit'])->name('surat.edit');
+        Route::put('/surat/{id}', [SuratController::class, 'update'])->name('surat.update');
+        Route::delete('/surat/{id}', [SuratController::class, 'destroy'])->name('surat.destroy');
+        
+        // Pengajuan Management (Staff Prodi Only)
+        Route::middleware(['role:staff_prodi'])->group(function () {
+            Route::get('/pengajuan', [PublicSuratController::class, 'index'])->name('pengajuan.index');
+            Route::get('/pengajuan/{id}', [PublicSuratController::class, 'show'])->name('pengajuan.show');
+            Route::post('/pengajuan/{id}/process', [PublicSuratController::class, 'createSuratFromPengajuan'])
+                ->name('pengajuan.process');
+            Route::get('/surat/create-from-pengajuan/{id}', [SuratController::class, 'createFromPengajuan'])
+                ->name('surat.create-from-pengajuan');
+        });
+    });
+
+    // Kaprodi Routes
+    Route::middleware(['role:kaprodi'])->prefix('kaprodi')->name('kaprodi.')->group(function () {
+        Route::get('/surat/approval', [SuratController::class, 'approvalList'])->name('surat.approval');
+    });
+
+    // Pimpinan Routes
+    Route::middleware(['role:pimpinan,dekan,wd1,wd2,wd3'])->prefix('pimpinan')->name('pimpinan.')->group(function () {
         Route::get('/surat/disposisi', function () {
             return view('pimpinan.surat.disposisi');
         })->name('surat.disposisi');
-        
         Route::post('/surat/{id}/disposisi', [DisposisiController::class, 'store'])->name('surat.disposisi.store');
-        
         Route::get('/surat/ttd', function () {
             return view('pimpinan.surat.ttd');
         })->name('surat.ttd');
-        
         Route::post('/surat/{id}/ttd', [SuratController::class, 'tandaTangan'])->name('surat.ttd.process');
     });
-    
-    // Kabag routes
-    Route::prefix('kabag')->name('kabag.')->group(function () {
-        Route::get('/surat', function () {
-            return view('kabag.surat.index');
-        })->name('surat.index');
-    });
-    
-    // Divisi routes
-    Route::prefix('divisi')->name('divisi.')->group(function () {
-        Route::get('/surat', function () {
-            return view('divisi.surat.index');
-        })->name('surat.index');
-    });
-    
-    // Kaprodi routes
-    Route::prefix('kaprodi')->name('kaprodi.')->group(function () {
-        Route::get('/surat/approval', [SuratController::class, 'approvalList'])->name('surat.approval');
-    });
-    
-    // Staff routes
-    // Staff routes
-    // Staff routes - Fixed
-    Route::prefix('staff')->name('staff.')->middleware(['auth'])->group(function () {
-        Route::get('/surat/create', [SuratController::class, 'create'])->name('surat.create');
-        Route::post('/surat', [SuratController::class, 'store'])->name('surat.store');
-        Route::post('/surat/{id}/submit', [SuratController::class, 'submit'])->name('surat.submit');
-        Route::get('/surat/{id}/tracking', [SuratController::class, 'tracking'])->name('surat.tracking');
-        Route::get('/surat/{id}/download', [SuratController::class, 'download'])->name('surat.download');
-    });
-});
 
-require __DIR__.'/fakultas.php';
+    // Admin Routes
+    Route::middleware(['role:admin,super_admin'])->prefix('admin')->name('admin.')->group(function () {
+        Route::resource('users', UserController::class);
+        Route::resource('fakultas', FakultasController::class);
+        Route::resource('prodi', ProdiController::class);
+        Route::resource('jabatan', JabatanController::class);
+    });
 
-// Admin routes
-Route::middleware(['auth'])->group(function () {
-    Route::resource('users', UserController::class);
-    Route::resource('fakultas', FakultasController::class); // This should come after
-    Route::resource('prodi', ProdiController::class);
-    Route::resource('jabatan', JabatanController::class);
+    // General Admin Resources (accessible by authorized roles)
     Route::resource('tracking', TrackingController::class);
 });
 
-// Admin routes
-Route::middleware(['auth'])->group(function () {
-    Route::resource('users', UserController::class);
-    Route::resource('fakultas', FakultasController::class);
-    Route::resource('prodi', ProdiController::class);
-    Route::resource('jabatan', JabatanController::class);
-    Route::resource('tracking', TrackingController::class);
+// Temporary debug route - hapus setelah selesai debug
+Route::get('/debug-info', function() {
+    // Copy paste isi script debug.php disini
+    return view('debug'); // atau return response langsung
 });
 
+// Include additional route files
 require __DIR__.'/auth.php';
-
-// Include staff routes
-require __DIR__.'/staff.php';
-
-
-// Include fakultas staff routes
 require __DIR__.'/fakultas.php';
+require __DIR__.'/staff.php';

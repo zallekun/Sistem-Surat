@@ -16,7 +16,7 @@
                 </div>
                 @if(Auth::user()->hasRole('staff_prodi'))
                 <a href="{{ route('staff.surat.create') }}" 
-                   class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-indigo-600 hover:bg-indigo-700">
+                   class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-indigo-700">
                     <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                     </svg>
@@ -210,7 +210,7 @@
                         <td class="px-2 py-3">
                             <div class="flex items-center justify-center gap-2">
                                 {{-- View button - always visible --}}
-                                <a href="{{ route('surat.show', $surat->id) }}" 
+                                <a href="{{ route('staff.surat.show', $surat->id) }}" 
                                    class="inline-flex items-center justify-center w-8 h-8 bg-blue-100 text-blue-600 hover:bg-blue-200 rounded-lg transition-colors duration-150 group relative"
                                    title="Lihat Detail">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -220,7 +220,7 @@
                                 
                                 {{-- Edit button - if owner --}}
                                 @if($canEdit)
-                                <a href="{{ route('surat.edit', $surat->id) }}" 
+                                <a href="{{ route('staff.surat.edit', $surat->id) }}" 
                                    class="inline-flex items-center justify-center w-8 h-8 bg-yellow-100 text-yellow-600 hover:bg-yellow-200 rounded-lg transition-colors duration-150"
                                    title="Edit">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -319,7 +319,7 @@
 <script>
 function confirmApprove(id) {
     if (confirm('Apakah Anda yakin ingin menyetujui surat ini?')) {
-        window.location.href = `/surat/${id}/approve`;
+        window.location.href = `/staff/surat/${id}/approve`;
     }
 }
 
@@ -327,7 +327,7 @@ function confirmSubmit(id) {
     if (confirm('Apakah Anda yakin ingin mengirim surat ini ke Kaprodi untuk review?')) {
         const form = document.createElement('form');
         form.method = 'POST';
-        form.action = `/surat/${id}/submit`;
+        form.action = `/staff/surat/${id}/submit`;
         
         const token = document.createElement('input');
         token.type = 'hidden';
@@ -345,7 +345,7 @@ function confirmReject(id) {
     if (reason) {
         const form = document.createElement('form');
         form.method = 'POST';
-        form.action = `/surat/${id}/reject`;
+        form.action = `/staff/surat/${id}/reject`;
         
         const token = document.createElement('input');
         token.type = 'hidden';

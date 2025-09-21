@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Alpine.js Form</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-2xl font-bold mb-6">Debug Alpine.js Form</h1>
+        
+        <!-- Test 1: Alpine.js Loading -->
+        <div class="bg-white p-4 rounded-lg shadow mb-4">
+            <h2 class="font-bold mb-2">Test 1: Alpine.js Loading</h2>
+            <div x-data="{ message: 'Alpine.js is working!' }">
+                <p x-text="message" class="text-green-600"></p>
+                <button @click="message = 'Button clicked!'" class="bg-blue-500 text-white px-3 py-1 rounded">
+                    Click Me
+                </button>
+            </div>
+        </div>
+
+        <!-- Test 2: Complex Data Structure -->
+        <div class="bg-white p-4 rounded-lg shadow mb-4">
+            <h2 class="font-bold mb-2">Test 2: Complex Data Structure</h2>
+            <div x-data="{
+                step: 1,
+                form: {
+                    jenis_surat_id: '',
+                    nim: '',
+                    nama_mahasiswa: ''
+                }
+            }">
+                <p>Current Step: <span x-text="step"></span></p>
+                <button @click="step++" class="bg-green-500 text-white px-3 py-1 rounded">Next Step</button>
+                <button @click="form.jenis_surat_id = '1'" class="bg-purple-500 text-white px-3 py-1 rounded ml-2">
+                    Set Jenis Surat
+                </button>
+                <p class="mt-2">Jenis Surat ID: <span x-text="form.jenis_surat_id || 'empty'"></span></p>
+            </div>
+        </div>
+
+        <!-- Test 3: PHP Data Simulation -->
+        <div class="bg-white p-4 rounded-lg shadow mb-4">
+            <h2 class="font-bold mb-2">Test 3: JSON Data</h2>
+            <div x-data="{
+                jenisSurat: [
+                    {id: 1, nama_jenis: 'Surat Mahasiswa Aktif', kode_surat: 'MA'},
+                    {id: 2, nama_jenis: 'Surat Kerja Praktek', kode_surat: 'KP'},
+                    {id: 3, nama_jenis: 'Surat Tugas Akhir', kode_surat: 'TA'},
+                    {id: 4, nama_jenis: 'Surat Keterangan', kode_surat: 'SKM'}
+                ],
+                selected: ''
+            }">
+                <div class="grid grid-cols-2 gap-3">
+                    <template x-for="jenis in jenisSurat">
+                        <div @click="selected = jenis.id" 
+                             class="border p-3 rounded cursor-pointer"
+                             :class="selected == jenis.id ? 'border-blue-500 bg-blue-50' : 'border-gray-300'">
+                            <p x-text="jenis.nama_jenis" class="font-medium"></p>
+                            <p x-text="'Kode: ' + jenis.kode_surat" class="text-sm text-gray-500"></p>
+                        </div>
+                    </template>
+                </div>
+                <p class="mt-3">Selected ID: <span x-text="selected || 'none'" class="font-bold"></span></p>
+            </div>
+        </div>
+
+        <!-- Test 4: Methods -->
+        <div class="bg-white p-4 rounded-lg shadow mb-4">
+            <h2 class="font-bold mb-2">Test 4: Methods</h2>
+            <div x-data="{
+                count: 0,
+                form: {
+                    jenis_surat_id: ''
+                },
+                
+                toggleJenisSurat(id) {
+                    if (this.form.jenis_surat_id === id) {
+                        this.form.jenis_surat_id = '';
+                    } else {
+                        this.form.jenis_surat_id = id;
+                    }
+                },
+                
+                canProceed() {
+                    return this.form.jenis_surat_id !== '';
+                }
+            }">
+                <button @click="count++" class="bg-blue-500 text-white px-3 py-1 rounded">
+                    Count: <span x-text="count"></span>
+                </button>
+                <button @click="toggleJenisSurat(1)" class="bg-green-500 text-white px-3 py-1 rounded ml-2">
+                    Toggle Surat 1
+                </button>
+                <button @click="toggleJenisSurat(2)" class="bg-green-500 text-white px-3 py-1 rounded ml-2">
+                    Toggle Surat 2
+                </button>
+                <p class="mt-2">
+                    Jenis Surat ID: <span x-text="form.jenis_surat_id || 'empty'" class="font-bold"></span>
+                </p>
+                <p>
+                    Can Proceed: <span x-text="canProceed() ? 'YES' : 'NO'" class="font-bold"
+                                       :class="canProceed() ? 'text-green-600' : 'text-red-600'"></span>
+                </p>
+            </div>
+        </div>
+
+        <!-- Test 5: Full Form Structure -->
+        <div class="bg-white p-4 rounded-lg shadow mb-4">
+            <h2 class="font-bold mb-2">Test 5: Full Form Structure (Without Comments)</h2>
+            <div x-data="{
+                step: 1,
+                loading: false,
+                form: {
+                    jenis_surat_id: '',
+                    nim: '',
+                    nama_mahasiswa: '',
+                    email: '',
+                    phone: '',
+                    prodi_id: '',
+                    keperluan: '',
+                    semester: '',
+                    tahun_akademik: '',
+                    nama_orang_tua: '',
+                    tempat_lahir_ortu: '',
+                    tanggal_lahir_ortu: '',
+                    pekerjaan_ortu: '',
+                    nip_ortu: '',
+                    jabatan_ortu: '',
+                    pangkat_golongan_ortu: '',
+                    pendidikan_terakhir_ortu: '',
+                    alamat_instansi_ortu: '',
+                    alamat_rumah_ortu: '',
+                    nama_perusahaan: '',
+                    alamat_perusahaan: '',
+                    periode_mulai: '',
+                    periode_selesai: '',
+                    bidang_kerja: '',
+                    judul_ta: '',
+                    dosen_pembimbing1: '',
+                    dosen_pembimbing2: '',
+                    lokasi_penelitian: '',
+                    keterangan_khusus: ''
+                },
+                
+                toggleJenisSurat(id) {
+                    if (this.form.jenis_surat_id === id) {
+                        this.form.jenis_surat_id = '';
+                    } else {
+                        this.form.jenis_surat_id = id;
+                    }
+                }
+            }">
+                <p class="text-green-600 font-bold">✓ Structure loaded successfully!</p>
+                <p>Step: <span x-text="step"></span></p>
+                <p>Loading: <span x-text="loading"></span></p>
+                <button @click="toggleJenisSurat(1)" class="bg-blue-500 text-white px-3 py-1 rounded mt-2">
+                    Select Jenis 1
+                </button>
+                <p class="mt-2">Selected: <span x-text="form.jenis_surat_id || 'none'"></span></p>
+            </div>
+        </div>
+
+        <!-- Console Debug -->
+        <div class="bg-white p-4 rounded-lg shadow">
+            <h2 class="font-bold mb-2">Console Debug</h2>
+            <p class="text-gray-600 mb-2">Buka browser console (F12) untuk melihat debug info:</p>
+            <button onclick="checkAlpine()" class="bg-red-500 text-white px-3 py-1 rounded">
+                Check Alpine Status
+            </button>
+            <button onclick="checkData()" class="bg-orange-500 text-white px-3 py-1 rounded ml-2">
+                Check All x-data
+            </button>
+        </div>
+    </div>
+
+    <script>
+        function checkAlpine() {
+            if (typeof Alpine !== 'undefined') {
+                console.log('✓ Alpine.js loaded, version:', Alpine.version);
+            } else {
+                console.error('✗ Alpine.js NOT loaded');
+            }
+        }
+
+        function checkData() {
+            const elements = document.querySelectorAll('[x-data]');
+            console.log('Found', elements.length, 'x-data elements:');
+            elements.forEach((el, i) => {
+                if (el.__x) {
+                    console.log(`Element ${i+1}:`, el.__x.$data);
+                } else {
+                    console.error(`Element ${i+1}: No Alpine data`);
+                }
+            });
+        }
+
+        // Auto check on load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                console.log('=== Auto Debug Check ===');
+                checkAlpine();
+                checkData();
+            }, 1000);
+        });
+    </script>
+
+    <!-- Alpine.js at the bottom -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</body>
+</html>

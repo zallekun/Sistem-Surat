@@ -203,7 +203,7 @@
                             <!-- Edit untuk Staff Prodi -->
                             @if(Auth::user()->role->name === 'staff_prodi' && 
                                 in_array($surat->currentStatus->kode_status ?? '', ['draft', 'ditolak_umum']))
-                                <a href="{{ route('staff.surat.edit', $surat->id) }}" 
+                                <a href="{{ route('surat.edit', $surat->id) }}" 
                                    class="text-yellow-600 hover:text-yellow-900 inline-flex items-center">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
@@ -249,7 +249,7 @@
         if (confirm('Apakah Anda yakin ingin menyetujui surat ini?')) {
             const form = document.createElement('form');
             form.method = 'POST';
-            form.action = `/staff/surat/${id}/approve`;
+            form.action = `/surat/${id}/approve`;
             
             const csrfToken = document.createElement('input');
             csrfToken.type = 'hidden';
@@ -267,7 +267,7 @@
         if (reason && reason.trim() !== '') {
             const form = document.createElement('form');
             form.method = 'POST';
-            form.action = `/staff/surat/${id}/reject`;
+            form.action = `/surat/${id}/reject`;
             
             const csrfToken = document.createElement('input');
             csrfToken.type = 'hidden';

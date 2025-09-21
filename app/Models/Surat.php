@@ -85,4 +85,52 @@ class Surat extends Model
     {
         return $this->hasMany(\App\Models\StatusHistory::class, 'surat_id');
     }
+    public function pengajuan()
+{
+    return $this->hasOne(PengajuanSurat::class);
+}
+
+// Method untuk create surat dari pengajuan
+public static function createFromPengajuan(PengajuanSurat $pengajuan, $userId)
+{
+    return self::create([
+        'nomor_surat' => self::generateNomorSurat($pengajuan->jenisSurat->kode_surat),
+        'perihal' => $pengajuan->keperluan,
+        'tanggal_surat' => now()->toDateString(),
+        'jenis_id' => $pengajuan->jenis_surat_id,
+        'prodi_id' => $pengajuan->prodi_id,
+        'fakultas_id' => $pengajuan->prodi->fakultas_id,
+        'created_by' => $userId,
+        'status' => 'draft',
+        'tipe_surat' => 'keluar',
+        'sifat_surat' => 'biasa',
+        // Tambahan data dari pengajuan
+        'isi_surat' => json_encode([
+            'nim' => $pengajuan->nim,
+            'nama_mahasiswa' => $pengajuan->nama_mahasiswa,
+            'additional_data' => $pengajuan->additional_data
+        ])
+    ]);
+}
+
+// Method untuk generate nomor surat (sesuaikan dengan logic existing)
+private static function generateNomorSurat($kodeSurat)
+{
+    $tahun = now()->year;
+    $bulan = now()->format('m');
+    
+    // Get last number for this type
+    $lastSurat = self::whereYear('created_at', $tahun)
+        ->whereMonth('created_at', now()->month)
+        ->whereHas('jenisSurat', function($q) use ($kodeSurat) {
+            $q->where('kode_surat', $kodeSurat);
+        })
+        ->orderBy('id', 'desc')
+        ->first();
+    
+    $urutan = $lastSurat ? 
+        (int) explode('/', $lastSurat->nomor_surat)[0] + 1 : 1;
+    
+    return sprintf('%03d/UN27.XX/%s/%s/%s', $urutan, $kodeSurat, $bulan, $tahun);
+}
 }

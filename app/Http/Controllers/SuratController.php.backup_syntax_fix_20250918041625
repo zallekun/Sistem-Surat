@@ -23,18 +23,96 @@ class SuratController extends Controller
      * Display a listing of the resource.
      */
     public function index()
-{
-    return $this->staffIndex();
-}
+    {
+        $user = auth()->user();
+        $query = Surat::with(['pengirim', 'tujuan_jabatan', 'status', 'fakultas', 'prodi']);
+        
+        if ($user->hasRole('kaprodi')) {
+            // Get kaprodi's jabatan using correct relationship
+            $userJabatanId = $user->jabatan_id ?? null;
+            
+            if (!$userJabatanId) {
+                // Try to find jabatan by matching nama with user nama
+                $jabatan = \App\Models\Jabatan::where('nama_jabatan', 'LIKE', '%Kaprodi%')
+                    ->whereHas('prodi', function($q) use ($user) {
+                        // Match by some criteria
+                    })->first();
+            } else {
+                $jabatan = \App\Models\Jabatan::find($userJabatanId);
+            }
+            
+            if ($jabatan && $jabatan->prodi_id) {
+                // Kaprodi sees submitted/approved letters from their prodi
+                $query->where('prodi_id', $jabatan->prodi_id)
+                      ->where('status_id', '!=', 1); // Exclude drafts
+            }
+            
+            \Log::info('Kaprodi viewing surats', [
+                'user_id' => $user->id,
+                'jabatan_id' => $jabatan->id ?? null,
+                'prodi_id' => $jabatan->prodi_id ?? null,
+            ]);
+            
+        } elseif ($user->hasRole('staff_prodi')) {
+            // Staff prodi sees their own letters
+            $userJabatanId = $user->jabatan_id ?? null;
+            
+            if ($userJabatanId) {
+                $query->where('pengirim_jabatan_id', $userJabatanId);
+            }
+            
+        } elseif ($user->hasRole('staff_fakultas')) {
+            // Staff fakultas sees faculty letters
+            $userJabatanId = $user->jabatan_id ?? null;
+            
+            if ($userJabatanId) {
+                $jabatan = \App\Models\Jabatan::find($userJabatanId);
+                if ($jabatan && $jabatan->fakultas_id) {
+                    $query->where('fakultas_id', $jabatan->fakultas_id);
+                }
+            }
+        }
+        
+        $surats = $query->orderBy('created_at', 'desc')->paginate(10);
+        
+        return view('surat.index', compact('surats'));
+    }
+            
+            \Log::info('Kaprodi viewing surats', [
+                'user_id' => $user->id,
+                'prodi_id' => $kaprodiJabatan->prodi_id ?? null,
+                'query' => $query->toSql()
+            ]);
+            
+        } elseif ($user->hasRole('staff_prodi')) {
+            // Staff prodi sees their own letters
+            $staffJabatan = \App\Models\Jabatan::where('user_id', $user->id)->first();
+            
+            if ($staffJabatan) {
+                $query->where('pengirim_jabatan_id', $staffJabatan->id);
+            }
+            
+        } elseif ($user->hasRole('staff_fakultas')) {
+            // Staff fakultas sees faculty letters
+            $staffJabatan = \App\Models\Jabatan::where('user_id', $user->id)->first();
+            
+            if ($staffJabatan && $staffJabatan->fakultas_id) {
+                $query->where('fakultas_id', $staffJabatan->fakultas_id);
+            }
+        }
+        
+        $surats = $query->orderBy('created_at', 'desc')->paginate(10);
+        
+        return view('surat.index', compact('surats'));
+    }
 
     /**
      * Show the form for creating a new resource.
      */
     public function create()
-{
-    // Hanya return view yang berisi livewire component
-    return view('staff.surat.create');
-}
+    {
+        return view('staff.surat.create');
+    }
 
     /**
      * Store a newly created resource in storage.
@@ -483,5 +561,12 @@ public function staffIndex()
     {
         $surat = Surat::with(['currentStatus', 'createdBy'])->findOrFail($id);
         return view('staff.surat.tracking', compact('surat'));
+    }
+
+    public function download($id)
+    {
+        $surat = Surat::findOrFail($id);
+        // Implement download logic here
+        return response()->download('path/to/surat.pdf');
     }
 }

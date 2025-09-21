@@ -31,10 +31,9 @@ class SuratController extends Controller
      * Show the form for creating a new resource.
      */
     public function create()
-{
-    // Hanya return view yang berisi livewire component
-    return view('staff.surat.create');
-}
+    {
+        return view('staff.surat.create');
+    }
 
     /**
      * Store a newly created resource in storage.
@@ -483,5 +482,12 @@ public function staffIndex()
     {
         $surat = Surat::with(['currentStatus', 'createdBy'])->findOrFail($id);
         return view('staff.surat.tracking', compact('surat'));
+    }
+
+    public function download($id)
+    {
+        $surat = Surat::findOrFail($id);
+        // Implement download logic here
+        return response()->download('path/to/surat.pdf');
     }
 }

@@ -1,0 +1,218 @@
+<div>
+    @if (session('success'))
+        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
+            <span class="block sm:inline">{{ session('success') }}</span>
+        </div>
+    @endif
+
+    @if (session('error'))
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+            <span class="block sm:inline">{{ session('error') }}</span>
+        </div>
+    @endif
+
+    <form wire:submit.prevent="saveSurat" enctype="multipart/form-data">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Nomor Surat -->
+            <div>
+                <label for="nomor_surat" class="block text-sm font-medium text-gray-700">Nomor Surat (Otomatis)</label>
+                <input type="text" wire:model="nomor_surat" id="nomor_surat" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 bg-gray-100" readonly>
+                <p class="text-sm text-gray-500 mt-1">Nomor surat akan dibuat secara otomatis berdasarkan Fakultas yang dipilih.</p>
+            </div>
+
+            <!-- Perihal -->
+            <div>
+                <label for="perihal" class="block text-sm font-medium text-gray-700">Perihal</label>
+                <input type="text" wire:model="perihal" id="perihal" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" required>
+                @error('perihal')
+                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <!-- Tujuan Jabatan -->
+            <div>
+                <label for="tujuan_jabatan_id" class="block text-sm font-medium text-gray-700">Tujuan Jabatan</label>
+                <select wire:model="tujuan_jabatan_id" id="tujuan_jabatan_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" required>
+                    <option value="">Pilih Tujuan Jabatan</option>
+                    @foreach($tujuanJabatanOptions as $jabatan)
+                        <option value="{{ $jabatan->id }}">{{ $jabatan->nama_jabatan }}</option>
+                    @endforeach
+                </select>
+                @error('tujuan_jabatan_id')
+                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <!-- Lampiran (Opsional) -->
+            <div>
+                <label for="lampiran" class="block text-sm font-medium text-gray-700">Lampiran (Opsional)</label>
+                <input type="text" wire:model="lampiran" id="lampiran" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                @error('lampiran')
+                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <!-- Fakultas -->
+            <div>
+                <label for="fakultas_id" class="block text-sm font-medium text-gray-700">Fakultas</label>
+                <input type="text" wire:model="fakultas_name" id="fakultas_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 bg-gray-100" readonly>
+                @error('fakultas_id')
+                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                @enderror
+            </div>
+
+            @if(!$isStaffFakultas)
+            <!-- Prodi -->
+            <div>
+                <label for="prodi_id" class="block text-sm font-medium text-gray-700">Prodi</label>
+                <input type="text" wire:model="prodi_name" id="prodi_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 bg-gray-100" readonly>
+                @error('prodi_id')
+                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                @enderror
+            </div>
+            @endif
+
+            <!-- Tanggal Surat -->
+            <div>
+                <label for="tanggal_surat" class="block text-sm font-medium text-gray-700">Tanggal Surat</label>
+                <input type="date" wire:model="tanggal_surat" id="tanggal_surat" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" required>
+                @error('tanggal_surat')
+                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <!-- Sifat Surat -->
+            <div>
+                <label for="sifat_surat" class="block text-sm font-medium text-gray-700">Sifat Surat</label>
+                <select wire:model="sifat_surat" id="sifat_surat" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" required>
+                    <option value="">Pilih Sifat Surat</option>
+                    @foreach($sifatSuratOptions as $sifat)
+                        <option value="{{ $sifat }}">{{ $sifat }}</option>
+                    @endforeach
+                </select>
+                @error('sifat_surat')
+                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <!-- File PDF -->
+            <div class="md:col-span-2">
+                <label for="file_surat" class="block text-sm font-medium text-gray-700">Upload File PDF (Wajib)</label>
+                <input type="file" wire:model="file_surat" id="file_surat" class="mt-1 block w-full text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" required>
+                @error('file_surat')
+                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                @enderror
+            </div>
+        </div>
+
+        <div class="flex items-center justify-end mt-6">
+            
+                <!-- Action Buttons -->
+                <div class="flex flex-wrap gap-3 justify-end mt-6">
+                    <!-- Cancel Button -->
+                    <a href="{{ route('staff.surat.index') }}"
+                       class="inline-flex items-center px-5 py-2.5 bg-gray-500 text-white font-medium text-sm rounded-lg hover:bg-gray-600 focus:outline-none focus:ring-4 focus:ring-gray-300 transition duration-200">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                        Batal
+                    </a>
+                    
+                    <!-- Save Draft Button -->
+                    <button type="button"
+                            wire:click="saveDraft"
+                            wire:loading.attr="disabled"
+                            class="inline-flex items-center px-5 py-2.5 bg-gray-600 text-white font-medium text-sm rounded-lg hover:bg-gray-700 focus:outline-none focus:ring-4 focus:ring-gray-300 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <span wire:loading.remove wire:target="saveDraft">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V2"/>
+                            </svg>
+                            Simpan Draft
+                        </span>
+                        <span wire:loading wire:target="saveDraft" class="inline-flex items-center">
+                            <svg class="animate-spin h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Menyimpan...
+                        </span>
+                    </button>
+                    
+                    <!-- Submit for Review Button -->
+                    <button type="button"
+                            wire:click="confirmSubmit"
+                            wire:loading.attr="disabled"
+                            class="inline-flex items-center px-5 py-2.5 bg-blue-600 text-white font-medium text-sm rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <span wire:loading.remove wire:target="submitForReview">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                            </svg>
+                            Kirim ke Kaprodi
+                        </span>
+                        <span wire:loading wire:target="submitForReview" class="inline-flex items-center">
+                            <svg class="animate-spin h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Mengirim...
+                        </span>
+                    </button>
+                </div>
+        </div>
+    </form>
+</div>
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    document.addEventListener('livewire:init', () => {
+        Livewire.on('show-submit-confirmation', () => {
+            Swal.fire({
+                title: 'Konfirmasi Pengiriman',
+                html: `
+                    <div class="text-left">
+                        <p class="mb-3">Apakah Anda yakin ingin mengirim surat ini ke Kaprodi untuk review?</p>
+                        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
+                            <div class="flex">
+                                <div class="flex-shrink-0">
+                                    <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                    </svg>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm text-yellow-700">
+                                        <strong>Perhatian:</strong> Surat yang sudah dikirim tidak dapat diedit kembali.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#2563eb',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Ya, Kirim!',
+                cancelButtonText: 'Batal',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Show loading
+                    Swal.fire({
+                        title: 'Mengirim Surat',
+                        text: 'Mohon tunggu...',
+                        allowOutsideClick: false,
+                        showConfirmButton: false,
+                        willOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+                    
+                    // Call Livewire method
+                    @this.submitForReview();
+                }
+            });
+        });
+    });
+</script>
+@endpush

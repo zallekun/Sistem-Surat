@@ -44,37 +44,56 @@ class CreateSuratForm extends Component
     public $sifatSuratOptions = ['Biasa', 'Segera', 'Rahasia'];
     public $tujuanJabatanOptions;
 
-    public function mount()
-    {
-        $user = Auth::user()->load('jabatan', 'prodi.fakultas');
-
-        $this->tanggal_surat = now()->format('Y-m-d');
-
-        $this->tujuanJabatanOptions = Jabatan::whereIn('nama_jabatan', [
-            'Dekan', 'Wakil Dekan Bidang Akademik', 'Wakil Dekan Bidang Keuangan', 'Wakil Dekan Bidang Kemahasiswaan', 'Kepala Bagian TU'
-        ])->get();
-
-        if ($user->jabatan?->nama_jabatan === 'Staff Program Studi' && $user->prodi) {
-            $this->prodi_id = $user->prodi->id;
-            $this->fakultas_id = $user->prodi->fakultas_id;
-            $this->prodi_name = $user->prodi->nama_prodi;
-            $this->fakultas_name = $user->prodi->fakultas->nama_fakultas;
-        } elseif ($user->jabatan?->nama_jabatan === 'Staff Fakultas' && $user->prodi?->fakultas) {
-            $this->isStaffFakultas = true;
-            $this->prodi_id = null; // Staff fakultas does not have a prodi
-            $this->fakultas_id = $user->prodi->fakultas->id;
-            $this->fakultas_name = $user->prodi->fakultas->nama_fakultas;
-        }
-
-        if ($this->fakultas_id) {
-            $this->generateNumber();
+   public function mount()
+{
+    $user = Auth::user()->load('jabatan', 'prodi.fakultas');
+    
+    $this->tanggal_surat = now()->format('Y-m-d');
+    $this->sifat_surat = 'biasa'; // Set default
+    
+    // Load dropdown options
+    $this->tujuanJabatanOptions = Jabatan::whereIn('level', [1, 2, 3])
+        ->orderBy('level')
+        ->orderBy('nama_jabatan')
+        ->get();
+    
+    // Check user role and set fakultas/prodi
+    if ($user->prodi_id) {
+        $prodi = Prodi::with('fakultas')->find($user->prodi_id);
+        if ($prodi) {
+            $this->prodi_id = $prodi->id;
+            $this->prodi_name = $prodi->nama_prodi;
+            $this->fakultas_id = $prodi->fakultas_id;
+            $this->fakultas_name = $prodi->fakultas->nama_fakultas ?? '';
         }
     }
+    
+    // Generate nomor surat setelah fakultas_id terisi
+    if ($this->fakultas_id) {
+        $this->generateNumber();
+    }
+}
 
     public function generateNumber()
-    {
-        $this->nomor_surat = $this->generateNomorSurat($this->fakultas_id, $this->prodi_id, now()->year);
+{
+    if (!$this->fakultas_id) return;
+    
+    $lastSurat = Surat::whereYear('created_at', date('Y'))
+        ->whereMonth('created_at', date('m'))
+        ->orderBy('id', 'desc')
+        ->first();
+    
+    $lastNumber = 0;
+    if ($lastSurat && preg_match('/(\d+)\//', $lastSurat->nomor_surat, $matches)) {
+        $lastNumber = intval($matches[1]);
     }
+    
+    $newNumber = str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
+    $romanMonth = $this->getRomanMonth(date('n'));
+    $year = date('Y');
+    
+    $this->nomor_surat = "{$newNumber}/FSI-UIN/{$romanMonth}/{$year}";
+}
 
     protected function rules()
     {
@@ -302,4 +321,14 @@ public function render()
     {
         return view('livewire.create-surat-form');
     }
+
+    private function getRomanMonth($month)
+{
+    $romans = [
+        1 => 'I', 2 => 'II', 3 => 'III', 4 => 'IV', 
+        5 => 'V', 6 => 'VI', 7 => 'VII', 8 => 'VIII',
+        9 => 'IX', 10 => 'X', 11 => 'XI', 12 => 'XII'
+    ];
+    return $romans[$month] ?? 'I';
+}
 }

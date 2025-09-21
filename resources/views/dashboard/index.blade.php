@@ -45,7 +45,7 @@
         </div>
 
         <!-- Statistics Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-{{ Auth::user()->hasRole('staff_prodi') ? '5' : '4' }} gap-4 mb-6">
             <!-- Card 1: Total Surat -->
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6">
@@ -141,8 +141,34 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Card 5: Pengajuan Baru (Only for Staff Prodi) -->
+            @if(Auth::user()->hasRole('staff_prodi'))
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                <div class="p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-orange-100 rounded-lg p-3">
+                            <svg class="h-6 w-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">
+                                    Pengajuan Baru
+                                </dt>
+                                <dd class="text-3xl font-semibold text-gray-900">
+                                    {{ $stats['pengajuan_pending'] ?? 0 }}
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @endif
         </div>
 
+        <!-- Grid for Quick Actions and Info -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <!-- Quick Actions -->
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
@@ -185,6 +211,20 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                                 </svg>
                                 <span class="text-sm text-gray-700">Daftar Surat</span>
+                            </a>
+                        @endif
+    
+                        @if(Auth::user()->hasRole('staff_prodi'))
+                            <a href="{{ route('staff.pengajuan.index') }}" class="flex flex-col items-center justify-center p-4 bg-orange-50 rounded-lg hover:bg-orange-100 transition">
+                                <svg class="h-6 w-6 text-orange-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                                </svg>
+                                <span class="text-sm text-gray-700">Pengajuan Mahasiswa</span>
+                                @if(isset($stats['pengajuan_pending']) && $stats['pengajuan_pending'] > 0)
+                                    <span class="mt-1 px-2 py-1 text-xs rounded-full bg-red-100 text-red-800">
+                                        {{ $stats['pengajuan_pending'] }} baru
+                                    </span>
+                                @endif
                             </a>
                         @endif
                         
@@ -280,6 +320,39 @@
                 </div>
             </div>
         </div>
+
+        <!-- Recent Pengajuan Section (Outside Grid) -->
+        @if(Auth::user()->hasRole('staff_prodi') && isset($recent_pengajuan) && $recent_pengajuan && $recent_pengajuan->count() > 0)
+        <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mt-6">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900">Pengajuan Surat Terbaru</h3>
+                    <a href="{{ route('staff.pengajuan.index') }}" class="text-sm text-blue-600 hover:text-blue-900">
+                        Lihat semua →
+                    </a>
+                </div>
+                <div class="space-y-3">
+                    @foreach($recent_pengajuan as $pengajuan)
+                    <div class="flex items-center justify-between py-2 border-b">
+                        <div>
+                            <p class="text-sm font-medium">{{ $pengajuan->nama_mahasiswa }}</p>
+                            <p class="text-xs text-gray-500">
+                                {{ $pengajuan->nim }} • {{ $pengajuan->jenis_surat ?? 'Pengajuan Surat' }} • {{ $pengajuan->created_at->diffForHumans() }}
+                            </p>
+                        </div>
+                        <form action="{{ route('staff.pengajuan.process', $pengajuan->id) }}" method="POST">
+                            @csrf
+                            <button type="submit" class="text-sm bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600">
+                                Proses
+                            </button>
+                        </form>
+                    </div>
+                    @endforeach
+                </div>
+            </div>
+        </div>
+        @endif
+        
     </div>
 </div>
 @endsection
