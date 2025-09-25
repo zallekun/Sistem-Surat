@@ -181,7 +181,7 @@ public function show($id)
         }
         
         $surat->type = 'surat';
-        return view('fakultas.surat.show', compact('surat'));
+        return view('shared.pengajuan.show', compact('surat'));
     }
     
     // Cari di pengajuan
@@ -250,7 +250,7 @@ public function show($id)
             'additional_data_keys' => $additionalData ? array_keys($additionalData) : []
         ]);
         
-        return view('fakultas.surat.show', compact('surat'));
+        return view('shared.pengajuan.show', compact('surat'));
     }
     
     return redirect()->route('fakultas.surat.index')
@@ -771,6 +771,75 @@ private function getRomanMonth($month)
             
             return redirect()->back()->with('error', 'Gagal menolak surat: ' . $e->getMessage());
         }
+    }
+    public function show($id)
+    {
+        $user = Auth::user();
+        $user->load('prodi.fakultas');
+        
+        $fakultasId = $user->prodi?->fakultas_id;
+        if (!$fakultasId) {
+            return redirect()->route('fakultas.surat.index')
+                           ->with('error', 'Anda tidak memiliki akses ke fakultas manapun');
+        }
+        
+        // Cari di surat dulu
+        $surat = Surat::with([
+            'jenisSurat', 
+            'currentStatus', 
+            'createdBy.jabatan', 
+            'tujuanJabatan', 
+            'prodi.fakultas',
+            'statusHistories.user',
+            'statusHistories.status'
+        ])->find($id);
+        
+        if ($surat) {
+            if ($surat->prodi->fakultas_id !== $fakultasId) {
+                return redirect()->route('fakultas.surat.index')
+                               ->with('error', 'Anda tidak memiliki akses ke surat ini');
+            }
+            
+            $surat->type = 'surat';
+            
+            // CONSISTENT DATA HANDLING - decode additional_data if exists
+            if (isset($surat->additional_data)) {
+                $surat->additional_data = $this->parseAdditionalData($surat->additional_data);
+            }
+            
+            return view('fakultas.surat.show', compact('surat'));
+        }
+        
+        // Cari di pengajuan
+        $pengajuan = PengajuanSurat::with([
+            'jenisSurat', 
+            'prodi.fakultas'
+        ])->find($id);
+        
+        if ($pengajuan) {
+            if ($pengajuan->prodi->fakultas_id !== $fakultasId) {
+                return redirect()->route('fakultas.surat.index')
+                               ->with('error', 'Anda tidak memiliki akses ke pengajuan ini');
+            }
+            
+            // CRITICAL FIX: Ensure additional_data is properly decoded
+            $pengajuan->additional_data = $this->parseAdditionalData($pengajuan->additional_data);
+            
+            // Transform pengajuan ke format yang sama dengan staff prodi
+            // Tapi tetap pakai surat wrapper untuk backward compatibility
+            $surat = new \stdClass();
+            $surat->id = $pengajuan->id;
+            $surat->type = 'pengajuan';
+            $surat->pengajuan = $pengajuan; // Use same name as staff prodi
+            
+            // Also keep original_pengajuan for backward compatibility
+            $surat->original_pengajuan = $pengajuan;
+            
+            return view('fakultas.surat.show', compact('surat', 'pengajuan'));
+        }
+        
+        return redirect()->route('fakultas.surat.index')
+                       ->with('error', 'Data tidak ditemukan');
     }
     
     private function parseAdditionalData($data)

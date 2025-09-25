@@ -181,7 +181,7 @@ public function show($id)
         }
         
         $surat->type = 'surat';
-        return view('fakultas.surat.show', compact('surat'));
+        return view('shared.pengajuan.show', compact('surat'));
     }
     
     // Cari di pengajuan
@@ -250,7 +250,7 @@ public function show($id)
             'additional_data_keys' => $additionalData ? array_keys($additionalData) : []
         ]);
         
-        return view('fakultas.surat.show', compact('surat'));
+        return view('shared.pengajuan.show', compact('surat'));
     }
     
     return redirect()->route('fakultas.surat.index')
@@ -771,34 +771,5 @@ private function getRomanMonth($month)
             
             return redirect()->back()->with('error', 'Gagal menolak surat: ' . $e->getMessage());
         }
-    }
-    
-    private function parseAdditionalData($data)
-    {
-        if (empty($data)) {
-            return null;
-        }
-        
-        if (is_array($data)) {
-            return $data;
-        }
-        
-        if (is_string($data)) {
-            try {
-                $decoded = json_decode($data, true);
-                if (json_last_error() === JSON_ERROR_NONE) {
-                    return $decoded;
-                }
-            } catch (\Exception $e) {
-                // Log error if needed
-            }
-            return ['data' => $data];
-        }
-        
-        if (is_object($data)) {
-            return (array) $data;
-        }
-        
-        return null;
     }
 }

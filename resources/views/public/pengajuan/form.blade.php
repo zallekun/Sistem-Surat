@@ -43,7 +43,7 @@
                      :class="step >= 3 ? 'bg-blue-600 border-blue-600 text-white' : 'border-gray-300 text-gray-400'">
                     <span>3</span>
                 </div>
-                <span class="ml-2 font-medium">Konfirmasi</span>
+                <span class="ml-2 font-medium">Validasi</span>
             </div>
         </div>
     </div>
@@ -87,65 +87,110 @@
 
         <!-- Step 2: Form Data -->
         <div x-show="step === 2" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-x-4" x-transition:enter-end="opacity-100 transform translate-x-0">
-            <h2 class="text-xl font-semibold mb-4">Data Pemohon</h2>
-            
-            <!-- Basic Information -->
-            <div class="grid md:grid-cols-2 gap-4 mb-6">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">NIM *</label>
-                    <input type="text" x-model="form.nim" 
-                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap *</label>
-                    <input type="text" x-model="form.nama_mahasiswa" 
-                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Email *</label>
-                    <input type="email" x-model="form.email" 
-                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">No. HP *</label>
-                    <input type="tel" x-model="form.phone" 
-                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Program Studi *</label>
-                    <select x-model="form.prodi_id" 
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                        <option value="">Pilih Program Studi</option>
-                        @foreach($prodi as $p)
-                            <option value="{{ $p->id }}">{{ $p->nama_prodi }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Keperluan *</label>
-                    <input type="text" x-model="form.keperluan" placeholder="Keperluan surat ini..." 
-                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                </div>
-            </div>
+    <h2 class="text-xl font-semibold mb-4">Data Pemohon</h2>
+    
+    <!-- Basic Information -->
+    <div class="grid md:grid-cols-2 gap-4 mb-6">
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">NIM *</label>
+            <input type="text" x-model="form.nim" 
+                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap *</label>
+            <input type="text" x-model="form.nama_mahasiswa" 
+                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+            <input type="email" x-model="form.email" 
+                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">No. HP *</label>
+            <input type="tel" x-model="form.phone" 
+                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Program Studi *</label>
+            <select x-model="form.prodi_id" 
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                <option value="">Pilih Program Studi</option>
+                @foreach($prodi as $p)
+                    <option value="{{ $p->id }}">{{ $p->nama_prodi }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Keperluan *</label>
+            <input type="text" x-model="form.keperluan" placeholder="Keperluan surat ini..." 
+                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+        </div>
+        
+        <!-- MOVED: Semester & Tahun Akademik (Universal fields) -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Semester *</label>
+            <select x-model="form.semester" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                <option value="">Pilih Semester</option>
+                @for ($i = 1; $i <= 14; $i++)
+                    <option value="{{ $i }}">{{ $i }}</option>
+                @endfor
+            </select>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Tahun Akademik *</label>
+            <input type="text" x-model="form.tahun_akademik" placeholder="2024/2025" 
+                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+        </div>
+        
+        <!-- NEW: Dosen Wali (Universal fields) with Dropdown -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+                Dosen Wali * 
+                <span class="text-xs text-gray-500">(Pilih dari daftar)</span>
+            </label>
+            <select x-model="form.dosen_wali_id" 
+                    @change="selectDosenWali()"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                <option value="">Pilih Dosen Wali</option>
+                <template x-for="dosen in dosenWaliList" :key="dosen.id">
+                    <option :value="dosen.id" x-text="dosen.nama"></option>
+                </template>
+                <option value="other">Dosen Lain (Input Manual)</option>
+            </select>
+        </div>
+
+        <!-- Manual Input - shown only if "Dosen Lain" selected -->
+        <div x-show="form.dosen_wali_id === 'other'" x-transition>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Nama Dosen Wali (Manual)</label>
+            <input type="text" 
+                x-model="form.dosen_wali_nama_manual" 
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Masukkan nama dosen wali">
+        </div>
+
+                <!-- NID Display/Input -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+                NID Dosen Wali
+                <span class="text-xs text-gray-500" x-show="form.dosen_wali_id && form.dosen_wali_id !== 'other'">(Otomatis)</span>
+            </label>
+            <input type="text" 
+                x-model="form.dosen_wali_nid" 
+                :readonly="form.dosen_wali_id && form.dosen_wali_id !== 'other'"
+                :class="form.dosen_wali_id && form.dosen_wali_id !== 'other' ? 'bg-gray-100 cursor-not-allowed' : ''"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="NID akan terisi otomatis">
+        </div>
+
+                <!-- Hidden field for dosen wali nama (final value) -->
+        <input type="hidden" x-model="form.dosen_wali_nama">
+    </div>
 
             <!-- Dynamic Fields Based on Selected Jenis Surat -->
             <div x-show="getSelectedKode() === 'MA'">
                 <h3 class="text-lg font-medium mb-4 text-gray-800">Data Tambahan - Surat Mahasiswa Aktif</h3>
                 <div class="grid md:grid-cols-2 gap-4 mb-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Semester</label>
-                        <select x-model="form.semester" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                            <option value="">Pilih Semester</option>
-                            @for ($i = 1; $i <= 14; $i++)
-                                <option value="{{ $i }}">{{ $i }}</option>
-                            @endfor
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Tahun Akademik</label>
-                        <input type="text" x-model="form.tahun_akademik" placeholder="2024/2025" 
-                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                    </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Nama Orang Tua</label>
                         <input type="text" x-model="form.nama_orang_tua" 
@@ -318,11 +363,13 @@
                         <p><span class="font-medium text-gray-600">NIM:</span> <span class="text-gray-800" x-text="form.nim || '-'"></span></p>
                         <p><span class="font-medium text-gray-600">Nama:</span> <span class="text-gray-800" x-text="form.nama_mahasiswa || '-'"></span></p>
                         <p><span class="font-medium text-gray-600">Email:</span> <span class="text-gray-800" x-text="form.email || '-'"></span></p>
+                        <p><span class="font-medium text-green-600">Semester:</span> <span class="text-green-800" x-text="form.semester || '-'"></span></p>
                     </div>
                     <div class="space-y-2">
                         <p><span class="font-medium text-gray-600">No. HP:</span> <span class="text-gray-800" x-text="form.phone || '-'"></span></p>
                         <p><span class="font-medium text-gray-600">Program Studi:</span> <span class="text-gray-800" x-text="getSelectedProdiName() || '-'"></span></p>
                         <p><span class="font-medium text-gray-600">Keperluan:</span> <span class="text-gray-800" x-text="form.keperluan || '-'"></span></p>
+                        <p><span class="font-medium text-green-600">Tahun Akademik:</span> <span class="text-green-800" x-text="form.tahun_akademik || '-'"></span></p>
                     </div>
                 </div>
             </div>
@@ -337,8 +384,6 @@
                 </h3>
                 <div class="grid md:grid-cols-2 gap-4 text-sm">
                     <div class="space-y-2">
-                        <p><span class="font-medium text-green-600">Semester:</span> <span class="text-green-800" x-text="form.semester || '-'"></span></p>
-                        <p><span class="font-medium text-green-600">Tahun Akademik:</span> <span class="text-green-800" x-text="form.tahun_akademik || '-'"></span></p>
                         <p><span class="font-medium text-green-600">Nama Orang Tua:</span> <span class="text-green-800" x-text="form.nama_orang_tua || '-'"></span></p>
                         <p><span class="font-medium text-green-600">Tempat Lahir:</span> <span class="text-green-800" x-text="form.tempat_lahir_ortu || '-'"></span></p>
                         <p><span class="font-medium text-green-600">Tanggal Lahir:</span> <span class="text-green-800" x-text="form.tanggal_lahir_ortu || '-'"></span></p>
@@ -473,6 +518,7 @@
             loading: false,
             jenisSuratOptions: @json($jenisSurat),
             prodiOptions: @json($prodi),
+            dosenWaliList: [],
             pekerjaanOptions: [
                 'PNS', 'TNI/POLRI', 'Guru', 'Dosen', 'Dokter', 'Perawat', 'Bidan',
                 'Karyawan Swasta', 'Wiraswasta', 'Petani', 'Nelayan', 'Pedagang',
@@ -489,8 +535,16 @@
                 phone: '',
                 prodi_id: '',
                 keperluan: '',
+
+                //universal fields - for all jenis surat
                 semester: '',
                 tahun_akademik: '',
+                dosen_wali_id: '',           // NEW: Selected dosen ID
+                dosen_wali_nama: '',          // Final nama (from dropdown or manual)
+                dosen_wali_nama_manual: '',   // NEW: Manual input nama
+                dosen_wali_nid: '',
+
+                //fields for specific jenis surat
                 nama_orang_tua: '',
                 tempat_lahir_ortu: '',
                 tanggal_lahir_ortu: '',
@@ -514,171 +568,263 @@
                 keterangan_khusus: ''
             },
             
-            toggleJenisSurat(id) {
-                if (this.form.jenis_surat_id === id) {
-                    this.form.jenis_surat_id = '';
+            // NEW: Initialize component
+        init() {
+            // Watch prodi_id changes to load dosen wali
+            this.$watch('form.prodi_id', (value) => {
+                if (value) {
+                    this.loadDosenWali();
                 } else {
-                    this.form.jenis_surat_id = id;
+                    this.dosenWaliList = [];
+                    this.form.dosen_wali_id = '';
+                    this.form.dosen_wali_nama = '';
+                    this.form.dosen_wali_nid = '';
                 }
-            },
-            
-            getSelectedJenisName() {
-                const selected = this.jenisSuratOptions.find(j => j.id == this.form.jenis_surat_id);
-                return selected ? selected.nama_jenis : '';
-            },
-            
-            getSelectedKode() {
-                const selected = this.jenisSuratOptions.find(j => j.id == this.form.jenis_surat_id);
-                return selected ? selected.kode_surat : '';
-            },
+            });
+        },
 
-            getSelectedProdiName() {
-                const selected = this.prodiOptions.find(p => p.id == this.form.prodi_id);
-                return selected ? selected.nama_prodi : '';
-            },
-            
-            canProceed() {
-                if (this.step === 1) {
-                    return this.form.jenis_surat_id !== '';
-                } else if (this.step === 2) {
-                    return this.form.nim && this.form.nama_mahasiswa && 
-                           this.form.email && this.form.phone && 
-                           this.form.prodi_id && this.form.keperluan;
-                }
-                return true;
-            },
-            
-            nextStep() {
-                if (this.canProceed() && this.step < 3) {
-                    this.step++;
-                }
-            },
-            
-            prevStep() {
-                if (this.step > 1) {
-                    this.step--;
-                }
-            },
-            
-            async submitForm() {
-                this.loading = true;
-                
-                try {
-                    const csrfToken = document.querySelector('meta[name=csrf-token]')?.content;
-                    
-                    if (!csrfToken) {
-                        alert('Session expired. Halaman akan di-refresh.');
-                        window.location.reload();
-                        return;
-                    }
-                    
-                    const formData = new FormData();
-                    formData.append('_token', csrfToken);
-                    
-                    formData.append('jenis_surat_id', this.form.jenis_surat_id);
-                    formData.append('nim', this.form.nim);
-                    formData.append('nama_mahasiswa', this.form.nama_mahasiswa);
-                    formData.append('email', this.form.email);
-                    formData.append('phone', this.form.phone);
-                    formData.append('prodi_id', this.form.prodi_id);
-                    formData.append('keperluan', this.form.keperluan);
-                    
-                    const kode = this.getSelectedKode();
-                    
-                    if (kode === 'MA') {
-                        formData.append('semester', this.form.semester || '');
-                        formData.append('tahun_akademik', this.form.tahun_akademik || '');
-                        formData.append('nama_orang_tua', this.form.nama_orang_tua || '');
-                        formData.append('tempat_lahir_ortu', this.form.tempat_lahir_ortu || '');
-                        formData.append('tanggal_lahir_ortu', this.form.tanggal_lahir_ortu || '');
-                        
-                        // Handle pekerjaan "Lainnya"
-                        let pekerjaanOrtu = this.form.pekerjaan_ortu;
-                        if (pekerjaanOrtu === 'Lainnya') {
-                            pekerjaanOrtu = this.form.pekerjaan_ortu_lainnya;
-                        }
-                        formData.append('pekerjaan_ortu', pekerjaanOrtu || '');
-
-                        formData.append('nip_ortu', this.form.nip_ortu || '');
-                        formData.append('jabatan_ortu', this.form.jabatan_ortu || '');
-                        formData.append('pangkat_golongan_ortu', this.form.pangkat_golongan_ortu || '');
-                        formData.append('pendidikan_terakhir_ortu', this.form.pendidikan_terakhir_ortu || '');
-                        formData.append('alamat_instansi_ortu', this.form.alamat_instansi_ortu || '');
-                        formData.append('alamat_rumah_ortu', this.form.alamat_rumah_ortu || '');
-                    } else if (kode === 'KP') {
-                        formData.append('nama_perusahaan', this.form.nama_perusahaan || '');
-                        formData.append('alamat_perusahaan', this.form.alamat_perusahaan || '');
-                        formData.append('periode_mulai', this.form.periode_mulai || '');
-                        formData.append('periode_selesai', this.form.periode_selesai || '');
-                        formData.append('bidang_kerja', this.form.bidang_kerja || '');
-                    } else if (kode === 'TA') {
-                        formData.append('judul_ta', this.form.judul_ta || '');
-                        formData.append('dosen_pembimbing1', this.form.dosen_pembimbing1 || '');
-                        formData.append('dosen_pembimbing2', this.form.dosen_pembimbing2 || '');
-                        formData.append('lokasi_penelitian', this.form.lokasi_penelitian || '');
-                    } else if (kode === 'SKM') {
-                        formData.append('keterangan_khusus', this.form.keterangan_khusus || '');
-                    }
-                    
-                    const response = await fetch('{{ route('public.pengajuan.store') }}', {
-                        method: 'POST',
-                        body: formData,
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest',
-                            'Accept': 'application/json'
-                        },
-                        credentials: 'same-origin'
-                    });
-                    
-                    if (response.status === 419) {
-                        alert('Session telah berakhir. Silakan refresh halaman.');
-                        window.location.reload();
-                        return;
-                    }
-                    
-                    const responseText = await response.text();
-                    console.log('Response:', responseText);
-                    
-                    if (response.ok) {
-                        let data;
-                        try {
-                            data = JSON.parse(responseText);
-                        } catch (e) {
-                            window.showSuccessModal('TRK-' + Date.now().toString(36).toUpperCase().substr(0, 8));
-                            this.resetForm();
-                            return;
-                        }
-                        
-                        if (data.success) {
-                            window.showSuccessModal(data.tracking_token);
-                            this.resetForm();
-                        } else {
-                            alert(data.message || 'Terjadi kesalahan');
-                        }
-                    } else {
-                        try {
-                            const errorData = JSON.parse(responseText);
-                            alert(errorData.message || 'Terjadi kesalahan server');
-                        } catch (e) {
-                            alert('Terjadi kesalahan. Silakan coba lagi.');
-                        }
-                    }
-                } catch (error) {
-                    console.error('Error:', error);
-                    alert('Terjadi kesalahan jaringan: ' + error.message);
-                } finally {
-                    this.loading = false;
-                }
-            },
-            
-            resetForm() {
-                this.step = 1;
-                Object.keys(this.form).forEach(key => {
-                    this.form[key] = '';
-                });
+        // NEW: Fetch dosen wali when prodi selected
+        async loadDosenWali() {
+            if (!this.form.prodi_id) {
+                this.dosenWaliList = [];
+                return;
             }
+            
+            try {
+                const response = await fetch(`/api/dosen-wali/${this.form.prodi_id}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    this.dosenWaliList = result.data;
+                    console.log('Loaded dosen wali:', this.dosenWaliList);
+                } else {
+                    console.error('Failed to load dosen wali:', result.message);
+                    this.dosenWaliList = [];
+                }
+            } catch (error) {
+                console.error('Error loading dosen wali:', error);
+                this.dosenWaliList = [];
+            }
+        },
+
+        // NEW: Select dosen wali and auto-populate NID
+        selectDosenWali() {
+            const selectedId = this.form.dosen_wali_id;
+            
+            if (selectedId === 'other') {
+                // Manual input mode
+                this.form.dosen_wali_nama = '';
+                this.form.dosen_wali_nid = '';
+                return;
+            }
+            
+            if (!selectedId) {
+                // Clear selection
+                this.form.dosen_wali_nama = '';
+                this.form.dosen_wali_nid = '';
+                return;
+            }
+            
+            // Find selected dosen from list
+            const selectedDosen = this.dosenWaliList.find(d => d.id == selectedId);
+            
+            if (selectedDosen) {
+                this.form.dosen_wali_nama = selectedDosen.nama;
+                this.form.dosen_wali_nid = selectedDosen.nid;
+                console.log('Selected dosen:', selectedDosen);
+            }
+        },
+        
+        toggleJenisSurat(id) {
+            if (this.form.jenis_surat_id === id) {
+                this.form.jenis_surat_id = '';
+            } else {
+                this.form.jenis_surat_id = id;
+            }
+        },
+        
+        getSelectedJenisName() {
+            const selected = this.jenisSuratOptions.find(j => j.id == this.form.jenis_surat_id);
+            return selected ? selected.nama_jenis : '';
+        },
+        
+        getSelectedKode() {
+            const selected = this.jenisSuratOptions.find(j => j.id == this.form.jenis_surat_id);
+            return selected ? selected.kode_surat : '';
+        },
+
+        getSelectedProdiName() {
+            const selected = this.prodiOptions.find(p => p.id == this.form.prodi_id);
+            return selected ? selected.nama_prodi : '';
+        },
+        
+        canProceed() {
+            if (this.step === 1) {
+                return this.form.jenis_surat_id !== '';
+            } else if (this.step === 2) {
+                // Check dosen wali based on mode
+                let dosenWaliValid = false;
+                
+                if (this.form.dosen_wali_id === 'other') {
+                    // Manual mode - nama manual required
+                    dosenWaliValid = this.form.dosen_wali_nama_manual !== '';
+                } else if (this.form.dosen_wali_id) {
+                    // Dropdown mode - ID selected
+                    dosenWaliValid = true;
+                }
+                
+                return this.form.nim && this.form.nama_mahasiswa && 
+                       this.form.email && this.form.phone && 
+                       this.form.prodi_id && this.form.keperluan &&
+                       this.form.semester && this.form.tahun_akademik &&
+                       dosenWaliValid;
+            }
+            return true;
+        },
+        
+        nextStep() {
+            if (this.canProceed() && this.step < 3) {
+                this.step++;
+            }
+        },
+        
+        prevStep() {
+            if (this.step > 1) {
+                this.step--;
+            }
+        },
+        
+        async submitForm() {
+            this.loading = true;
+            
+            try {
+                const csrfToken = document.querySelector('meta[name=csrf-token]')?.content;
+                
+                if (!csrfToken) {
+                    alert('Session expired. Halaman akan di-refresh.');
+                    window.location.reload();
+                    return;
+                }
+                
+                const formData = new FormData();
+                formData.append('_token', csrfToken);
+                
+                formData.append('jenis_surat_id', this.form.jenis_surat_id);
+                formData.append('nim', this.form.nim);
+                formData.append('nama_mahasiswa', this.form.nama_mahasiswa);
+                formData.append('email', this.form.email);
+                formData.append('phone', this.form.phone);
+                formData.append('prodi_id', this.form.prodi_id);
+                formData.append('keperluan', this.form.keperluan);
+                formData.append('semester', this.form.semester || '');
+                formData.append('tahun_akademik', this.form.tahun_akademik || '');
+                
+                // Dosen Wali - handle both dropdown and manual
+                if (this.form.dosen_wali_id === 'other') {
+                    // Manual input
+                    formData.append('dosen_wali_nama', this.form.dosen_wali_nama_manual || '');
+                    formData.append('dosen_wali_nid', this.form.dosen_wali_nid || '');
+                } else {
+                    // From dropdown
+                    formData.append('dosen_wali_nama', this.form.dosen_wali_nama || '');
+                    formData.append('dosen_wali_nid', this.form.dosen_wali_nid || '');
+                }
+                
+                const kode = this.getSelectedKode();
+                
+                if (kode === 'MA') {
+                    formData.append('nama_orang_tua', this.form.nama_orang_tua || '');
+                    formData.append('tempat_lahir_ortu', this.form.tempat_lahir_ortu || '');
+                    formData.append('tanggal_lahir_ortu', this.form.tanggal_lahir_ortu || '');
+                    
+                    let pekerjaanOrtu = this.form.pekerjaan_ortu;
+                    if (pekerjaanOrtu === 'Lainnya') {
+                        pekerjaanOrtu = this.form.pekerjaan_ortu_lainnya;
+                    }
+                    formData.append('pekerjaan_ortu', pekerjaanOrtu || '');
+
+                    formData.append('nip_ortu', this.form.nip_ortu || '');
+                    formData.append('jabatan_ortu', this.form.jabatan_ortu || '');
+                    formData.append('pangkat_golongan_ortu', this.form.pangkat_golongan_ortu || '');
+                    formData.append('pendidikan_terakhir_ortu', this.form.pendidikan_terakhir_ortu || '');
+                    formData.append('alamat_instansi_ortu', this.form.alamat_instansi_ortu || '');
+                    formData.append('alamat_rumah_ortu', this.form.alamat_rumah_ortu || '');
+                } else if (kode === 'KP') {
+                    formData.append('nama_perusahaan', this.form.nama_perusahaan || '');
+                    formData.append('alamat_perusahaan', this.form.alamat_perusahaan || '');
+                    formData.append('periode_mulai', this.form.periode_mulai || '');
+                    formData.append('periode_selesai', this.form.periode_selesai || '');
+                    formData.append('bidang_kerja', this.form.bidang_kerja || '');
+                } else if (kode === 'TA') {
+                    formData.append('judul_ta', this.form.judul_ta || '');
+                    formData.append('dosen_pembimbing1', this.form.dosen_pembimbing1 || '');
+                    formData.append('dosen_pembimbing2', this.form.dosen_pembimbing2 || '');
+                    formData.append('lokasi_penelitian', this.form.lokasi_penelitian || '');
+                } else if (kode === 'SKM') {
+                    formData.append('keterangan_khusus', this.form.keterangan_khusus || '');
+                }
+                
+                const response = await fetch('{{ route('public.pengajuan.store') }}', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'same-origin'
+                });
+                
+                if (response.status === 419) {
+                    alert('Session telah berakhir. Silakan refresh halaman.');
+                    window.location.reload();
+                    return;
+                }
+                
+                const responseText = await response.text();
+                console.log('Response:', responseText);
+                
+                if (response.ok) {
+                    let data;
+                    try {
+                        data = JSON.parse(responseText);
+                    } catch (e) {
+                        window.showSuccessModal('TRK-' + Date.now().toString(36).toUpperCase().substr(0, 8));
+                        this.resetForm();
+                        return;
+                    }
+                    
+                    if (data.success) {
+                        window.showSuccessModal(data.tracking_token);
+                        this.resetForm();
+                    } else {
+                        alert(data.message || 'Terjadi kesalahan');
+                    }
+                } else {
+                    try {
+                        const errorData = JSON.parse(responseText);
+                        alert(errorData.message || 'Terjadi kesalahan server');
+                    } catch (e) {
+                        alert('Terjadi kesalahan. Silakan coba lagi.');
+                    }
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Terjadi kesalahan jaringan: ' + error.message);
+            } finally {
+                this.loading = false;
+            }
+        },
+        
+        resetForm() {
+            this.step = 1;
+            this.dosenWaliList = []; // NEW: Clear dosen list
+            Object.keys(this.form).forEach(key => {
+                this.form[key] = '';
+            });
         }
     }
+}
+
 
 window.showSuccessModal = function(token) {
     document.getElementById('trackingNumber').textContent = token;

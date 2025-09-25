@@ -181,7 +181,7 @@ public function show($id)
         }
         
         $surat->type = 'surat';
-        return view('fakultas.surat.show', compact('surat'));
+        return view('shared.pengajuan.show', compact('surat'));
     }
     
     // Cari di pengajuan
@@ -250,7 +250,7 @@ public function show($id)
             'additional_data_keys' => $additionalData ? array_keys($additionalData) : []
         ]);
         
-        return view('fakultas.surat.show', compact('surat'));
+        return view('shared.pengajuan.show', compact('surat'));
     }
     
     return redirect()->route('fakultas.surat.index')

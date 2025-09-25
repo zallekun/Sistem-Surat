@@ -47,6 +47,12 @@
                             {{ __('Disposisi') }}
                         </x-nav-link>
                     @endif
+
+                    @if(auth()->user()->hasRole('staff_prodi'))
+                        <x-nav-link :href="route('surat.pengajuan.index')" :active="request()->routeIs('surat.pengajuan.*')">
+                            {{ __('Pengajuan Mahasiswa') }}
+                        </x-nav-link>
+                    @endif
                 </div>
             </div>
 

@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Surat;
 use App\Models\StatusSurat;
+use App\Models\PengajuanSurat;
 use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
@@ -17,26 +18,27 @@ class DashboardController extends Controller
 
         // Apply filtering based on user's role and associated IDs
         if ($user->hasRole('kaprodi')) {
-            // Kaprodi should only see surats for their prodi that are in 'review_kaprodi' status
             $reviewKaprodiStatus = StatusSurat::where('kode_status', 'review_kaprodi')->first();
             if ($reviewKaprodiStatus) {
                 $approvedKaprodiStatus = StatusSurat::where('kode_status', 'disetujui_kaprodi')->first();
-            $rejectedKaprodiStatus = StatusSurat::where('kode_status', 'ditolak_kaprodi')->first();
-            $approvedKaprodiStatus = StatusSurat::where('kode_status', 'disetujui_kaprodi')->first();
-            $rejectedKaprodiStatus = StatusSurat::where('kode_status', 'ditolak_kaprodi')->first();
-            $suratQuery->where('prodi_id', $user->prodi_id)
-            
-            ->whereIn('status_id', [$reviewKaprodiStatus->id, $approvedKaprodiStatus->id ?? 0, $rejectedKaprodiStatus->id ?? 0]);
+                $rejectedKaprodiStatus = StatusSurat::where('kode_status', 'ditolak_kaprodi')->first();
+                
+                $suratQuery->where('prodi_id', $user->prodi_id)
+                    ->whereIn('status_id', [
+                        $reviewKaprodiStatus->id, 
+                        $approvedKaprodiStatus->id ?? 0, 
+                        $rejectedKaprodiStatus->id ?? 0
+                    ]);
             } else {
-                // If 'review_kaprodi' status not found, show no surats
                 $suratQuery->whereRaw('0 = 1');
             }
+        } elseif ($user->hasRole('staff_fakultas') && $user->prodi?->fakultas_id) {
+            // Staff fakultas sees surats from their fakultas
+            $suratQuery->whereHas('prodi', function($q) use ($user) {
+                $q->where('fakultas_id', $user->prodi->fakultas_id);
+            });
         } elseif ($user->prodi_id) {
-            // Generic filter for users with prodi_id (e.g., staff_prodi)
             $suratQuery->where('prodi_id', $user->prodi_id);
-        } elseif ($user->hasRole('staff_fakultas') && $user->fakultas_id) {
-            // If user is staff_fakultas and has a fakultas_id, filter by fakultas
-            $suratQuery->where('fakultas_id', $user->fakultas_id);
         }
 
         $stats = [
@@ -48,29 +50,49 @@ class DashboardController extends Controller
             'surat_draft' => (clone $suratQuery)->whereHas('currentStatus', fn($q) => $q->where('kode_status', 'draft'))->count(),
         ];
 
-    // ADD PENGAJUAN STATS - perbaikan
-$pengajuan_stats = ['pending' => 0, 'processed' => 0];
-if ($user->hasRole('staff_prodi') && $user->prodi_id) {
-    $pengajuanQuery = \App\Models\PengajuanSurat::where('prodi_id', $user->prodi_id);
-    $pengajuan_stats['pending'] = (clone $pengajuanQuery)->where('status', 'pending')->count();
-    $pengajuan_stats['processed'] = (clone $pengajuanQuery)->where('status', 'processed')->count();
-    $stats['pengajuan_pending'] = $pengajuan_stats['pending']; // backward compatibility
-}
+        // STATS UNTUK STAFF PRODI - Pengajuan dari mahasiswa
+        $recent_pengajuan = null;
+        if ($user->hasRole('staff_prodi') && $user->prodi_id) {
+            $pengajuanQuery = PengajuanSurat::where('prodi_id', $user->prodi_id);
+            $stats['pengajuan_pending'] = (clone $pengajuanQuery)->where('status', 'pending')->count();
+            
+            $recent_pengajuan = (clone $pengajuanQuery)
+                ->where('status', 'pending')
+                ->with('jenisSurat')
+                ->latest()
+                ->take(5)
+                ->get();
+        }
+
+        // STATS UNTUK STAFF FAKULTAS - Pengajuan dari prodi
+        $recent_pengajuan_fakultas = null;
+        if ($user->hasRole('staff_fakultas') && $user->prodi?->fakultas_id) {
+            $fakultasId = $user->prodi->fakultas_id;
+            
+            $pengajuanFakultasQuery = PengajuanSurat::whereHas('prodi', function($q) use ($fakultasId) {
+                $q->where('fakultas_id', $fakultasId);
+            });
+            
+            $stats['pengajuan_fakultas_pending'] = (clone $pengajuanFakultasQuery)
+                ->whereIn('status', ['approved_prodi', 'approved_prodi_direct_fakultas'])
+                ->count();
+            
+            $recent_pengajuan_fakultas = (clone $pengajuanFakultasQuery)
+                ->whereIn('status', ['approved_prodi', 'approved_prodi_direct_fakultas'])
+                ->with(['prodi', 'jenisSurat'])
+                ->latest()
+                ->take(5)
+                ->get();
+        }
 
         $recent_surat = (clone $suratQuery)->with('currentStatus')->latest()->take(5)->get();
 
-        // GET RECENT PENGAJUAN FOR STAFF
-    $recent_pengajuan = null;
-    if ($user->hasRole('staff_prodi') && $user->prodi_id) {
-        $recent_pengajuan = \App\Models\PengajuanSurat::where('prodi_id', $user->prodi_id)
-            ->where('status', 'pending')
-            ->latest()
-            ->take(5)
-            ->get();
+        // PERBAIKAN: Gunakan path view yang benar
+        return view('dashboard.index', compact(
+            'stats', 
+            'recent_surat', 
+            'recent_pengajuan', 
+            'recent_pengajuan_fakultas'
+        ));
     }
-
-        return view('dashboard.index', compact('stats', 'recent_surat', 'recent_pengajuan', 'pengajuan_stats'));
-    }
-
-    // Other dashboard methods can be added here if needed for other roles.
 }

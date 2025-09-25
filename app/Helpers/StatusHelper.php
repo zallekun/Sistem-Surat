@@ -22,4 +22,40 @@ class StatusHelper
         $yiq = (($r * 299) + ($g * 587) + ($b * 114)) / 1000;
         return ($yiq >= 128) ? '#000000' : '#FFFFFF';
     }
+
+    public static function getPengajuanStatusColor($status)
+    {
+        $colors = [
+            'pending' => 'bg-yellow-100 text-yellow-800',
+            'processed' => 'bg-blue-100 text-blue-800',
+            'approved_prodi' => 'bg-blue-100 text-blue-800',
+            'approved_prodi_direct_fakultas' => 'bg-indigo-100 text-indigo-800',
+            'rejected_prodi' => 'bg-red-100 text-red-800',
+            'approved_fakultas' => 'bg-green-100 text-green-800',
+            'rejected_fakultas' => 'bg-red-100 text-red-800',
+            'surat_generated' => 'bg-purple-100 text-purple-800',
+            'completed' => 'bg-green-100 text-green-800',
+            'rejected' => 'bg-red-100 text-red-800',
+        ];
+        
+        return $colors[$status] ?? 'bg-gray-100 text-gray-800';
+    }
+    
+    public static function getPengajuanStatusLabel($status)
+    {
+        $labels = [
+            'pending' => 'Menunggu Review',
+            'processed' => 'Disetujui Prodi',
+            'approved_prodi' => 'Disetujui Prodi',
+            'approved_prodi_direct_fakultas' => 'Diteruskan ke Fakultas',
+            'rejected_prodi' => 'Ditolak Prodi',
+            'approved_fakultas' => 'Disetujui Fakultas',
+            'rejected_fakultas' => 'Ditolak Fakultas',
+            'surat_generated' => 'Surat Dibuat',
+            'completed' => 'Selesai',
+            'rejected' => 'Ditolak',
+        ];
+        
+        return $labels[$status] ?? ucfirst(str_replace('_', ' ', $status));
+    }
 }

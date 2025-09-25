@@ -1,0 +1,706 @@
+{{--
+    Unified Pengajuan Detail View
+    Compatible with both Staff Prodi and Staff Fakultas
+    Auto-detects data source and adjusts display accordingly
+--}}
+
+@php
+    // Auto-detect data source and context
+    if (isset($surat) && is_object($surat) && isset($surat->type) && $surat->type === 'pengajuan' && isset($surat->original_pengajuan)) {
+        // Coming from Fakultas (wrapped in surat object)
+        $pengajuan = $surat->original_pengajuan;
+        $isFromFakultas = true;
+        $backRoute = 'fakultas.surat.index';
+        $contextLabel = 'Staff Fakultas';
+        $contextClass = 'text-blue-600';
+    } else {
+        // Coming from Prodi (direct pengajuan object)
+        $isFromFakultas = false;
+        $backRoute = 'staff.pengajuan.index';
+        $contextLabel = 'Staff Prodi';
+        $contextClass = 'text-green-600';
+    }
+    
+    // Unified additional_data handling with error protection
+    $additionalData = null;
+    if (isset($pengajuan->additional_data) && !empty($pengajuan->additional_data)) {
+        try {
+            if (is_string($pengajuan->additional_data)) {
+                $additionalData = json_decode($pengajuan->additional_data, true);
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    $additionalData = null;
+                }
+            } elseif (is_array($pengajuan->additional_data)) {
+                $additionalData = $pengajuan->additional_data;
+            } elseif (is_object($pengajuan->additional_data)) {
+                $additionalData = (array) $pengajuan->additional_data;
+            }
+        } catch (\Exception $e) {
+            $additionalData = null;
+        }
+    }
+    
+    // Safe access to relations
+    $jenisSurat = isset($pengajuan->jenisSurat) ? $pengajuan->jenisSurat : null;
+    $prodi = isset($pengajuan->prodi) ? $pengajuan->prodi : null;
+    
+    // Status handling
+    $status = isset($pengajuan->status) ? $pengajuan->status : 'unknown';
+    $statusColors = [
+        'pending' => 'bg-yellow-100 text-yellow-800',
+        'processed' => 'bg-blue-100 text-blue-800',
+        'approved_prodi' => 'bg-green-100 text-green-800',
+        'rejected' => 'bg-red-100 text-red-800',
+        'rejected_prodi' => 'bg-red-100 text-red-800',
+        'surat_generated' => 'bg-purple-100 text-purple-800'
+    ];
+    $statusClass = isset($statusColors[$status]) ? $statusColors[$status] : 'bg-gray-100 text-gray-800';
+@endphp
+
+@extends('layouts.app')
+
+@section('title', 'Detail Pengajuan Surat')
+
+@section('content')
+<div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="bg-white shadow-sm rounded-lg">
+        <!-- Header -->
+        <div class="px-6 py-4 border-b border-gray-200">
+            <div class="flex justify-between items-center">
+                <h2 class="text-xl font-semibold text-gray-800">
+                    Detail Pengajuan Surat
+                    <span class="text-sm font-normal {{ $contextClass }}">({{ $contextLabel }})</span>
+                </h2>
+                <div class="flex items-center space-x-4">
+                    <span class="px-3 py-1 rounded-full text-sm font-medium {{ $statusClass }}">
+                        {{ ucwords(str_replace('_', ' ', $status)) }}
+                    </span>
+                    <a href="{{ route($backRoute) }}" 
+                       class="inline-flex items-center px-4 py-2 bg-gray-600 text-white text-sm font-medium rounded-md hover:bg-gray-700 transition-colors">
+                        <i class="fas fa-arrow-left mr-2"></i>
+                        Kembali
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-6">
+            <!-- Basic Information Grid -->
+            <div class="grid md:grid-cols-2 gap-6 mb-8">
+                <!-- Informasi Pengajuan -->
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <h3 class="font-semibold text-blue-800 mb-3 flex items-center">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        Informasi Pengajuan
+                    </h3>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                            <span class="font-medium">Token Tracking:</span>
+                            <span class="font-mono bg-blue-100 px-2 py-1 rounded text-xs">
+                                {{ $pengajuan->tracking_token ?? 'N/A' }}
+                            </span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="font-medium">Tanggal Pengajuan:</span>
+                            <span>{{ isset($pengajuan->created_at) ? $pengajuan->created_at->format('d/m/Y H:i') : 'N/A' }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="font-medium">Jenis Surat:</span>
+                            <div class="text-right">
+                                <span class="font-semibold">{{ $jenisSurat ? $jenisSurat->nama_jenis : 'N/A' }}</span>
+                                @if($jenisSurat && isset($jenisSurat->kode_surat))
+                                    <br><span class="text-xs bg-gray-200 px-1 py-0.5 rounded">{{ $jenisSurat->kode_surat }}</span>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Data Mahasiswa -->
+                <div class="bg-green-50 p-4 rounded-lg">
+                    <h3 class="font-semibold text-green-800 mb-3 flex items-center">
+                        <i class="fas fa-user-graduate mr-2"></i>
+                        Data Mahasiswa
+                    </h3>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                            <span class="font-medium">NIM:</span>
+                            <span>{{ $pengajuan->nim ?? 'N/A' }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="font-medium">Nama:</span>
+                            <span>{{ $pengajuan->nama_mahasiswa ?? 'N/A' }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="font-medium">Program Studi:</span>
+                            <span>{{ $prodi ? $prodi->nama_prodi : 'N/A' }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="font-medium">Email:</span>
+                            <span class="text-xs">{{ $pengajuan->email ?? 'N/A' }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="font-medium">Phone:</span>
+                            <span>{{ $pengajuan->phone ?? '-' }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 
+Updated Blade Template Section untuk Pemisahan Data Akademik dari Data Tambahan
+File: resources/views/shared/pengajuan/show.blade.php (bagian yang perlu diupdate)
+-->
+
+<!-- Keperluan -->
+<div class="mb-8">
+    <h3 class="font-semibold text-gray-800 mb-3">
+        <i class="fas fa-clipboard-list mr-2"></i>
+        Keperluan Surat
+    </h3>
+    <div class="bg-gray-50 p-4 rounded-lg">
+        <p class="text-gray-700">{{ $pengajuan->keperluan ?? 'Tidak ada keterangan keperluan' }}</p>
+    </div>
+</div>
+
+<!-- Data Akademik (SELALU TAMPIL jika ada) -->
+@php
+    $hasAkademikData = false;
+    if($additionalData && is_array($additionalData)) {
+        $hasAkademikData = isset($additionalData['semester']) || 
+                          isset($additionalData['tahun_akademik']) || 
+                          isset($additionalData['dosen_wali']);
+    }
+@endphp
+
+@if($hasAkademikData)
+    <div class="mb-8">
+        <h3 class="font-semibold text-gray-800 mb-3">
+            <i class="fas fa-graduation-cap mr-2"></i>
+            Data Akademik
+        </h3>
+        <div class="bg-indigo-50 p-4 rounded-lg">
+            <div class="grid md:grid-cols-3 gap-4 text-sm">
+                @if(isset($additionalData['semester']))
+                    <div>
+                        <span class="font-medium">Semester:</span>
+                        <span class="ml-2">{{ $additionalData['semester'] }}</span>
+                    </div>
+                @endif
+                @if(isset($additionalData['tahun_akademik']))
+                    <div>
+                        <span class="font-medium">Tahun Akademik:</span>
+                        <span class="ml-2">{{ $additionalData['tahun_akademik'] }}</span>
+                    </div>
+                @endif
+                @if(isset($additionalData['dosen_wali']) && is_array($additionalData['dosen_wali']))
+                    <div>
+                        <span class="font-medium">Dosen Wali:</span>
+                        <span class="ml-2">{{ $additionalData['dosen_wali']['nama'] ?? '-' }}</span>
+                        @if(isset($additionalData['dosen_wali']['nid']) && !empty($additionalData['dosen_wali']['nid']))
+                            <br><span class="text-xs text-gray-600">NID: {{ $additionalData['dosen_wali']['nid'] }}</span>
+                        @endif
+                    </div>
+                @elseif(isset($additionalData['dosen_wali']) && is_string($additionalData['dosen_wali']))
+                    <div>
+                        <span class="font-medium">Dosen Wali:</span>
+                        <span class="ml-2">{{ $additionalData['dosen_wali'] }}</span>
+                    </div>
+                @endif
+            </div>
+        </div>
+    </div>
+@endif
+
+<!-- Data Tambahan (TIDAK termasuk data akademik) -->
+@php
+    $hasTambahanData = false;
+    if($additionalData && is_array($additionalData)) {
+        // Check if there's any data other than akademik fields
+        $nonAkademikKeys = array_diff(
+            array_keys($additionalData), 
+            ['semester', 'tahun_akademik', 'dosen_wali']
+        );
+        $hasTambahanData = count($nonAkademikKeys) > 0;
+    }
+@endphp
+
+@if($hasTambahanData)
+    <div class="mb-8">
+        <h3 class="font-semibold text-gray-800 mb-4">
+            <i class="fas fa-file-alt mr-2"></i>
+            Data Tambahan
+        </h3>
+
+        {{-- Surat Mahasiswa Aktif (MA) - Data Orang Tua --}}
+        @if($jenisSurat && isset($jenisSurat->kode_surat) && $jenisSurat->kode_surat === 'MA' && isset($additionalData['orang_tua']))
+            <div class="bg-yellow-50 p-4 rounded-lg">
+                <h4 class="font-medium text-yellow-800 mb-3">
+                    <i class="fas fa-users mr-2"></i>
+                    Biodata Orang Tua
+                </h4>
+                <div class="grid md:grid-cols-2 gap-4 text-sm">
+                    @foreach([
+                        'nama' => 'Nama',
+                        'tempat_lahir' => 'Tempat Lahir',
+                        'tanggal_lahir' => 'Tanggal Lahir',
+                        'pekerjaan' => 'Pekerjaan',
+                        'nip' => 'NIP',
+                        'jabatan' => 'Jabatan',
+                        'pangkat_golongan' => 'Pangkat/Golongan',
+                        'pendidikan_terakhir' => 'Pendidikan Terakhir'
+                    ] as $key => $label)
+                        @if(isset($additionalData['orang_tua'][$key]) && !empty($additionalData['orang_tua'][$key]))
+                            <div>
+                                <span class="font-medium">{{ $label }}:</span>
+                                <span class="ml-2">{{ $additionalData['orang_tua'][$key] }}</span>
+                            </div>
+                        @endif
+                    @endforeach
+                </div>
+                
+                @if(isset($additionalData['orang_tua']['alamat_instansi']) && !empty($additionalData['orang_tua']['alamat_instansi']))
+                    <div class="mt-4">
+                        <span class="font-medium text-sm">Alamat Instansi:</span>
+                        <div class="mt-1 p-3 bg-white rounded border text-sm">
+                            {{ $additionalData['orang_tua']['alamat_instansi'] }}
+                        </div>
+                    </div>
+                @endif
+                
+                @if(isset($additionalData['orang_tua']['alamat_rumah']) && !empty($additionalData['orang_tua']['alamat_rumah']))
+                    <div class="mt-4">
+                        <span class="font-medium text-sm">Alamat Rumah:</span>
+                        <div class="mt-1 p-3 bg-white rounded border text-sm">
+                            {{ $additionalData['orang_tua']['alamat_rumah'] }}
+                        </div>
+                    </div>
+                @endif
+            </div>
+
+        {{-- Surat Kerja Praktek (KP) --}}
+        @elseif($jenisSurat && isset($jenisSurat->kode_surat) && $jenisSurat->kode_surat === 'KP' && isset($additionalData['kerja_praktek']))
+            <div class="bg-blue-50 p-4 rounded-lg">
+                <h4 class="font-medium text-blue-800 mb-3">
+                    <i class="fas fa-briefcase mr-2"></i>
+                    Data Kerja Praktek
+                </h4>
+                <div class="grid md:grid-cols-2 gap-4 text-sm">
+                    @foreach([
+                        'nama_perusahaan' => 'Nama Perusahaan',
+                        'bidang_kerja' => 'Bidang Kerja',
+                        'periode_mulai' => 'Periode Mulai',
+                        'periode_selesai' => 'Periode Selesai'
+                    ] as $key => $label)
+                        @if(isset($additionalData['kerja_praktek'][$key]) && !empty($additionalData['kerja_praktek'][$key]))
+                            <div>
+                                <span class="font-medium">{{ $label }}:</span>
+                                <span class="ml-2">{{ $additionalData['kerja_praktek'][$key] }}</span>
+                            </div>
+                        @endif
+                    @endforeach
+                </div>
+                
+                @if(isset($additionalData['kerja_praktek']['alamat_perusahaan']) && !empty($additionalData['kerja_praktek']['alamat_perusahaan']))
+                    <div class="mt-4">
+                        <span class="font-medium text-sm">Alamat Perusahaan:</span>
+                        <div class="mt-1 p-3 bg-white rounded border text-sm">
+                            {{ $additionalData['kerja_praktek']['alamat_perusahaan'] }}
+                        </div>
+                    </div>
+                @endif
+            </div>
+
+        {{-- Surat Tugas Akhir (TA) --}}
+        @elseif($jenisSurat && isset($jenisSurat->kode_surat) && $jenisSurat->kode_surat === 'TA' && isset($additionalData['tugas_akhir']))
+            <div class="bg-purple-50 p-4 rounded-lg">
+                <h4 class="font-medium text-purple-800 mb-3">
+                    <i class="fas fa-book mr-2"></i>
+                    Data Tugas Akhir
+                </h4>
+                
+                @if(isset($additionalData['tugas_akhir']['judul_ta']) && !empty($additionalData['tugas_akhir']['judul_ta']))
+                    <div class="mb-3">
+                        <span class="font-medium text-sm">Judul Tugas Akhir:</span>
+                        <div class="mt-1 p-3 bg-white rounded border text-sm">
+                            {{ $additionalData['tugas_akhir']['judul_ta'] }}
+                        </div>
+                    </div>
+                @endif
+                
+                <div class="grid md:grid-cols-2 gap-4 text-sm">
+                    @foreach([
+                        'dosen_pembimbing1' => 'Dosen Pembimbing 1',
+                        'dosen_pembimbing2' => 'Dosen Pembimbing 2',
+                        'lokasi_penelitian' => 'Lokasi Penelitian'
+                    ] as $key => $label)
+                        @if(isset($additionalData['tugas_akhir'][$key]) && !empty($additionalData['tugas_akhir'][$key]))
+                            <div>
+                                <span class="font-medium">{{ $label }}:</span>
+                                <span class="ml-2">{{ $additionalData['tugas_akhir'][$key] }}</span>
+                            </div>
+                        @endif
+                    @endforeach
+                </div>
+            </div>
+
+        {{-- Surat Keterangan Khusus (SKM) --}}
+        @elseif($jenisSurat && isset($jenisSurat->kode_surat) && $jenisSurat->kode_surat === 'SKM' && isset($additionalData['keterangan_khusus']))
+            <div class="bg-orange-50 p-4 rounded-lg">
+                <h4 class="font-medium text-orange-800 mb-3">
+                    <i class="fas fa-info-circle mr-2"></i>
+                    Keterangan Khusus
+                </h4>
+                <div class="p-3 bg-white rounded border text-sm">
+                    {{ $additionalData['keterangan_khusus'] }}
+                </div>
+            </div>
+
+        {{-- Generic display untuk data lainnya (exclude akademik fields) --}}
+        @else
+            @php
+                $otherData = array_diff_key($additionalData, array_flip(['semester', 'tahun_akademik', 'dosen_wali']));
+                $hasOtherData = count($otherData) > 0;
+            @endphp
+            
+            @if($hasOtherData)
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <h4 class="font-medium text-gray-800 mb-3">
+                        <i class="fas fa-list mr-2"></i>
+                        Data Lainnya
+                    </h4>
+                    <div class="space-y-2 text-sm">
+                        @foreach($otherData as $key => $value)
+                            @if(!is_array($value) && !is_object($value))
+                                <div class="flex justify-between">
+                                    <span class="font-medium">{{ ucwords(str_replace('_', ' ', $key)) }}:</span>
+                                    <span>{{ $value }}</span>
+                                </div>
+                            @elseif(is_array($value))
+                                <div class="mt-3">
+                                    <span class="font-medium">{{ ucwords(str_replace('_', ' ', $key)) }}:</span>
+                                    <div class="ml-4 mt-1">
+                                        @foreach($value as $subKey => $subValue)
+                                            @if(!is_array($subValue))
+                                                <div class="text-sm">
+                                                    <span class="text-gray-600">{{ ucwords(str_replace('_', ' ', $subKey)) }}:</span>
+                                                    <span>{{ $subValue }}</span>
+                                                </div>
+                                            @endif
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endif
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+        @endif
+    </div>
+@elseif(!$hasAkademikData)
+    <!-- No Additional Data at all -->
+    <div class="bg-gray-50 border border-gray-200 p-4 rounded-lg mb-8 text-center">
+        <i class="fas fa-info-circle text-gray-400 text-2xl mb-2"></i>
+        <p class="text-gray-600 text-sm">
+            Tidak ada data tambahan untuk pengajuan ini.
+        </p>
+    </div>
+@endif
+
+            <!-- Action Buttons -->
+<div class="flex justify-between items-center pt-6 border-t border-gray-200">
+    @if(config('app.debug'))
+        <div class="text-xs text-gray-500 bg-yellow-50 px-2 py-1 rounded">
+            Status: {{ $status }} | 
+            Context: {{ $isFromFakultas ? 'Fakultas' : 'Prodi' }} |
+            Data: {{ $additionalData ? count($additionalData) . ' items' : 'none' }}
+        </div>
+    @else
+        <div></div>
+    @endif
+    
+    <div class="flex space-x-3">
+        @if($isFromFakultas)
+            @if(in_array($status, ['processed', 'approved_prodi']))
+                @if($jenisSurat && $jenisSurat->kode_surat === 'MA')
+                    <button onclick="previewSuratFSI({{ isset($surat) ? $surat->id : $pengajuan->id }})" 
+                            class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700">
+                        <i class="fas fa-eye mr-2"></i>
+                        Preview Surat
+                    </button>
+                    <button onclick="generateSuratFSI({{ isset($surat) ? $surat->id : $pengajuan->id }})" 
+                            class="inline-flex items-center px-5 py-2.5 bg-purple-600 text-white text-sm font-medium rounded-md hover:bg-purple-700">
+                        <i class="fas fa-file-pdf mr-2"></i>
+                        Generate PDF Surat
+                    </button>
+                @else
+                    <button onclick="generateSurat({{ isset($surat) ? $surat->id : $pengajuan->id }})" 
+                            class="inline-flex items-center px-5 py-2.5 bg-purple-600 text-white text-sm font-medium rounded-md hover:bg-purple-700">
+                        <i class="fas fa-file-alt mr-2"></i>
+                        Generate Surat
+                    </button>
+                @endif
+            @else
+                <span class="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-600 text-sm font-medium rounded-md">
+                    <i class="fas fa-clock mr-2"></i>
+                    Menunggu Approval Prodi
+                </span>
+            @endif
+        @elseif(!$isFromFakultas && $status === 'pending' && auth()->check() && auth()->user()->hasRole(['staff_prodi', 'kaprodi']))
+            <button onclick="showRejectModal()" 
+                    class="inline-flex items-center px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700">
+                <i class="fas fa-times mr-2"></i>
+                Tolak
+            </button>
+            <button onclick="showApproveConfirm()" 
+                    class="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700">
+                <i class="fas fa-check mr-2"></i>
+                Setujui & Teruskan ke Fakultas
+            </button>
+        @else
+            <span class="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-600 text-sm font-medium rounded-md">
+                <i class="fas fa-info-circle mr-2"></i>
+                Status: {{ ucwords(str_replace('_', ' ', $status)) }}
+            </span>
+        @endif
+    </div>
+</div>
+    </div>
+</div>
+
+{{-- Include modals only for staff prodi with pending status --}}
+@if(!$isFromFakultas && $status === 'pending')
+    @include('shared.pengajuan.modals', ['pengajuan' => $pengajuan])
+@endif
+
+@push('scripts')
+@if($isFromFakultas)
+    <script>
+    console.log('FSI Scripts loaded for fakultas context');
+    
+    // Preview Surat FSI UNJANI
+    function previewSuratFSI(id) {
+        console.log('Opening FSI Preview for ID:', id);
+        
+        // Show loading indicator
+        const button = event.target;
+        const originalText = button.innerHTML;
+        button.disabled = true;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right: 8px;"></i>Loading Preview...';
+        
+        // Open preview in new tab
+        const previewUrl = `/fakultas/surat/fsi/preview/${id}`;
+        const previewWindow = window.open(previewUrl, '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
+        
+        // Reset button after a short delay
+        setTimeout(() => {
+            button.disabled = false;
+            button.innerHTML = originalText;
+        }, 1000);
+        
+        // Check if popup was blocked
+        if (!previewWindow || previewWindow.closed || typeof previewWindow.closed == 'undefined') {
+            alert('Popup diblokir! Silakan izinkan popup atau buka manual: ' + previewUrl);
+            button.disabled = false;
+            button.innerHTML = originalText;
+        }
+    }
+    
+    // Generate PDF Surat FSI UNJANI (Direct without preview)
+    function generateSuratFSI(id) {
+        console.log('Direct Generate FSI PDF for ID:', id);
+        
+        if (!confirm('Generate PDF surat resmi FSI UNJANI langsung? Anda akan diarahkan ke halaman preview terlebih dahulu.')) {
+            return;
+        }
+        
+        // Redirect to preview instead of direct generate
+        previewSuratFSI(id);
+    }
+    
+    // Standard generate for other surat types
+    function generateSurat(id) {
+        console.log('Generate standard surat for ID:', id);
+        
+        if (!confirm('Generate surat dari pengajuan ini? Surat akan dibuat berdasarkan template standard.')) return;
+        
+        // Show loading state
+        const button = event.target;
+        const originalText = button.innerHTML;
+        button.disabled = true;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right: 8px;"></i>Generating...';
+        
+        fetch(`/fakultas/pengajuan/${id}/generate`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Surat berhasil di-generate! Silakan print untuk ditandatangani.');
+                window.location.reload();
+            } else {
+                alert(data.message || 'Terjadi kesalahan saat generate surat');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Terjadi kesalahan saat generate surat');
+        })
+        .finally(() => {
+            // Reset button
+            button.disabled = false;
+            button.innerHTML = originalText;
+        });
+    }
+    
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('FSI system initialized');
+        
+        // Check debug mode
+        @if(config('app.debug'))
+            console.log('Debug mode active - additional logging enabled');
+        @endif
+        
+        // Check if this is FSI context
+        const isFromFakultas = {{ $isFromFakultas ? 'true' : 'false' }};
+        const jenisSurat = '{{ $jenisSurat->kode_surat ?? "unknown" }}';
+        const status = '{{ $status }}';
+        
+        console.log('Context info:', {
+            isFromFakultas: isFromFakultas,
+            jenisSurat: jenisSurat,
+            status: status
+        });
+        
+        // Show appropriate buttons
+        if (isFromFakultas && jenisSurat === 'MA' && ['processed', 'approved_prodi'].includes(status)) {
+            console.log('FSI buttons should be visible');
+        } else {
+            console.log('FSI buttons not shown - conditions not met');
+        }
+    });
+    </script>
+@else
+    {{-- Staff Prodi Scripts --}}
+    <script>
+    console.log('Prodi scripts loaded');
+    
+    function showApproveConfirm() {
+        const modal = document.getElementById('approveModal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            document.body.style.overflow = 'hidden';
+        }
+    }
+
+    function closeApproveModal() {
+        const modal = document.getElementById('approveModal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            document.body.style.overflow = 'auto';
+        }
+    }
+
+    function showRejectModal() {
+        const modal = document.getElementById('rejectModal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            document.body.style.overflow = 'hidden';
+            document.getElementById('rejectionReason')?.focus();
+        }
+    }
+
+    function closeRejectModal() {
+        const modal = document.getElementById('rejectModal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            document.body.style.overflow = 'auto';
+            const reasonField = document.getElementById('rejectionReason');
+            if (reasonField) reasonField.value = '';
+        }
+    }
+
+    function processPengajuan(action) {
+        let data = { action: action };
+        
+        if (action === 'reject') {
+            const reason = document.getElementById('rejectionReason')?.value.trim();
+            if (!reason) {
+                alert('Alasan penolakan harus diisi!');
+                return;
+            }
+            if (reason.length < 10) {
+                alert('Alasan penolakan minimal 10 karakter!');
+                return;
+            }
+            data.rejection_reason = reason;
+        }
+        
+        // Show loading state
+        const button = event.target;
+        const originalText = button.innerHTML;
+        button.disabled = true;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right: 8px;"></i>Processing...';
+        
+        // Get pengajuan ID from the page context
+        const pengajuanId = '{{ isset($pengajuan) ? $pengajuan->id : (isset($surat) && isset($surat->original_pengajuan) ? $surat->original_pengajuan->id : "unknown") }}';
+        
+        if (pengajuanId === 'unknown') {
+            alert('Error: ID pengajuan tidak ditemukan');
+            button.disabled = false;
+            button.innerHTML = originalText;
+            return;
+        }
+        
+        fetch(`/pengajuan/${pengajuanId}/prodi/process`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(result => {
+            if (result.success) {
+                if (action === 'approve') {
+                    alert('Pengajuan berhasil disetujui dan diteruskan ke Fakultas!');
+                } else {
+                    alert('Pengajuan berhasil ditolak');
+                }
+                window.location.href = '{{ route("staff.pengajuan.index") }}';
+            } else {
+                alert('Error: ' + (result.message || 'Terjadi kesalahan'));
+                button.disabled = false;
+                button.innerHTML = originalText;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Terjadi kesalahan sistem: ' + error.message);
+            button.disabled = false;
+            button.innerHTML = originalText;
+        });
+        
+        // Close modals
+        if (action === 'approve') closeApproveModal();
+        if (action === 'reject') closeRejectModal();
+    }
+    </script>
+@endif
+@endpush
