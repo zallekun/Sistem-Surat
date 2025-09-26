@@ -9,10 +9,10 @@ use Illuminate\Support\Facades\Auth;
 
 class StaffPengajuanController extends Controller
 {
-    /**
-     * Display pengajuan list for staff
+/**
+     * Display pengajuan list for staff with filters
      */
-    public function index()
+    public function index(Request $request)
     {
         $user = Auth::user();
         
@@ -29,43 +29,89 @@ class StaffPengajuanController extends Controller
             $query->where('prodi_id', $user->prodi_id);
         }
         
-        // Filter by status
-        $status = request('status');
-        if ($status) {
-            $query->where('status', $status);
+        // SEARCH FILTER - Token, NIM, atau Nama
+        if ($request->filled('search')) {
+            $searchTerm = $request->search;
+            $query->where(function($q) use ($searchTerm) {
+                $q->where('tracking_token', 'like', "%{$searchTerm}%")
+                  ->orWhere('nim', 'like', "%{$searchTerm}%")
+                  ->orWhere('nama_mahasiswa', 'like', "%{$searchTerm}%");
+            });
+        }
+        
+        // STATUS FILTER
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
         } else {
-            // ✅ PERBAIKAN: Show semua status yang relevan untuk staff prodi
+            // Default: Show semua status yang relevan untuk staff prodi
             $relevantStatuses = [
-                'pending',              // Baru masuk, perlu review
-                'processed',            // Sudah diproses staff prodi
-                'approved_prodi',       // Sudah disetujui prodi
+                'pending',               // Baru masuk, perlu review
+                'processed',             // Sudah diproses staff prodi
+                'approved_prodi',        // Sudah disetujui prodi
                 'sedang_ditandatangani', // Sedang proses TTD di fakultas
-                'completed',            // Selesai
-                'rejected',             // Ditolak (untuk review)
-                'rejected_fakultas'     // Ditolak fakultas (untuk info)
+                'completed',             // Selesai
+                'rejected_prodi',        // Ditolak prodi
+                'rejected_fakultas'      // Ditolak fakultas (untuk info)
             ];
             
             $query->whereIn('status', $relevantStatuses);
         }
         
-        $pengajuans = $query->orderBy('created_at', 'desc')->paginate(10);
-        $jenisSurats = JenisSurat::all();
-        
-        // ✅ TAMBAH: Hitung statistik status untuk dashboard info
-        $statusCounts = [];
-        if ($user->prodi_id) {
-            $baseQuery = PengajuanSurat::where('prodi_id', $user->prodi_id);
-            $statusCounts = [
-                'pending' => $baseQuery->clone()->where('status', 'pending')->count(),
-                'processed' => $baseQuery->clone()->where('status', 'processed')->count(),
-                'approved_prodi' => $baseQuery->clone()->where('status', 'approved_prodi')->count(),
-                'sedang_ditandatangani' => $baseQuery->clone()->where('status', 'sedang_ditandatangani')->count(),
-                'completed' => $baseQuery->clone()->where('status', 'completed')->count(),
-                'rejected' => $baseQuery->clone()->whereIn('status', ['rejected', 'rejected_fakultas'])->count(),
-            ];
+        // JENIS SURAT FILTER
+        if ($request->filled('jenis_surat')) {
+            $query->where('jenis_surat_id', $request->jenis_surat);
         }
         
-        return view('staff.pengajuan.index', compact('pengajuans', 'jenisSurats', 'statusCounts'));
+        // DATE RANGE FILTER
+        if ($request->filled('date_from')) {
+            $query->whereDate('created_at', '>=', $request->date_from);
+        }
+        
+        if ($request->filled('date_to')) {
+            $query->whereDate('created_at', '<=', $request->date_to);
+        }
+        
+        // SORTING
+        $allowedSortFields = ['tracking_token', 'nama_mahasiswa', 'status', 'created_at'];
+        $sortField = in_array($request->get('sort'), $allowedSortFields) ? $request->get('sort') : 'created_at';
+        $sortDirection = in_array($request->get('direction'), ['asc', 'desc']) ? $request->get('direction') : 'desc';
+        
+        $query->orderBy($sortField, $sortDirection);
+        
+        // Get paginated results
+        $pengajuans = $query->paginate(15)->withQueryString();
+        
+        // Get jenis surat for dropdown
+        $jenisSurat = JenisSurat::orderBy('nama_jenis')->get();
+        
+        // Calculate status counts for quick filters
+        $baseCountQuery = PengajuanSurat::query();
+        if ($user->prodi_id) {
+            $baseCountQuery->where('prodi_id', $user->prodi_id);
+        }
+        
+        $pendingCount = $baseCountQuery->clone()->where('status', 'pending')->count();
+        $approvedCount = $baseCountQuery->clone()->where('status', 'approved_prodi')->count();
+        $completedCount = $baseCountQuery->clone()->where('status', 'completed')->count();
+        
+        // Additional counts for dashboard
+        $statusCounts = [
+            'pending' => $pendingCount,
+            'processed' => $baseCountQuery->clone()->where('status', 'processed')->count(),
+            'approved_prodi' => $approvedCount,
+            'sedang_ditandatangani' => $baseCountQuery->clone()->where('status', 'sedang_ditandatangani')->count(),
+            'completed' => $completedCount,
+            'rejected' => $baseCountQuery->clone()->whereIn('status', ['rejected_prodi', 'rejected_fakultas'])->count(),
+        ];
+        
+        return view('staff.pengajuan.index', compact(
+            'pengajuans', 
+            'jenisSurat', 
+            'statusCounts',
+            'pendingCount',
+            'approvedCount', 
+            'completedCount'
+        ));
     }
     
     /**

@@ -27,6 +27,27 @@
             }
         }
     }
+
+    // Status labels consistency
+    $statusLabels = [
+        'pending' => 'Menunggu Persetujuan',
+        'approved_prodi' => 'Disetujui Prodi',
+        'processed' => 'Sudah Diproses',
+        'rejected_prodi' => 'Ditolak Prodi',
+        'sedang_ditandatangani' => 'Sedang Ditandatangani',
+        'completed' => 'Selesai',
+        'rejected_fakultas' => 'Ditolak Fakultas'
+    ];
+
+    $statusColors = [
+        'pending' => 'bg-yellow-100 text-yellow-800',
+        'approved_prodi' => 'bg-blue-100 text-blue-800',
+        'processed' => 'bg-blue-100 text-blue-800',
+        'rejected_prodi' => 'bg-red-100 text-red-800',
+        'sedang_ditandatangani' => 'bg-orange-100 text-orange-800',
+        'completed' => 'bg-green-100 text-green-800',
+        'rejected_fakultas' => 'bg-red-100 text-red-800'
+    ];
 ?>
 
 <div class="container mx-auto px-4 py-8">
@@ -40,12 +61,12 @@
                 </h2>
                 <div class="flex items-center gap-4">
                     <?php if($pengajuan): ?>
-                        <span class="px-3 py-1 rounded-full text-xs font-medium 
-                            <?php if($pengajuan->status == 'completed'): ?> bg-green-100 text-green-800
-                            <?php elseif($pengajuan->status == 'sedang_ditandatangani'): ?> bg-orange-100 text-orange-800
-                            <?php elseif($pengajuan->status == 'approved_prodi'): ?> bg-blue-100 text-blue-800
-                            <?php else: ?> bg-gray-100 text-gray-800 <?php endif; ?>">
-                            <?php echo e(ucwords(str_replace('_', ' ', $pengajuan->status))); ?>
+                        <?php
+                            $statusLabel = $statusLabels[$pengajuan->status] ?? ucfirst(str_replace('_', ' ', $pengajuan->status));
+                            $statusColor = $statusColors[$pengajuan->status] ?? 'bg-gray-100 text-gray-800';
+                        ?>
+                        <span class="px-3 py-1 rounded-full text-xs font-medium <?php echo e($statusColor); ?>">
+                            <?php echo e($statusLabel); ?>
 
                         </span>
                     <?php endif; ?>
@@ -70,6 +91,12 @@
                         <div><strong>Token:</strong> <span class="font-mono bg-white px-2 py-1 rounded"><?php echo e($pengajuan->tracking_token); ?></span></div>
                         <div><strong>Tanggal:</strong> <?php echo e($pengajuan->created_at->format('d/m/Y H:i')); ?></div>
                         <div><strong>Jenis Surat:</strong> <?php echo e($jenisSurat->nama_jenis ?? 'N/A'); ?> (<?php echo e($jenisSurat->kode_surat ?? ''); ?>)</div>
+                        <div><strong>Status:</strong> 
+                            <span class="inline-flex px-2 py-1 rounded-full text-xs font-medium <?php echo e($statusColor); ?>">
+                                <?php echo e($statusLabel); ?>
+
+                            </span>
+                        </div>
                     </div>
                 </div>
 
@@ -176,7 +203,7 @@
                     </button>
                     <button onclick="printSurat(<?php echo e($pengajuan->id); ?>)" 
                             class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition">
-                        <i class="fas fa-print mr-2"></i>Print untuk TTD
+                        <i class="fas fa-print mr-2"></i>Cetak untuk TTD
                     </button>
                 <?php elseif($pengajuan->status === 'sedang_ditandatangani'): ?>
                     <button onclick="previewSurat(<?php echo e($pengajuan->id); ?>)" 
@@ -185,13 +212,22 @@
                     </button>
                     <button onclick="showUploadModal()" 
                             class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition">
-                        <i class="fas fa-upload mr-2"></i>Upload Link Surat Signed
+                        <i class="fas fa-upload mr-2"></i>Upload Surat Bertanda Tangan
                     </button>
                 <?php elseif($pengajuan->status === 'completed'): ?>
+                    <button onclick="previewSurat(<?php echo e($pengajuan->id); ?>)" 
+                            class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
+                        <i class="fas fa-eye mr-2"></i>Lihat Surat
+                    </button>
                     <a href="<?php echo e($pengajuan->download_url ?? '#'); ?>" 
-                       class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition">
+                       target="_blank"
+                       class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition">
                         <i class="fas fa-download mr-2"></i>Download Surat
                     </a>
+                    <button onclick="showSendModal()" 
+                            class="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 transition">
+                        <i class="fas fa-paper-plane mr-2"></i>Kirim ke Mahasiswa
+                    </button>
                 <?php endif; ?>
             </div>
         </div>
@@ -208,14 +244,51 @@
 <!-- Modal Upload Link -->
 <div id="uploadModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
     <div class="bg-white rounded-lg p-6 w-full max-w-md">
-        <h3 class="text-lg font-semibold mb-4">Upload Link Surat Tertandatangan</h3>
+        <h3 class="text-lg font-semibold mb-4">Upload Surat Bertanda Tangan</h3>
+        <p class="text-sm text-gray-600 mb-4">Upload link surat yang sudah ditandatangani secara fisik/digital.</p>
+        
         <input type="url" id="signedUrl" placeholder="https://drive.google.com/..." 
-               class="w-full px-3 py-2 border rounded mb-3">
-        <textarea id="uploadNotes" placeholder="Catatan (opsional)" 
-                  class="w-full px-3 py-2 border rounded mb-4" rows="3"></textarea>
+               class="w-full px-3 py-2 border border-gray-300 rounded mb-3 focus:outline-none focus:ring-2 focus:ring-green-500">
+        
+        <textarea id="uploadNotes" placeholder="Catatan tambahan (opsional)" 
+                  class="w-full px-3 py-2 border border-gray-300 rounded mb-4 focus:outline-none focus:ring-2 focus:ring-green-500" rows="3"></textarea>
+        
         <div class="flex justify-end gap-2">
-            <button onclick="closeUploadModal()" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">Batal</button>
-            <button onclick="submitSignedLink()" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Upload</button>
+            <button onclick="closeUploadModal()" 
+                    class="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 transition">
+                Batal
+            </button>
+            <button onclick="submitSignedLink()" 
+                    class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition">
+                Upload
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Send to Student -->
+<div id="sendModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-6 w-full max-w-md">
+        <h3 class="text-lg font-semibold mb-4">Kirim Surat ke Mahasiswa</h3>
+        <p class="text-sm text-gray-600 mb-4">Surat akan dikirim ke email mahasiswa dan status akan berubah menjadi "Selesai".</p>
+        
+        <div class="bg-blue-50 p-3 rounded mb-4">
+            <p class="text-sm"><strong>Email:</strong> <?php echo e($pengajuan->email ?? ''); ?></p>
+            <p class="text-sm"><strong>Mahasiswa:</strong> <?php echo e($pengajuan->nama_mahasiswa ?? ''); ?></p>
+        </div>
+        
+        <textarea id="sendMessage" placeholder="Pesan tambahan untuk mahasiswa (opsional)" 
+                  class="w-full px-3 py-2 border border-gray-300 rounded mb-4 focus:outline-none focus:ring-2 focus:ring-orange-500" rows="3"></textarea>
+        
+        <div class="flex justify-end gap-2">
+            <button onclick="closeSendModal()" 
+                    class="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 transition">
+                Batal
+            </button>
+            <button onclick="sendToStudent()" 
+                    class="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 transition">
+                Kirim
+            </button>
         </div>
     </div>
 </div>
@@ -226,7 +299,7 @@ function previewSurat(id) {
 }
 
 function printSurat(id) {
-    if (confirm('Print surat untuk proses tanda tangan?')) {
+    if (confirm('Cetak surat untuk proses tanda tangan?')) {
         window.location.href = `/fakultas/surat/fsi/print/${id}`;
     }
 }
@@ -239,33 +312,111 @@ function showUploadModal() {
 function closeUploadModal() {
     document.getElementById('uploadModal').classList.add('hidden');
     document.getElementById('uploadModal').classList.remove('flex');
+    document.getElementById('signedUrl').value = '';
+    document.getElementById('uploadNotes').value = '';
+}
+
+function showSendModal() {
+    document.getElementById('sendModal').classList.remove('hidden');
+    document.getElementById('sendModal').classList.add('flex');
+}
+
+function closeSendModal() {
+    document.getElementById('sendModal').classList.add('hidden');
+    document.getElementById('sendModal').classList.remove('flex');
+    document.getElementById('sendMessage').value = '';
 }
 
 function submitSignedLink() {
-    const url = document.getElementById('signedUrl').value;
-    const notes = document.getElementById('uploadNotes').value;
+    const url = document.getElementById('signedUrl').value.trim();
+    const notes = document.getElementById('uploadNotes').value.trim();
     
     if (!url) {
-        alert('Link harus diisi!');
+        alert('Link surat harus diisi!');
         return;
     }
+    
+    // Validate URL format
+    try {
+        new URL(url);
+    } catch (e) {
+        alert('Format URL tidak valid!');
+        return;
+    }
+    
+    const button = event.target;
+    button.disabled = true;
+    button.textContent = 'Uploading...';
     
     fetch(`/fakultas/surat/fsi/upload-signed/<?php echo e($pengajuan->id ?? 0); ?>`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': '<?php echo e(csrf_token()); ?>'
+            'X-CSRF-TOKEN': '<?php echo e(csrf_token()); ?>',
+            'Accept': 'application/json'
         },
-        body: JSON.stringify({ signed_url: url, notes: notes })
+        body: JSON.stringify({ 
+            signed_url: url, 
+            notes: notes 
+        })
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            alert(data.message);
+            alert('Surat berhasil diupload dan status berubah menjadi "Selesai"');
             window.location.reload();
         } else {
-            alert(data.message);
+            alert(data.message || 'Terjadi kesalahan');
         }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Terjadi kesalahan jaringan');
+    })
+    .finally(() => {
+        button.disabled = false;
+        button.textContent = 'Upload';
+    });
+}
+
+function sendToStudent() {
+    const message = document.getElementById('sendMessage').value.trim();
+    
+    if (!confirm('Kirim surat ke mahasiswa? Tindakan ini tidak dapat dibatalkan.')) {
+        return;
+    }
+    
+    const button = event.target;
+    button.disabled = true;
+    button.textContent = 'Mengirim...';
+    
+    fetch(`/fakultas/surat/fsi/send-to-student/<?php echo e($pengajuan->id ?? 0); ?>`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '<?php echo e(csrf_token()); ?>',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({ 
+            message: message 
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Surat berhasil dikirim ke mahasiswa');
+            window.location.reload();
+        } else {
+            alert(data.message || 'Terjadi kesalahan');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Terjadi kesalahan jaringan');
+    })
+    .finally(() => {
+        button.disabled = false;
+        button.textContent = 'Kirim';
     });
 }
 </script>
