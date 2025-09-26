@@ -1,278 +1,270 @@
-{{-- File: resources/views/fakultas/surat/show.blade.php --}}
 @extends('layouts.app')
 
 @section('title', 'Detail Pengajuan - Staff Fakultas')
 
 @section('content')
 @php
-    // Initialize variables
-    $statusColors = [
-        'pending' => 'background-color: #fef3c7; color: #92400e;',
-        'processed' => 'background-color: #dbeafe; color: #1e40af;',
-        'approved_prodi' => 'background-color: #d1fae5; color: #065f46;',
-        'rejected' => 'background-color: #fee2e2; color: #991b1b;',
-        'completed' => 'background-color: #e0e7ff; color: #4338ca;'
-    ];
-    
-    // Determine data source and extract pengajuan
+    // Parse pengajuan data properly
     $pengajuan = null;
     $jenisSurat = null;
-    $status = 'unknown';
     $additionalData = null;
     
     if (isset($surat) && is_object($surat)) {
         if (isset($surat->original_pengajuan)) {
-            // This is a pengajuan wrapped in surat object
             $pengajuan = $surat->original_pengajuan;
-        } else {
-            // This is a regular surat
-            // For now, we'll skip this case as we focus on pengajuan
         }
-    } elseif (isset($pengajuan)) {
-        // Direct pengajuan object
-        // Already set
     }
     
-    // Extract related data if pengajuan exists
     if ($pengajuan) {
         $jenisSurat = $pengajuan->jenisSurat ?? null;
-        $status = $pengajuan->status ?? 'unknown';
         
         // Parse additional data
-        if (isset($pengajuan->additional_data) && !empty($pengajuan->additional_data)) {
+        if ($pengajuan->additional_data) {
             if (is_string($pengajuan->additional_data)) {
-                try {
-                    $additionalData = json_decode($pengajuan->additional_data, true);
-                    if (json_last_error() !== JSON_ERROR_NONE) {
-                        $additionalData = null;
-                    }
-                } catch (\Exception $e) {
-                    $additionalData = null;
-                }
+                $additionalData = json_decode($pengajuan->additional_data, true);
             } elseif (is_array($pengajuan->additional_data)) {
                 $additionalData = $pengajuan->additional_data;
-            } elseif (is_object($pengajuan->additional_data)) {
-                $additionalData = (array) $pengajuan->additional_data;
             }
         }
     }
-    
-    $statusStyle = $statusColors[$status] ?? 'background-color: #f3f4f6; color: #374151;';
 @endphp
 
 <div class="container mx-auto px-4 py-8">
     <div class="bg-white shadow-sm rounded-lg">
         <!-- Header -->
-        <div style="padding: 24px; border-bottom: 1px solid #e5e7eb;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h2 style="font-size: 20px; font-weight: 600; margin: 0; color: #374151;">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <div class="flex justify-between items-center">
+                <h2 class="text-xl font-bold text-gray-800">
                     Detail Pengajuan Surat
-                    <span style="font-size: 14px; font-weight: normal; color: #3b82f6;">(Staff Fakultas)</span>
+                    <span class="text-sm font-normal text-blue-600 ml-2">(Staff Fakultas)</span>
                 </h2>
-                <div style="display: flex; align-items: center; gap: 16px;">
-                    <span style="padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 500; {{ $statusStyle }}">
-                        {{ ucwords(str_replace('_', ' ', $status)) }}
-                    </span>
+                <div class="flex items-center gap-4">
+                    @if($pengajuan)
+                        <span class="px-3 py-1 rounded-full text-xs font-medium 
+                            @if($pengajuan->status == 'completed') bg-green-100 text-green-800
+                            @elseif($pengajuan->status == 'sedang_ditandatangani') bg-orange-100 text-orange-800
+                            @elseif($pengajuan->status == 'approved_prodi') bg-blue-100 text-blue-800
+                            @else bg-gray-100 text-gray-800 @endif">
+                            {{ ucwords(str_replace('_', ' ', $pengajuan->status)) }}
+                        </span>
+                    @endif
                     <a href="{{ route('fakultas.surat.index') }}" 
-                       style="display: inline-flex; align-items: center; padding: 8px 16px; background-color: #6b7280; color: white; text-decoration: none; border-radius: 6px; font-size: 14px;">
-                        <i class="fas fa-arrow-left" style="margin-right: 8px;"></i>
-                        Kembali
+                       class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition">
+                        <i class="fas fa-arrow-left mr-2"></i>Kembali
                     </a>
                 </div>
             </div>
         </div>
 
         @if($pengajuan)
-        <div style="padding: 24px;">
-            <!-- Data Grid -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px;">
+        <div class="p-6">
+            <!-- Basic Info Grid -->
+            <div class="grid md:grid-cols-2 gap-6 mb-6">
                 <!-- Informasi Pengajuan -->
-                <div style="background-color: #eff6ff; padding: 16px; border-radius: 8px;">
-                    <h3 style="font-weight: 600; color: #1e40af; margin-bottom: 12px; font-size: 16px;">
-                        <i class="fas fa-info-circle" style="margin-right: 8px;"></i>
-                        Informasi Pengajuan
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <h3 class="font-semibold text-blue-800 mb-3">
+                        <i class="fas fa-info-circle mr-2"></i>Informasi Pengajuan
                     </h3>
-                    <div style="font-size: 14px; line-height: 1.6;">
-                        <div style="margin-bottom: 8px;">
-                            <span style="color: #6b7280;">Token Tracking:</span>
-                            <span style="font-weight: 500; font-family: monospace; background: #f3f4f6; padding: 2px 6px; border-radius: 4px; margin-left: 8px;">
-                                {{ $pengajuan->tracking_token ?? 'N/A' }}
-                            </span>
-                        </div>
-                        <div style="margin-bottom: 8px;">
-                            <span style="color: #6b7280;">Tanggal Pengajuan:</span>
-                            <span style="font-weight: 500; margin-left: 8px;">
-                                {{ $pengajuan->created_at ? $pengajuan->created_at->format('d/m/Y H:i') : 'N/A' }}
-                            </span>
-                        </div>
-                        <div style="margin-bottom: 8px;">
-                            <span style="color: #6b7280;">Jenis Surat:</span>
-                            <div style="margin-left: 8px; margin-top: 4px;">
-                                <span style="font-weight: 600;">{{ $jenisSurat ? $jenisSurat->nama_jenis : 'N/A' }}</span>
-                                @if($jenisSurat && $jenisSurat->kode_surat)
-                                    <br><span style="font-size: 12px; background: #e5e7eb; padding: 2px 6px; border-radius: 4px;">
-                                        {{ $jenisSurat->kode_surat }}
-                                    </span>
-                                @endif
-                            </div>
-                        </div>
+                    <div class="space-y-2 text-sm">
+                        <div><strong>Token:</strong> <span class="font-mono bg-white px-2 py-1 rounded">{{ $pengajuan->tracking_token }}</span></div>
+                        <div><strong>Tanggal:</strong> {{ $pengajuan->created_at->format('d/m/Y H:i') }}</div>
+                        <div><strong>Jenis Surat:</strong> {{ $jenisSurat->nama_jenis ?? 'N/A' }} ({{ $jenisSurat->kode_surat ?? '' }})</div>
                     </div>
                 </div>
 
                 <!-- Data Mahasiswa -->
-                <div style="background-color: #f0fdf4; padding: 16px; border-radius: 8px;">
-                    <h3 style="font-weight: 600; color: #166534; margin-bottom: 12px; font-size: 16px;">
-                        <i class="fas fa-user-graduate" style="margin-right: 8px;"></i>
-                        Data Mahasiswa
+                <div class="bg-green-50 p-4 rounded-lg">
+                    <h3 class="font-semibold text-green-800 mb-3">
+                        <i class="fas fa-user-graduate mr-2"></i>Data Mahasiswa
                     </h3>
-                    <div style="font-size: 14px; line-height: 1.6;">
-                        <div style="margin-bottom: 8px;">
-                            <span style="color: #6b7280;">NIM:</span>
-                            <span style="font-weight: 500; margin-left: 8px;">{{ $pengajuan->nim ?? 'N/A' }}</span>
-                        </div>
-                        <div style="margin-bottom: 8px;">
-                            <span style="color: #6b7280;">Nama:</span>
-                            <span style="font-weight: 500; margin-left: 8px;">{{ $pengajuan->nama_mahasiswa ?? 'N/A' }}</span>
-                        </div>
-                        <div style="margin-bottom: 8px;">
-                            <span style="color: #6b7280;">Program Studi:</span>
-                            <span style="font-weight: 500; margin-left: 8px;">{{ $pengajuan->prodi->nama_prodi ?? 'N/A' }}</span>
-                        </div>
-                        <div style="margin-bottom: 8px;">
-                            <span style="color: #6b7280;">Email:</span>
-                            <span style="font-weight: 500; margin-left: 8px; font-size: 12px;">{{ $pengajuan->email ?? 'N/A' }}</span>
-                        </div>
+                    <div class="space-y-2 text-sm">
+                        <div><strong>NIM:</strong> {{ $pengajuan->nim }}</div>
+                        <div><strong>Nama:</strong> {{ $pengajuan->nama_mahasiswa }}</div>
+                        <div><strong>Prodi:</strong> {{ $pengajuan->prodi->nama_prodi ?? 'N/A' }}</div>
+                        <div><strong>Email:</strong> {{ $pengajuan->email }}</div>
                     </div>
                 </div>
             </div>
 
             <!-- Keperluan -->
-            <div style="margin-bottom: 32px;">
-                <h3 style="font-weight: 600; color: #374151; margin-bottom: 12px; font-size: 16px;">
-                    <i class="fas fa-clipboard-list" style="margin-right: 8px;"></i>
-                    Keperluan Surat
+            <div class="mb-6">
+                <h3 class="font-semibold text-gray-800 mb-2">
+                    <i class="fas fa-clipboard-list mr-2"></i>Keperluan
                 </h3>
-                <div style="background-color: #f9fafb; padding: 16px; border-radius: 8px; border: 1px solid #e5e7eb;">
-                    {{ $pengajuan->keperluan ?? 'Tidak ada keterangan keperluan' }}
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    {{ $pengajuan->keperluan }}
                 </div>
             </div>
 
-            <!-- Data Tambahan -->
-            @if($additionalData && is_array($additionalData))
-                <!-- Data Akademik -->
-                @if(isset($additionalData['semester']) || isset($additionalData['tahun_akademik']))
-                <div style="margin-bottom: 24px;">
-                    <h3 style="font-weight: 600; color: #374151; margin-bottom: 12px; font-size: 16px;">
-                        <i class="fas fa-graduation-cap" style="margin-right: 8px;"></i>
-                        Data Akademik
+            <!-- Additional Data Section -->
+            @if($additionalData)
+                <div class="mb-6">
+                    <h3 class="font-semibold text-gray-800 mb-3">
+                        <i class="fas fa-list-alt mr-2"></i>Data Tambahan
                     </h3>
-                    <div style="background-color: #f0f9ff; padding: 16px; border-radius: 8px;">
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; font-size: 14px;">
-                            @if(isset($additionalData['semester']))
-                            <div>
-                                <span style="color: #6b7280;">Semester:</span>
-                                <span style="font-weight: 500; margin-left: 8px;">{{ $additionalData['semester'] }}</span>
-                            </div>
-                            @endif
-                            @if(isset($additionalData['tahun_akademik']))
-                            <div>
-                                <span style="color: #6b7280;">Tahun Akademik:</span>
-                                <span style="font-weight: 500; margin-left: 8px;">{{ $additionalData['tahun_akademik'] }}</span>
-                            </div>
-                            @endif
-                        </div>
-                    </div>
-                </div>
-                @endif
 
-                <!-- Data Orang Tua (untuk MA) -->
-                @if($jenisSurat && $jenisSurat->kode_surat === 'MA' && isset($additionalData['orang_tua']))
-                <div style="margin-bottom: 24px;">
-                    <h3 style="font-weight: 600; color: #374151; margin-bottom: 12px; font-size: 16px;">
-                        <i class="fas fa-users" style="margin-right: 8px;"></i>
-                        Data Orang Tua
-                    </h3>
-                    <div style="background-color: #fefce8; padding: 16px; border-radius: 8px;">
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; font-size: 14px;">
-                            @php
-                                $orangTua = $additionalData['orang_tua'];
-                            @endphp
-                            
-                            @foreach([
-                                'nama' => 'Nama',
-                                'tempat_lahir' => 'Tempat Lahir',
-                                'tanggal_lahir' => 'Tanggal Lahir',
-                                'pekerjaan' => 'Pekerjaan',
-                                'nip' => 'NIP',
-                                'pangkat_golongan' => 'Pangkat/Golongan',
-                                'instansi' => 'Instansi',
-                                'alamat_instansi' => 'Alamat Instansi',
-                                'alamat_rumah' => 'Alamat Rumah'
-                            ] as $key => $label)
-                                @if(isset($orangTua[$key]) && !empty($orangTua[$key]))
-                                <div>
-                                    <span style="color: #6b7280;">{{ $label }}:</span>
-                                    <span style="font-weight: 500; margin-left: 8px;">{{ $orangTua[$key] }}</span>
+                    {{-- SURAT MAHASISWA AKTIF (MA) --}}
+                    @if($jenisSurat && $jenisSurat->kode_surat === 'MA')
+                        @if(isset($additionalData['orang_tua']))
+                            <div class="bg-yellow-50 p-4 rounded-lg">
+                                <h4 class="font-medium text-yellow-800 mb-3">Data Orang Tua</h4>
+                                <div class="grid md:grid-cols-2 gap-3 text-sm">
+                                    @foreach(['nama' => 'Nama', 'tempat_lahir' => 'Tempat Lahir', 'tanggal_lahir' => 'Tanggal Lahir', 
+                                             'pekerjaan' => 'Pekerjaan', 'alamat_rumah' => 'Alamat'] as $key => $label)
+                                        @if(isset($additionalData['orang_tua'][$key]))
+                                            <div><strong>{{ $label }}:</strong> {{ $additionalData['orang_tua'][$key] }}</div>
+                                        @endif
+                                    @endforeach
                                 </div>
-                                @endif
-                            @endforeach
-                        </div>
-                    </div>
+                            </div>
+                        @endif
+                    @endif
+
+                    {{-- SURAT KERJA PRAKTEK (KP) --}}
+                    @if($jenisSurat && $jenisSurat->kode_surat === 'KP')
+                        @if(isset($additionalData['kerja_praktek']))
+                            <div class="bg-blue-50 p-4 rounded-lg mb-4">
+                                <h4 class="font-medium text-blue-800 mb-3">Data Perusahaan</h4>
+                                <div class="grid md:grid-cols-2 gap-3 text-sm">
+                                    <div><strong>Nama:</strong> {{ $additionalData['kerja_praktek']['nama_perusahaan'] ?? '-' }}</div>
+                                    <div><strong>Periode:</strong> {{ $additionalData['kerja_praktek']['periode_mulai'] ?? '' }} - {{ $additionalData['kerja_praktek']['periode_selesai'] ?? '' }}</div>
+                                    <div><strong>Alamat:</strong> {{ $additionalData['kerja_praktek']['alamat_perusahaan'] ?? '-' }}</div>
+                                    <div><strong>Jumlah Mahasiswa:</strong> {{ $additionalData['kerja_praktek']['jumlah_mahasiswa'] ?? 1 }}</div>
+                                </div>
+                            </div>
+                            
+                            @if(isset($additionalData['kerja_praktek']['mahasiswa_kp']))
+                                <div class="bg-green-50 p-4 rounded-lg">
+                                    <h4 class="font-medium text-green-800 mb-3">Daftar Mahasiswa KP</h4>
+                                    <table class="min-w-full">
+                                        <thead>
+                                            <tr class="border-b">
+                                                <th class="text-left py-2">No</th>
+                                                <th class="text-left py-2">Nama</th>
+                                                <th class="text-left py-2">NIM</th>
+                                                <th class="text-left py-2">Prodi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach($additionalData['kerja_praktek']['mahasiswa_kp'] as $index => $mhs)
+                                                <tr class="border-b">
+                                                    <td class="py-2">{{ $index + 1 }}</td>
+                                                    <td class="py-2">{{ $mhs['nama'] ?? '-' }}</td>
+                                                    <td class="py-2">{{ $mhs['nim'] ?? '-' }}</td>
+                                                    <td class="py-2">{{ $mhs['prodi'] ?? '-' }}</td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            @endif
+                        @endif
+                    @endif
+
+                    {{-- Add other letter types (TA, SKM) as needed --}}
                 </div>
-                @endif
             @endif
 
             <!-- Action Buttons -->
-            <div style="border-top: 1px solid #e5e7eb; padding-top: 24px; display: flex; justify-content: space-between; align-items: center;">
-                <div style="font-size: 12px; color: #6b7280;">
-                    Status: {{ $status }} | 
-                    Jenis: {{ $jenisSurat ? $jenisSurat->kode_surat : 'N/A' }} |
-                    @if(config('app.debug'))
-                        Debug Mode Active
-                    @endif
-                </div>
-                
-                <div style="display: flex; gap: 12px;">
-                    @if(in_array($status, ['processed', 'approved_prodi']))
-                        @if($jenisSurat && $jenisSurat->kode_surat === 'MA')
-                            <!-- FSI Buttons untuk Surat Mahasiswa Aktif -->
-                            <button onclick="previewSuratFSI({{ $pengajuan->id }})" 
-                                    style="display: inline-flex; align-items: center; padding: 8px 16px; background-color: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px;">
-                                <i class="fas fa-eye" style="margin-right: 8px;"></i>
-                                Preview Surat FSI
-                            </button>
-                            <button onclick="generateSuratFSI({{ $pengajuan->id }})" 
-                                    style="display: inline-flex; align-items: center; padding: 10px 20px; background-color: #7c3aed; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600;">
-                                <i class="fas fa-file-pdf" style="margin-right: 8px;"></i>
-                                Generate PDF Surat
-                            </button>
-                        @endif
-                    @endif
-                </div>
+            <div class="border-t pt-6 flex justify-end gap-3">
+                @if(in_array($pengajuan->status, ['approved_prodi', 'processed']))
+                    <button onclick="previewSurat({{ $pengajuan->id }})" 
+                            class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
+                        <i class="fas fa-eye mr-2"></i>Preview & Edit
+                    </button>
+                    <button onclick="printSurat({{ $pengajuan->id }})" 
+                            class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition">
+                        <i class="fas fa-print mr-2"></i>Print untuk TTD
+                    </button>
+                @elseif($pengajuan->status === 'sedang_ditandatangani')
+                    <button onclick="previewSurat({{ $pengajuan->id }})" 
+                            class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
+                        <i class="fas fa-eye mr-2"></i>Lanjutkan Proses TTD
+                    </button>
+                    <button onclick="showUploadModal()" 
+                            class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition">
+                        <i class="fas fa-upload mr-2"></i>Upload Link Surat Signed
+                    </button>
+                @elseif($pengajuan->status === 'completed')
+                    <a href="{{ $pengajuan->download_url ?? '#' }}" 
+                       class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition">
+                        <i class="fas fa-download mr-2"></i>Download Surat
+                    </a>
+                @endif
             </div>
         </div>
         @else
-            <!-- No Data State -->
-            <div style="padding: 48px; text-align: center;">
-                <i class="fas fa-exclamation-triangle" style="font-size: 48px; color: #d1d5db; margin-bottom: 16px;"></i>
-                <h3 style="color: #6b7280; margin: 0 0 8px 0;">Data Pengajuan Tidak Ditemukan</h3>
-                <p style="color: #9ca3af; margin: 0;">Pengajuan yang Anda cari tidak tersedia.</p>
+            <div class="p-12 text-center">
+                <i class="fas fa-exclamation-triangle text-4xl text-gray-400 mb-4"></i>
+                <h3 class="text-lg font-semibold text-gray-600">Data Tidak Ditemukan</h3>
+                <p class="text-gray-500">Pengajuan yang Anda cari tidak tersedia.</p>
             </div>
         @endif
     </div>
 </div>
 
+<!-- Modal Upload Link -->
+<div id="uploadModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-6 w-full max-w-md">
+        <h3 class="text-lg font-semibold mb-4">Upload Link Surat Tertandatangan</h3>
+        <input type="url" id="signedUrl" placeholder="https://drive.google.com/..." 
+               class="w-full px-3 py-2 border rounded mb-3">
+        <textarea id="uploadNotes" placeholder="Catatan (opsional)" 
+                  class="w-full px-3 py-2 border rounded mb-4" rows="3"></textarea>
+        <div class="flex justify-end gap-2">
+            <button onclick="closeUploadModal()" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">Batal</button>
+            <button onclick="submitSignedLink()" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Upload</button>
+        </div>
+    </div>
+</div>
+
 <script>
-// FSI Functions
-function previewSuratFSI(id) {
-    const previewUrl = `/fakultas/surat/fsi/preview/${id}`;
-    window.open(previewUrl, '_blank');
+function previewSurat(id) {
+    window.open(`/fakultas/surat/fsi/preview/${id}`, '_blank');
 }
 
-function generateSuratFSI(id) {
-    if (confirm('Generate PDF surat FSI UNJANI?')) {
-        previewSuratFSI(id);
+function printSurat(id) {
+    if (confirm('Print surat untuk proses tanda tangan?')) {
+        window.location.href = `/fakultas/surat/fsi/print/${id}`;
     }
+}
+
+function showUploadModal() {
+    document.getElementById('uploadModal').classList.remove('hidden');
+    document.getElementById('uploadModal').classList.add('flex');
+}
+
+function closeUploadModal() {
+    document.getElementById('uploadModal').classList.add('hidden');
+    document.getElementById('uploadModal').classList.remove('flex');
+}
+
+function submitSignedLink() {
+    const url = document.getElementById('signedUrl').value;
+    const notes = document.getElementById('uploadNotes').value;
+    
+    if (!url) {
+        alert('Link harus diisi!');
+        return;
+    }
+    
+    fetch(`/fakultas/surat/fsi/upload-signed/{{ $pengajuan->id ?? 0 }}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({ signed_url: url, notes: notes })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            window.location.reload();
+        } else {
+            alert(data.message);
+        }
+    });
 }
 </script>
 @endsection

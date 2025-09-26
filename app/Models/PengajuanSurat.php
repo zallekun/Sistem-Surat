@@ -1,14 +1,18 @@
 <?php
+// app/Models/PengajuanSurat.php - UPDATED VERSION
 
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
 
 class PengajuanSurat extends Model
 {
     use HasFactory;
+
+    protected $table = 'pengajuan_surats';
 
     protected $fillable = [
         'tracking_token',
@@ -20,17 +24,16 @@ class PengajuanSurat extends Model
         'jenis_surat_id',
         'keperluan',
         'additional_data',
+        'surat_data',           // NEW - untuk data yang diedit
         'status',
         'surat_id',
         'processed_by',
         'processed_at',
-        'approved_by',    // tambah ini
-        'approved_at',    // tambah ini
-        'rejected_by',    // tambah ini
-        'rejected_at',    // tambah ini
-        'rejection_reason', // tambah ini
-
-            // NEW WORKFLOW FIELDS
+        'approved_by',
+        'approved_at',
+        'rejected_by',
+        'rejected_at',
+        'rejection_reason',
         'approved_by_prodi',
         'approved_at_prodi',
         'rejected_by_prodi',
@@ -41,78 +44,31 @@ class PengajuanSurat extends Model
         'rejected_by_fakultas',
         'rejected_at_fakultas',
         'rejection_reason_fakultas',
+        'printed_at',           // NEW - waktu print untuk TTD
+        'printed_by',           // NEW - user yang print
+        'completed_at',         // NEW - waktu selesai
+        'completed_by',         // NEW - user yang menyelesaikan
+        'surat_generated_id',   // NEW - link ke surat_generated
         'notes',
         'direct_to_fakultas'
     ];
 
     protected $casts = [
         'additional_data' => 'array',
+        'surat_data' => 'array',        // NEW
         'processed_at' => 'datetime',
-        'approved_at' => 'datetime',    // tambah ini
-        'rejected_at' => 'datetime',     // tambah ini
-            // NEW WORKFLOW CASTS
+        'approved_at' => 'datetime',
+        'rejected_at' => 'datetime',
         'approved_at_prodi' => 'datetime',
         'rejected_at_prodi' => 'datetime',
         'approved_at_fakultas' => 'datetime',
         'rejected_at_fakultas' => 'datetime',
+        'printed_at' => 'datetime',     // NEW
+        'completed_at' => 'datetime',   // NEW
         'direct_to_fakultas' => 'boolean'
     ];
 
-    // ADD NEW RELATIONSHIPS
-public function approvedByProdi()
-{
-    return $this->belongsTo(User::class, 'approved_by_prodi');
-}
-
-public function rejectedByProdi()
-{
-    return $this->belongsTo(User::class, 'rejected_by_prodi');
-}
-
-public function approvedByFakultas()
-{
-    return $this->belongsTo(User::class, 'approved_by_fakultas');
-}
-
-public function rejectedByFakultas()
-{
-    return $this->belongsTo(User::class, 'rejected_by_fakultas');
-}
-
-// ADD NEW SCOPES
-public function scopePendingProdi($query)
-{
-    return $query->whereIn('status', ['pending', 'submitted']);
-}
-
-public function scopeApprovedProdi($query)
-{
-    return $query->whereIn('status', ['approved_prodi', 'approved_prodi_direct_fakultas']);
-}
-
-public function scopePendingFakultas($query)
-{
-    return $query->whereIn('status', ['approved_prodi', 'approved_prodi_direct_fakultas']);
-}
-
-public function scopeForFakultas($query, $fakultasId)
-{
-    return $query->whereHas('prodi', function($q) use ($fakultasId) {
-        $q->where('fakultas_id', $fakultasId);
-    });
-}
-
-
-    public function approvedBy()
-    {
-        return $this->belongsTo(User::class, 'approved_by');
-    }
-    public function rejectedBy()
-    {
-        return $this->belongsTo(User::class, 'rejected_by');
-    }
-
-    // Relationships
+    // EXISTING RELATIONSHIPS
     public function prodi()
     {
         return $this->belongsTo(Prodi::class);
@@ -133,7 +89,58 @@ public function scopeForFakultas($query, $fakultasId)
         return $this->belongsTo(User::class, 'processed_by');
     }
 
-    // Scopes
+    public function approvedBy()
+    {
+        return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    public function rejectedBy()
+    {
+        return $this->belongsTo(User::class, 'rejected_by');
+    }
+
+    public function approvedByProdi()
+    {
+        return $this->belongsTo(User::class, 'approved_by_prodi');
+    }
+
+    public function rejectedByProdi()
+    {
+        return $this->belongsTo(User::class, 'rejected_by_prodi');
+    }
+
+    public function approvedByFakultas()
+    {
+        return $this->belongsTo(User::class, 'approved_by_fakultas');
+    }
+
+    public function rejectedByFakultas()
+    {
+        return $this->belongsTo(User::class, 'rejected_by_fakultas');
+    }
+
+    // NEW RELATIONSHIPS
+    public function printedBy()
+    {
+        return $this->belongsTo(User::class, 'printed_by');
+    }
+
+    public function completedBy()
+    {
+        return $this->belongsTo(User::class, 'completed_by');
+    }
+
+    public function suratGenerated()
+    {
+        return $this->belongsTo(\App\Models\SuratGenerated::class, 'surat_generated_id');
+    }
+
+    public function trackingHistory()
+    {
+        return $this->hasMany(\App\Models\TrackingHistory::class, 'pengajuan_id')->orderBy('created_at', 'desc');
+    }
+
+    // EXISTING SCOPES
     public function scopePending($query)
     {
         return $query->where('status', 'pending');
@@ -151,143 +158,218 @@ public function scopeForFakultas($query, $fakultasId)
         });
     }
 
-    // ADD STATUS HELPER METHODS
-public function getStatusLabelAttribute()
-{
-    return match($this->status) {
-        'pending', 'submitted' => 'Menunggu Review Prodi',
-        'approved_prodi' => 'Disetujui Prodi - Menunggu Fakultas',
-        'approved_prodi_direct_fakultas' => 'Langsung ke Fakultas',
-        'rejected_prodi' => 'Ditolak Prodi',
-        'approved_fakultas' => 'Disetujui Fakultas - Siap Generate Surat',
-        'rejected_fakultas' => 'Ditolak Fakultas',
-        'surat_generated' => 'Surat Telah Dibuat',
-        'completed' => 'Selesai',
-        'processed' => 'Sudah Diproses (Legacy)',
-        default => ucfirst(str_replace('_', ' ', $this->status))
-    };
-}
-
-public function getStatusColorAttribute()
-{
-    return match($this->status) {
-        'pending', 'submitted' => 'bg-yellow-100 text-yellow-800',
-        'approved_prodi', 'approved_prodi_direct_fakultas' => 'bg-blue-100 text-blue-800',
-        'approved_fakultas' => 'bg-green-100 text-green-800',
-        'rejected_prodi', 'rejected_fakultas' => 'bg-red-100 text-red-800',
-        'surat_generated' => 'bg-purple-100 text-purple-800',
-        'completed' => 'bg-gray-100 text-gray-800',
-        'processed' => 'bg-indigo-100 text-indigo-800',
-        default => 'bg-gray-100 text-gray-600'
-    };
-}
-
-// ADD WORKFLOW CHECKING METHODS
-public function canBeProcessedByProdi(): bool
-{
-    return in_array($this->status, ['pending', 'submitted']);
-}
-
-public function canBeProcessedByFakultas(): bool
-{
-    return in_array($this->status, ['approved_prodi', 'approved_prodi_direct_fakultas']);
-}
-
-public function canGenerateSurat(): bool
-{
-    return $this->status === 'approved_fakultas';
-}
-
-public function isRejected(): bool
-{
-    return in_array($this->status, ['rejected_prodi', 'rejected_fakultas']);
-}
-
-public function getLastRejectionReason(): ?string
-{
-    if ($this->status === 'rejected_fakultas' && $this->rejection_reason_fakultas) {
-        return $this->rejection_reason_fakultas;
-    }
-    
-    if ($this->status === 'rejected_prodi' && $this->rejection_reason_prodi) {
-        return $this->rejection_reason_prodi;
-    }
-    
-    return $this->rejection_reason; // Legacy field
-}
-
-// ADD WORKFLOW PROGRESSION METHODS
-public function approveByProdi(int $userId, bool $directToFakultas = false): void
-{
-    $status = $directToFakultas ? 'approved_prodi_direct_fakultas' : 'approved_prodi';
-    
-    $this->update([
-        'status' => $status,
-        'approved_by_prodi' => $userId,
-        'approved_at_prodi' => now(),
-        'direct_to_fakultas' => $directToFakultas,
-        'notes' => $directToFakultas ? 'Langsung diteruskan ke fakultas untuk jenis surat ini' : null
-    ]);
-}
-
-public function rejectByProdi(int $userId, string $reason): void
-{
-    $this->update([
-        'status' => 'rejected_prodi',
-        'rejected_by_prodi' => $userId,
-        'rejected_at_prodi' => now(),
-        'rejection_reason_prodi' => $reason
-    ]);
-}
-
-public function approveByFakultas(int $userId): void
-{
-    $this->update([
-        'status' => 'approved_fakultas',
-        'approved_by_fakultas' => $userId,
-        'approved_at_fakultas' => now()
-    ]);
-}
-
-public function rejectByFakultas(int $userId, string $reason): void
-{
-    $this->update([
-        'status' => 'rejected_fakultas',
-        'rejected_by_fakultas' => $userId,
-        'rejected_at_fakultas' => now(),
-        'rejection_reason_fakultas' => $reason
-    ]);
-}
-
-public function markSuratGenerated(int $suratId, int $userId): void
-{
-    $this->update([
-        'status' => 'surat_generated',
-        'surat_id' => $suratId,
-        'processed_by' => $userId,
-        'processed_at' => now()
-    ]);
-}
-
-    // Mutators & Accessors
-    public function getStatusBadgeAttribute()
+    public function scopePendingProdi($query)
     {
-        $badges = [
-            'pending' => '<span class="px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded-full">Menunggu</span>',
-            'processed' => '<span class="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">Diproses</span>',
-            'completed' => '<span class="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">Selesai</span>',
-            'rejected' => '<span class="px-2 py-1 text-xs bg-red-100 text-red-800 rounded-full">Ditolak</span>',
-        ];
-        
-        return $badges[$this->status] ?? $this->status;
+        return $query->whereIn('status', ['pending', 'submitted']);
     }
 
-    public function getTrackingUrlAttribute()
+    public function scopeApprovedProdi($query)
     {
-        return route('tracking.public', $this->tracking_token);
+        return $query->whereIn('status', ['approved_prodi', 'approved_prodi_direct_fakultas']);
     }
 
-    // Static Methods
+    public function scopePendingFakultas($query)
+    {
+        return $query->whereIn('status', ['approved_prodi', 'approved_prodi_direct_fakultas']);
+    }
+
+    public function scopeForFakultas($query, $fakultasId)
+    {
+        return $query->whereHas('prodi', function($q) use ($fakultasId) {
+            $q->where('fakultas_id', $fakultasId);
+        });
+    }
+
+    // EXISTING ACCESSORS
+    public function getStatusLabelAttribute()
+    {
+        return match($this->status) {
+            'pending', 'submitted' => 'Menunggu Review Prodi',
+            'approved_prodi' => 'Disetujui Prodi - Menunggu Fakultas',
+            'approved_prodi_direct_fakultas' => 'Langsung ke Fakultas',
+            'rejected_prodi' => 'Ditolak Prodi',
+            'approved_fakultas' => 'Disetujui Fakultas - Siap Generate Surat',
+            'rejected_fakultas' => 'Ditolak Fakultas',
+            'sedang_ditandatangani' => 'Sedang Proses Tanda Tangan',    // NEW
+            'surat_generated' => 'Surat Telah Dibuat',
+            'completed' => 'Selesai',
+            'processed' => 'Sudah Diproses (Legacy)',
+            default => ucfirst(str_replace('_', ' ', $this->status))
+        };
+    }
+
+    public function getStatusColorAttribute()
+    {
+        return match($this->status) {
+            'pending', 'submitted' => 'bg-yellow-100 text-yellow-800',
+            'approved_prodi', 'approved_prodi_direct_fakultas' => 'bg-blue-100 text-blue-800',
+            'approved_fakultas' => 'bg-green-100 text-green-800',
+            'rejected_prodi', 'rejected_fakultas' => 'bg-red-100 text-red-800',
+            'sedang_ditandatangani' => 'bg-orange-100 text-orange-800',  // NEW
+            'surat_generated' => 'bg-purple-100 text-purple-800',
+            'completed' => 'bg-gray-100 text-gray-800',
+            'processed' => 'bg-indigo-100 text-indigo-800',
+            default => 'bg-gray-100 text-gray-600'
+        };
+    }
+
+    // EXISTING HELPER METHODS
+    public function canBeProcessedByProdi(): bool
+    {
+        return in_array($this->status, ['pending', 'submitted']);
+    }
+
+    public function canBeProcessedByFakultas(): bool
+    {
+        return in_array($this->status, ['approved_prodi', 'approved_prodi_direct_fakultas']);
+    }
+
+    public function canGenerateSurat(): bool
+    {
+        return in_array($this->status, ['approved_fakultas', 'processed']); // Include processed for legacy
+    }
+
+    // NEW HELPER METHODS FOR NEW WORKFLOW
+    public function canEditSurat(): bool
+    {
+        return !in_array($this->status, ['sedang_ditandatangani', 'completed']);
+    }
+
+    public function canPrintSurat(): bool
+    {
+        return in_array($this->status, ['approved_fakultas', 'processed']) && !$this->printed_at;
+    }
+
+    public function canUploadSignedLink(): bool
+    {
+        return $this->status === 'sedang_ditandatangani';
+    }
+
+    public function isReadyForSigning(): bool
+    {
+        return $this->status === 'sedang_ditandatangani';
+    }
+
+    public function isCompleted(): bool
+    {
+        return $this->status === 'completed';
+    }
+
+    public function hasPdfFile(): bool
+    {
+        return $this->status === 'completed' 
+               && $this->suratGenerated 
+               && (!empty($this->suratGenerated->file_path) || !empty($this->suratGenerated->signed_url));
+    }
+
+    // NEW WORKFLOW METHODS
+    public function markAsPrinted(int $userId): void
+    {
+        $this->update([
+            'status' => 'sedang_ditandatangani',
+            'printed_by' => $userId,
+            'printed_at' => now()
+        ]);
+    }
+
+    public function completeWithSignedLink(string $signedUrl, int $userId, string $notes = null): void
+    {
+        // Create or update surat_generated
+        $suratGenerated = \App\Models\SuratGenerated::updateOrCreate(
+            ['pengajuan_id' => $this->id],
+            [
+                'nomor_surat' => $this->getSuratData('nomor_surat') ?? 'N/A',
+                'signed_url' => $signedUrl,
+                'signed_by' => $this->getSuratData('penandatangan.nama') ?? 'Pejabat Fakultas',
+                'signed_at' => now(),
+                'generated_by' => $userId,
+                'status' => 'completed',
+                'notes' => $notes
+            ]
+        );
+
+        $this->update([
+            'status' => 'completed',
+            'surat_generated_id' => $suratGenerated->id,
+            'completed_by' => $userId,
+            'completed_at' => now()
+        ]);
+    }
+
+    // HELPER METHODS FOR SURAT DATA
+    public function getSuratData(string $key = null, $default = null)
+    {
+        if (!$this->surat_data) {
+            return $default;
+        }
+
+        if ($key === null) {
+            return $this->surat_data;
+        }
+
+        return data_get($this->surat_data, $key, $default);
+    }
+
+    public function setSuratData(array $data): void
+    {
+        $this->update(['surat_data' => $data]);
+    }
+
+    public function updateSuratData(string $key, $value): void
+    {
+        $suratData = $this->surat_data ?? [];
+        data_set($suratData, $key, $value);
+        $this->update(['surat_data' => $suratData]);
+    }
+
+    // EXISTING METHODS (keep all existing methods from your model)
+    public function getAdditionalDataAttribute($value)
+    {
+        if (empty($value)) {
+            return [];
+        }
+
+        if (is_array($value)) {
+            return $value;
+        }
+
+        if (is_string($value)) {
+            $value = trim($value, '"');
+            
+            try {
+                $decoded = json_decode($value, true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    return $decoded;
+                }
+            } catch (\Exception $e) {
+                \Log::warning('Failed to decode additional_data', [
+                    'id' => $this->id ?? null,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+
+        return [];
+    }
+
+    public function setAdditionalDataAttribute($value)
+    {
+        if (is_array($value) || is_object($value)) {
+            $this->attributes['additional_data'] = json_encode($value);
+        } else {
+            $this->attributes['additional_data'] = $value;
+        }
+    }
+
+    // Keep all other existing methods...
+    public function getDownloadUrlAttribute(): ?string
+    {
+        if ($this->hasPdfFile()) {
+            return route('tracking.download', $this->id);
+        }
+        return null;
+    }
+
     public static function generateTrackingToken()
     {
         do {
@@ -297,38 +379,6 @@ public function markSuratGenerated(int $suratId, int $userId): void
         return $token;
     }
 
-    public static function findByToken($token)
-    {
-        return self::where('tracking_token', $token)->first();
-    }
-
-    // Helper Methods
-    public function canBeProcessed()
-    {
-        return $this->status === 'pending';
-    }
-
-    public function markAsProcessed($suratId, $userId)
-    {
-        $this->update([
-            'status' => 'processed',
-            'surat_id' => $suratId,
-            'processed_by' => $userId,
-            'processed_at' => now()
-        ]);
-    }
-
-    public function getProdiName()
-    {
-        return $this->prodi?->nama_prodi ?? 'Unknown';
-    }
-
-    public function getJenisSuratName()
-    {
-        return $this->jenisSurat?->nama_jenis ?? 'Unknown';
-    }
-
-    // Boot method untuk auto-generate tracking token
     protected static function boot()
     {
         parent::boot();

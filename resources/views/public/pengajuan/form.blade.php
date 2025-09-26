@@ -1,3 +1,5 @@
+<!-- public.pengajuan.form -->
+
 @extends('layouts.public')
 
 @section('content')
@@ -257,33 +259,83 @@
                 </div>
             </div>
 
+                        <!-- GANTI section KP di Step 2 dengan ini -->
             <div x-show="getSelectedKode() === 'KP'">
                 <h3 class="text-lg font-medium mb-4 text-gray-800">Data Tambahan - Surat Kerja Praktek</h3>
+                
+                <!-- Jumlah Mahasiswa -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Jumlah Mahasiswa KP *</label>
+                    <select x-model="form.jumlah_mahasiswa_kp" 
+                            @change="updateMahasiswaKPList()"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="1">1 Orang</option>
+                        <option value="2">2 Orang</option>
+                        <option value="3">3 Orang</option>
+                        <option value="4">4 Orang</option>
+                        <option value="5">5 Orang</option>
+                    </select>
+                </div>
+
+                <!-- Dynamic Mahasiswa List -->
+                <div class="mb-6">
+                    <h4 class="font-medium text-gray-700 mb-3">Data Mahasiswa</h4>
+                    <div class="space-y-4">
+                        <template x-for="(mahasiswa, index) in form.mahasiswa_kp" :key="index">
+                            <div class="grid md:grid-cols-3 gap-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1" x-text="`Nama Mahasiswa ${index + 1} *`"></label>
+                                    <input type="text" x-model="mahasiswa.nama" 
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        :placeholder="`Nama mahasiswa ${index + 1}`">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1" x-text="`NIM ${index + 1} *`"></label>
+                                    <input type="text" x-model="mahasiswa.nim" 
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        :placeholder="`NIM mahasiswa ${index + 1}`">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1" x-text="`Program Studi ${index + 1} *`"></label>
+                                    <select x-model="mahasiswa.prodi" 
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                        <option value="">Pilih Program Studi</option>
+                                        <template x-for="prodi in prodiOptions" :key="prodi.id">
+                                            <option :value="prodi.nama_prodi" x-text="prodi.nama_prodi"></option>
+                                        </template>
+                                    </select>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+                
+                <!-- Data Perusahaan -->
                 <div class="grid md:grid-cols-2 gap-4 mb-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Nama Perusahaan</label>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nama Perusahaan/Instansi *</label>
                         <input type="text" x-model="form.nama_perusahaan" 
-                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Periode Mulai *</label>
+                        <input type="date" x-model="form.periode_mulai" 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Periode Selesai *</label>
+                        <input type="date" x-model="form.periode_selesai" 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Bidang Kerja</label>
                         <input type="text" x-model="form.bidang_kerja" 
-                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Periode Mulai</label>
-                        <input type="date" x-model="form.periode_mulai" 
-                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Periode Selesai</label>
-                        <input type="date" x-model="form.periode_selesai" 
-                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                     </div>
                     <div class="md:col-span-2">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Alamat Perusahaan</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Alamat Lengkap Perusahaan/Instansi *</label>
                         <textarea x-model="form.alamat_perusahaan" rows="3" 
-                                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
                     </div>
                 </div>
             </div>
@@ -400,23 +452,36 @@
                 </div>
             </div>
 
-            <!-- Surat Kerja Praktek -->
+            <!-- GANTI section KP di Step 3 dengan ini (untuk konfirmasi saja) -->
             <div x-show="getSelectedKode() === 'KP'" class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
                 <h3 class="font-semibold text-yellow-800 mb-3 flex items-center">
                     <i class="fas fa-briefcase mr-2"></i>
                     Data Kerja Praktek
                 </h3>
-                <div class="grid md:grid-cols-2 gap-4 text-sm">
+                <div class="grid md:grid-cols-2 gap-4 text-sm mb-4">
                     <div class="space-y-2">
                         <p><span class="font-medium text-yellow-600">Nama Perusahaan:</span> <span class="text-yellow-800" x-text="form.nama_perusahaan || '-'"></span></p>
+                        <p><span class="font-medium text-yellow-600">Periode:</span> <span class="text-yellow-800" x-text="(form.periode_mulai && form.periode_selesai) ? form.periode_mulai + ' s.d. ' + form.periode_selesai : '-'"></span></p>
                         <p><span class="font-medium text-yellow-600">Bidang Kerja:</span> <span class="text-yellow-800" x-text="form.bidang_kerja || '-'"></span></p>
                     </div>
                     <div class="space-y-2">
-                        <p><span class="font-medium text-yellow-600">Periode Mulai:</span> <span class="text-yellow-800" x-text="form.periode_mulai || '-'"></span></p>
-                        <p><span class="font-medium text-yellow-600">Periode Selesai:</span> <span class="text-yellow-800" x-text="form.periode_selesai || '-'"></span></p>
+                        <p><span class="font-medium text-yellow-600">Jumlah Mahasiswa:</span> <span class="text-yellow-800" x-text="form.jumlah_mahasiswa_kp + ' orang'"></span></p>
+                        <p><span class="font-medium text-yellow-600">Alamat:</span> <span class="text-yellow-800" x-text="form.alamat_perusahaan || '-'"></span></p>
                     </div>
-                    <div class="md:col-span-2">
-                        <p><span class="font-medium text-yellow-600">Alamat Perusahaan:</span> <span class="text-yellow-800" x-text="form.alamat_perusahaan || '-'"></span></p>
+                </div>
+                
+                <!-- List Mahasiswa KP -->
+                <div class="mt-4">
+                    <h4 class="font-medium text-yellow-700 mb-2">Daftar Mahasiswa:</h4>
+                    <div class="bg-yellow-100 rounded p-3">
+                        <template x-for="(mahasiswa, index) in form.mahasiswa_kp" :key="index">
+                            <div class="grid grid-cols-4 gap-2 py-1 border-b border-yellow-200 last:border-b-0 text-sm">
+                                <span class="font-medium" x-text="`${index + 1}.`"></span>
+                                <span x-text="mahasiswa.nama || 'Belum diisi'"></span>
+                                <span class="text-yellow-700" x-text="mahasiswa.nim || 'NIM belum diisi'"></span>
+                                <span class="text-yellow-600" x-text="mahasiswa.prodi || 'Prodi belum dipilih'"></span>
+                            </div>
+                        </template>
                     </div>
                 </div>
             </div>
@@ -528,6 +593,7 @@
                 'Tidak Sekolah', 'SD', 'SMP', 'SMA/SMK', 'D1', 'D2', 'D3', 'S1', 'S2', 'S3'
             ],
             form: {
+                // Basic fields
                 jenis_surat_id: '',
                 nim: '',
                 nama_mahasiswa: '',
@@ -536,15 +602,15 @@
                 prodi_id: '',
                 keperluan: '',
 
-                //universal fields - for all jenis surat
+                // Universal fields - for all jenis surat
                 semester: '',
                 tahun_akademik: '',
-                dosen_wali_id: '',           // NEW: Selected dosen ID
-                dosen_wali_nama: '',          // Final nama (from dropdown or manual)
-                dosen_wali_nama_manual: '',   // NEW: Manual input nama
+                dosen_wali_id: '',
+                dosen_wali_nama: '',
+                dosen_wali_nama_manual: '',
                 dosen_wali_nid: '',
 
-                //fields for specific jenis surat
+                // MA fields
                 nama_orang_tua: '',
                 tempat_lahir_ortu: '',
                 tanggal_lahir_ortu: '',
@@ -556,300 +622,425 @@
                 pendidikan_terakhir_ortu: '',
                 alamat_instansi_ortu: '',
                 alamat_rumah_ortu: '',
+
+                // KP fields - COMPLETE SET
+                jumlah_mahasiswa_kp: '1',
+                mahasiswa_kp: [{ nama: '', nim: '', prodi: '' }],
                 nama_perusahaan: '',
                 alamat_perusahaan: '',
                 periode_mulai: '',
                 periode_selesai: '',
                 bidang_kerja: '',
+
+                // TA fields
                 judul_ta: '',
                 dosen_pembimbing1: '',
                 dosen_pembimbing2: '',
                 lokasi_penelitian: '',
+                
+                // SKM fields
                 keterangan_khusus: ''
             },
             
-            // NEW: Initialize component
-        init() {
-            // Watch prodi_id changes to load dosen wali
-            this.$watch('form.prodi_id', (value) => {
-                if (value) {
-                    this.loadDosenWali();
-                } else {
+            // Initialize component
+            init() {
+                // Watch prodi_id changes to load dosen wali
+                this.$watch('form.prodi_id', (value) => {
+                    if (value) {
+                        this.loadDosenWali();
+                    } else {
+                        this.dosenWaliList = [];
+                        this.form.dosen_wali_id = '';
+                        this.form.dosen_wali_nama = '';
+                        this.form.dosen_wali_nid = '';
+                    }
+                });
+            },
+
+            // Fetch dosen wali when prodi selected
+            async loadDosenWali() {
+                if (!this.form.prodi_id) {
                     this.dosenWaliList = [];
-                    this.form.dosen_wali_id = '';
+                    return;
+                }
+                
+                try {
+                    const response = await fetch(`/api/dosen-wali/${this.form.prodi_id}`);
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        this.dosenWaliList = result.data;
+                        console.log('Loaded dosen wali:', this.dosenWaliList);
+                    } else {
+                        console.error('Failed to load dosen wali:', result.message);
+                        this.dosenWaliList = [];
+                    }
+                } catch (error) {
+                    console.error('Error loading dosen wali:', error);
+                    this.dosenWaliList = [];
+                }
+            },
+
+            // Select dosen wali and auto-populate NID
+            selectDosenWali() {
+                const selectedId = this.form.dosen_wali_id;
+                
+                if (selectedId === 'other') {
+                    // Manual input mode
                     this.form.dosen_wali_nama = '';
                     this.form.dosen_wali_nid = '';
-                }
-            });
-        },
-
-        // NEW: Fetch dosen wali when prodi selected
-        async loadDosenWali() {
-            if (!this.form.prodi_id) {
-                this.dosenWaliList = [];
-                return;
-            }
-            
-            try {
-                const response = await fetch(`/api/dosen-wali/${this.form.prodi_id}`);
-                const result = await response.json();
-                
-                if (result.success) {
-                    this.dosenWaliList = result.data;
-                    console.log('Loaded dosen wali:', this.dosenWaliList);
-                } else {
-                    console.error('Failed to load dosen wali:', result.message);
-                    this.dosenWaliList = [];
-                }
-            } catch (error) {
-                console.error('Error loading dosen wali:', error);
-                this.dosenWaliList = [];
-            }
-        },
-
-        // NEW: Select dosen wali and auto-populate NID
-        selectDosenWali() {
-            const selectedId = this.form.dosen_wali_id;
-            
-            if (selectedId === 'other') {
-                // Manual input mode
-                this.form.dosen_wali_nama = '';
-                this.form.dosen_wali_nid = '';
-                return;
-            }
-            
-            if (!selectedId) {
-                // Clear selection
-                this.form.dosen_wali_nama = '';
-                this.form.dosen_wali_nid = '';
-                return;
-            }
-            
-            // Find selected dosen from list
-            const selectedDosen = this.dosenWaliList.find(d => d.id == selectedId);
-            
-            if (selectedDosen) {
-                this.form.dosen_wali_nama = selectedDosen.nama;
-                this.form.dosen_wali_nid = selectedDosen.nid;
-                console.log('Selected dosen:', selectedDosen);
-            }
-        },
-        
-        toggleJenisSurat(id) {
-            if (this.form.jenis_surat_id === id) {
-                this.form.jenis_surat_id = '';
-            } else {
-                this.form.jenis_surat_id = id;
-            }
-        },
-        
-        getSelectedJenisName() {
-            const selected = this.jenisSuratOptions.find(j => j.id == this.form.jenis_surat_id);
-            return selected ? selected.nama_jenis : '';
-        },
-        
-        getSelectedKode() {
-            const selected = this.jenisSuratOptions.find(j => j.id == this.form.jenis_surat_id);
-            return selected ? selected.kode_surat : '';
-        },
-
-        getSelectedProdiName() {
-            const selected = this.prodiOptions.find(p => p.id == this.form.prodi_id);
-            return selected ? selected.nama_prodi : '';
-        },
-        
-        canProceed() {
-            if (this.step === 1) {
-                return this.form.jenis_surat_id !== '';
-            } else if (this.step === 2) {
-                // Check dosen wali based on mode
-                let dosenWaliValid = false;
-                
-                if (this.form.dosen_wali_id === 'other') {
-                    // Manual mode - nama manual required
-                    dosenWaliValid = this.form.dosen_wali_nama_manual !== '';
-                } else if (this.form.dosen_wali_id) {
-                    // Dropdown mode - ID selected
-                    dosenWaliValid = true;
-                }
-                
-                return this.form.nim && this.form.nama_mahasiswa && 
-                       this.form.email && this.form.phone && 
-                       this.form.prodi_id && this.form.keperluan &&
-                       this.form.semester && this.form.tahun_akademik &&
-                       dosenWaliValid;
-            }
-            return true;
-        },
-        
-        nextStep() {
-            if (this.canProceed() && this.step < 3) {
-                this.step++;
-            }
-        },
-        
-        prevStep() {
-            if (this.step > 1) {
-                this.step--;
-            }
-        },
-        
-        async submitForm() {
-            this.loading = true;
-            
-            try {
-                const csrfToken = document.querySelector('meta[name=csrf-token]')?.content;
-                
-                if (!csrfToken) {
-                    alert('Session expired. Halaman akan di-refresh.');
-                    window.location.reload();
                     return;
                 }
                 
-                const formData = new FormData();
-                formData.append('_token', csrfToken);
-                
-                formData.append('jenis_surat_id', this.form.jenis_surat_id);
-                formData.append('nim', this.form.nim);
-                formData.append('nama_mahasiswa', this.form.nama_mahasiswa);
-                formData.append('email', this.form.email);
-                formData.append('phone', this.form.phone);
-                formData.append('prodi_id', this.form.prodi_id);
-                formData.append('keperluan', this.form.keperluan);
-                formData.append('semester', this.form.semester || '');
-                formData.append('tahun_akademik', this.form.tahun_akademik || '');
-                
-                // Dosen Wali - handle both dropdown and manual
-                if (this.form.dosen_wali_id === 'other') {
-                    // Manual input
-                    formData.append('dosen_wali_nama', this.form.dosen_wali_nama_manual || '');
-                    formData.append('dosen_wali_nid', this.form.dosen_wali_nid || '');
-                } else {
-                    // From dropdown
-                    formData.append('dosen_wali_nama', this.form.dosen_wali_nama || '');
-                    formData.append('dosen_wali_nid', this.form.dosen_wali_nid || '');
+                if (!selectedId) {
+                    // Clear selection
+                    this.form.dosen_wali_nama = '';
+                    this.form.dosen_wali_nid = '';
+                    return;
                 }
                 
-                const kode = this.getSelectedKode();
+                // Find selected dosen from list
+                const selectedDosen = this.dosenWaliList.find(d => d.id == selectedId);
                 
-                if (kode === 'MA') {
-                    formData.append('nama_orang_tua', this.form.nama_orang_tua || '');
-                    formData.append('tempat_lahir_ortu', this.form.tempat_lahir_ortu || '');
-                    formData.append('tanggal_lahir_ortu', this.form.tanggal_lahir_ortu || '');
+                if (selectedDosen) {
+                    this.form.dosen_wali_nama = selectedDosen.nama;
+                    this.form.dosen_wali_nid = selectedDosen.nid;
+                    console.log('Selected dosen:', selectedDosen);
+                }
+            },
+
+            // CRITICAL: Update mahasiswa KP list when count changes
+            updateMahasiswaKPList() {
+                const count = parseInt(this.form.jumlah_mahasiswa_kp);
+                
+                // Create array with specified count
+                this.form.mahasiswa_kp = Array(count).fill().map(() => ({ 
+                    nama: '', 
+                    nim: '', 
+                    prodi: '' 
+                }));
+                
+                console.log('Updated mahasiswa KP list to', count, 'students:', this.form.mahasiswa_kp);
+            },
+            
+            toggleJenisSurat(id) {
+                if (this.form.jenis_surat_id === id) {
+                    this.form.jenis_surat_id = '';
+                } else {
+                    this.form.jenis_surat_id = id;
+                }
+            },
+            
+            getSelectedJenisName() {
+                const selected = this.jenisSuratOptions.find(j => j.id == this.form.jenis_surat_id);
+                return selected ? selected.nama_jenis : '';
+            },
+            
+            getSelectedKode() {
+                const selected = this.jenisSuratOptions.find(j => j.id == this.form.jenis_surat_id);
+                return selected ? selected.kode_surat : '';
+            },
+
+            getSelectedProdiName() {
+                const selected = this.prodiOptions.find(p => p.id == this.form.prodi_id);
+                return selected ? selected.nama_prodi : '';
+            },
+            
+            // UPDATED: Complete validation including KP multiple students
+            canProceed() {
+                if (this.step === 1) {
+                    return this.form.jenis_surat_id !== '';
+                } else if (this.step === 2) {
+                    // Check dosen wali based on mode
+                    let dosenWaliValid = false;
                     
-                    let pekerjaanOrtu = this.form.pekerjaan_ortu;
-                    if (pekerjaanOrtu === 'Lainnya') {
-                        pekerjaanOrtu = this.form.pekerjaan_ortu_lainnya;
+                    if (this.form.dosen_wali_id === 'other') {
+                        // Manual mode - nama manual required
+                        dosenWaliValid = this.form.dosen_wali_nama_manual !== '';
+                    } else if (this.form.dosen_wali_id) {
+                        // Dropdown mode - ID selected
+                        dosenWaliValid = true;
                     }
-                    formData.append('pekerjaan_ortu', pekerjaanOrtu || '');
-
-                    formData.append('nip_ortu', this.form.nip_ortu || '');
-                    formData.append('jabatan_ortu', this.form.jabatan_ortu || '');
-                    formData.append('pangkat_golongan_ortu', this.form.pangkat_golongan_ortu || '');
-                    formData.append('pendidikan_terakhir_ortu', this.form.pendidikan_terakhir_ortu || '');
-                    formData.append('alamat_instansi_ortu', this.form.alamat_instansi_ortu || '');
-                    formData.append('alamat_rumah_ortu', this.form.alamat_rumah_ortu || '');
-                } else if (kode === 'KP') {
-                    formData.append('nama_perusahaan', this.form.nama_perusahaan || '');
-                    formData.append('alamat_perusahaan', this.form.alamat_perusahaan || '');
-                    formData.append('periode_mulai', this.form.periode_mulai || '');
-                    formData.append('periode_selesai', this.form.periode_selesai || '');
-                    formData.append('bidang_kerja', this.form.bidang_kerja || '');
-                } else if (kode === 'TA') {
-                    formData.append('judul_ta', this.form.judul_ta || '');
-                    formData.append('dosen_pembimbing1', this.form.dosen_pembimbing1 || '');
-                    formData.append('dosen_pembimbing2', this.form.dosen_pembimbing2 || '');
-                    formData.append('lokasi_penelitian', this.form.lokasi_penelitian || '');
-                } else if (kode === 'SKM') {
-                    formData.append('keterangan_khusus', this.form.keterangan_khusus || '');
+                    
+                    const basicValid = this.form.nim && this.form.nama_mahasiswa && 
+                                      this.form.email && this.form.phone && 
+                                      this.form.prodi_id && this.form.keperluan &&
+                                      this.form.semester && this.form.tahun_akademik &&
+                                      dosenWaliValid;
+                    
+                    const kode = this.getSelectedKode();
+                    
+                    // KP specific validation
+                    if (kode === 'KP') {
+                        const kpBasicValid = this.form.nama_perusahaan && 
+                                            this.form.alamat_perusahaan &&
+                                            this.form.periode_mulai && 
+                                            this.form.periode_selesai;
+                        
+                        // Validate all mahasiswa entries
+                        const mahasiswaValid = this.form.mahasiswa_kp.every(m => 
+                            m.nama.trim() !== '' && m.nim.trim() !== '' && m.prodi.trim() !== ''
+                        );
+                        
+                        console.log('KP Validation:', {
+                            basicValid,
+                            kpBasicValid,
+                            mahasiswaValid,
+                            mahasiswaData: this.form.mahasiswa_kp
+                        });
+                        
+                        return basicValid && kpBasicValid && mahasiswaValid;
+                    }
+                    
+                    // MA specific validation
+                    if (kode === 'MA') {
+                        const maValid = this.form.nama_orang_tua && 
+                                       this.form.tempat_lahir_ortu && 
+                                       this.form.tanggal_lahir_ortu &&
+                                       this.form.pekerjaan_ortu &&
+                                       this.form.pendidikan_terakhir_ortu &&
+                                       this.form.alamat_rumah_ortu;
+                        
+                        return basicValid && maValid;
+                    }
+                    
+                    // TA specific validation
+                    if (kode === 'TA') {
+                        const taValid = this.form.judul_ta && 
+                                       this.form.dosen_pembimbing1;
+                        
+                        return basicValid && taValid;
+                    }
+                    
+                    // SKM specific validation
+                    if (kode === 'SKM') {
+                        const skmValid = this.form.keterangan_khusus;
+                        
+                        return basicValid && skmValid;
+                    }
+                    
+                    return basicValid;
                 }
-                
-                const response = await fetch('{{ route('public.pengajuan.store') }}', {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'Accept': 'application/json'
-                    },
-                    credentials: 'same-origin'
-                });
-                
-                if (response.status === 419) {
-                    alert('Session telah berakhir. Silakan refresh halaman.');
-                    window.location.reload();
-                    return;
+                return true;
+            },
+            
+            nextStep() {
+                if (this.canProceed() && this.step < 3) {
+                    this.step++;
                 }
+            },
+            
+            prevStep() {
+                if (this.step > 1) {
+                    this.step--;
+                }
+            },
+            
+            // UPDATED: Complete form submission with KP multiple students
+            async submitForm() {
+                this.loading = true;
                 
-                const responseText = await response.text();
-                console.log('Response:', responseText);
-                
-                if (response.ok) {
-                    let data;
-                    try {
-                        data = JSON.parse(responseText);
-                    } catch (e) {
-                        window.showSuccessModal('TRK-' + Date.now().toString(36).toUpperCase().substr(0, 8));
-                        this.resetForm();
+                try {
+                    const csrfToken = document.querySelector('meta[name=csrf-token]')?.content;
+                    
+                    if (!csrfToken) {
+                        alert('Session expired. Halaman akan di-refresh.');
+                        window.location.reload();
                         return;
                     }
                     
-                    if (data.success) {
-                        window.showSuccessModal(data.tracking_token);
-                        this.resetForm();
+                    const formData = new FormData();
+                    formData.append('_token', csrfToken);
+                    
+                    // Basic data
+                    formData.append('jenis_surat_id', this.form.jenis_surat_id);
+                    formData.append('nim', this.form.nim);
+                    formData.append('nama_mahasiswa', this.form.nama_mahasiswa);
+                    formData.append('email', this.form.email);
+                    formData.append('phone', this.form.phone);
+                    formData.append('prodi_id', this.form.prodi_id);
+                    formData.append('keperluan', this.form.keperluan);
+                    formData.append('semester', this.form.semester || '');
+                    formData.append('tahun_akademik', this.form.tahun_akademik || '');
+                    
+                    // Dosen Wali - handle both dropdown and manual
+                    if (this.form.dosen_wali_id === 'other') {
+                        // Manual input
+                        formData.append('dosen_wali_nama', this.form.dosen_wali_nama_manual || '');
+                        formData.append('dosen_wali_nid', this.form.dosen_wali_nid || '');
                     } else {
-                        alert(data.message || 'Terjadi kesalahan');
+                        // From dropdown
+                        formData.append('dosen_wali_nama', this.form.dosen_wali_nama || '');
+                        formData.append('dosen_wali_nid', this.form.dosen_wali_nid || '');
                     }
-                } else {
-                    try {
-                        const errorData = JSON.parse(responseText);
-                        alert(errorData.message || 'Terjadi kesalahan server');
-                    } catch (e) {
-                        alert('Terjadi kesalahan. Silakan coba lagi.');
+                    
+                    const kode = this.getSelectedKode();
+                    console.log('Submitting form for jenis surat:', kode);
+                    
+                    // Handle specific jenis surat data
+                    if (kode === 'MA') {
+                        formData.append('nama_orang_tua', this.form.nama_orang_tua || '');
+                        formData.append('tempat_lahir_ortu', this.form.tempat_lahir_ortu || '');
+                        formData.append('tanggal_lahir_ortu', this.form.tanggal_lahir_ortu || '');
+                        
+                        let pekerjaanOrtu = this.form.pekerjaan_ortu;
+                        if (pekerjaanOrtu === 'Lainnya') {
+                            pekerjaanOrtu = this.form.pekerjaan_ortu_lainnya;
+                        }
+                        formData.append('pekerjaan_ortu', pekerjaanOrtu || '');
+
+                        formData.append('nip_ortu', this.form.nip_ortu || '');
+                        formData.append('jabatan_ortu', this.form.jabatan_ortu || '');
+                        formData.append('pangkat_golongan_ortu', this.form.pangkat_golongan_ortu || '');
+                        formData.append('pendidikan_terakhir_ortu', this.form.pendidikan_terakhir_ortu || '');
+                        formData.append('alamat_instansi_ortu', this.form.alamat_instansi_ortu || '');
+                        formData.append('alamat_rumah_ortu', this.form.alamat_rumah_ortu || '');
+                        
+                    } else if (kode === 'KP') {
+                        // Basic KP data
+                        formData.append('nama_perusahaan', this.form.nama_perusahaan || '');
+                        formData.append('alamat_perusahaan', this.form.alamat_perusahaan || '');
+                        formData.append('periode_mulai', this.form.periode_mulai || '');
+                        formData.append('periode_selesai', this.form.periode_selesai || '');
+                        formData.append('bidang_kerja', this.form.bidang_kerja || '');
+                        
+                        // CRITICAL: Multiple mahasiswa data
+                        formData.append('jumlah_mahasiswa_kp', this.form.jumlah_mahasiswa_kp);
+                        formData.append('mahasiswa_kp', JSON.stringify(this.form.mahasiswa_kp));
+                        
+                        console.log('KP Form Data:', {
+                            jumlah: this.form.jumlah_mahasiswa_kp,
+                            mahasiswa: this.form.mahasiswa_kp,
+                            mahasiswaJSON: JSON.stringify(this.form.mahasiswa_kp)
+                        });
+                        
+                    } else if (kode === 'TA') {
+                        formData.append('judul_ta', this.form.judul_ta || '');
+                        formData.append('dosen_pembimbing1', this.form.dosen_pembimbing1 || '');
+                        formData.append('dosen_pembimbing2', this.form.dosen_pembimbing2 || '');
+                        formData.append('lokasi_penelitian', this.form.lokasi_penelitian || '');
+                        
+                    } else if (kode === 'SKM') {
+                        formData.append('keterangan_khusus', this.form.keterangan_khusus || '');
                     }
+                    
+                    console.log('Submitting to server...');
+                    
+                    const response = await fetch('{{ route('public.pengajuan.store') }}', {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json'
+                        },
+                        credentials: 'same-origin'
+                    });
+                    
+                    if (response.status === 419) {
+                        alert('Session telah berakhir. Silakan refresh halaman.');
+                        window.location.reload();
+                        return;
+                    }
+                    
+                    const responseText = await response.text();
+                    console.log('Server Response:', responseText);
+                    
+                    if (response.ok) {
+                        let data;
+                        try {
+                            data = JSON.parse(responseText);
+                        } catch (e) {
+                            console.error('Failed to parse response as JSON:', e);
+                            window.showSuccessModal('TRK-' + Date.now().toString(36).toUpperCase().substr(0, 8));
+                            this.resetForm();
+                            return;
+                        }
+                        
+                        if (data.success) {
+                            console.log('Form submitted successfully:', data);
+                            window.showSuccessModal(data.tracking_token);
+                            this.resetForm();
+                        } else {
+                            console.error('Server returned error:', data);
+                            alert(data.message || 'Terjadi kesalahan saat mengirim data');
+                        }
+                    } else {
+                        try {
+                            const errorData = JSON.parse(responseText);
+                            console.error('HTTP Error:', errorData);
+                            alert(errorData.message || 'Terjadi kesalahan server (HTTP ' + response.status + ')');
+                        } catch (e) {
+                            console.error('HTTP Error - unable to parse:', responseText);
+                            alert('Terjadi kesalahan server. Silakan coba lagi.');
+                        }
+                    }
+                } catch (error) {
+                    console.error('Network/JS Error:', error);
+                    alert('Terjadi kesalahan jaringan: ' + error.message);
+                } finally {
+                    this.loading = false;
                 }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('Terjadi kesalahan jaringan: ' + error.message);
-            } finally {
-                this.loading = false;
+            },
+            
+            // UPDATED: Reset form with proper KP defaults
+            resetForm() {
+                this.step = 1;
+                this.dosenWaliList = [];
+                
+                // Reset all form fields with proper defaults
+                Object.keys(this.form).forEach(key => {
+                    if (key === 'mahasiswa_kp') {
+                        // Reset to single student
+                        this.form[key] = [{ nama: '', nim: '', prodi: '' }];
+                    } else if (key === 'jumlah_mahasiswa_kp') {
+                        // Reset to 1 student
+                        this.form[key] = '1';
+                    } else {
+                        // Reset to empty string
+                        this.form[key] = '';
+                    }
+                });
+                
+                console.log('Form reset completed');
             }
-        },
-        
-        resetForm() {
-            this.step = 1;
-            this.dosenWaliList = []; // NEW: Clear dosen list
-            Object.keys(this.form).forEach(key => {
-                this.form[key] = '';
-            });
         }
     }
-}
 
+    // Success modal functions
+    window.showSuccessModal = function(token) {
+        document.getElementById('trackingNumber').textContent = token;
+        document.getElementById('successModal').classList.remove('hidden');
+        document.getElementById('successModal').classList.add('flex');
+    }
 
-window.showSuccessModal = function(token) {
-    document.getElementById('trackingNumber').textContent = token;
-    document.getElementById('successModal').classList.remove('hidden');
-    document.getElementById('successModal').classList.add('flex');
-}
+    window.closeSuccessModal = function() {
+        document.getElementById('successModal').classList.add('hidden');
+        document.getElementById('successModal').classList.remove('flex');
+    }
 
-window.closeSuccessModal = function() {
-    document.getElementById('successModal').classList.add('hidden');
-    document.getElementById('successModal').classList.remove('flex');
-}
+    window.copyTrackingNumber = function() {
+        const trackingNumber = document.getElementById('trackingNumber').textContent;
+        navigator.clipboard.writeText(trackingNumber).then(function() {
+            alert('Nomor tracking berhasil disalin!');
+        }).catch(function(err) {
+            console.error('Gagal menyalin: ', err);
+            prompt('Salin nomor tracking ini:', trackingNumber);
+        });
+    }
 
-window.copyTrackingNumber = function() {
-    const trackingNumber = document.getElementById('trackingNumber').textContent;
-    navigator.clipboard.writeText(trackingNumber).then(function() {
-        alert('Nomor tracking berhasil disalin!');
-    }).catch(function(err) {
-        console.error('Gagal menyalin: ', err);
-        prompt('Salin nomor tracking ini:', trackingNumber);
+    // Global error handling
+    window.addEventListener('error', function(event) {
+        console.log('Global error:', event.error);
     });
-}
 
-window.addEventListener('error', function(event) {
-    console.log('Global error:', event.error);
-});
+    // Debug helper for development
+    window.debugFormData = function() {
+        const app = document.querySelector('[x-data]').__x.$data;
+        console.log('Current form state:', app.form);
+        console.log('Current step:', app.step);
+        console.log('Can proceed:', app.canProceed());
+        console.log('Selected jenis:', app.getSelectedKode());
+    }
 </script>
 @endpush
 @endsection

@@ -375,6 +375,11 @@ class SuratController extends Controller
      * Process pengajuan at prodi level (approve/reject)
      * FIXED: Status konsisten dengan FakultasStaffController
      */
+    
+    /**
+     * Process pengajuan at prodi level (approve/reject)
+     * FIXED: Redirect to staff pengajuan index instead of surat create
+     */
     public function processProdiPengajuan(Request $request, $id)
     {
         $request->validate([
@@ -410,9 +415,8 @@ class SuratController extends Controller
             DB::beginTransaction();
             
             if ($request->action === 'approve') {
-                // IMPORTANT: Use 'approved_prodi' so it appears in fakultas
                 $pengajuan->update([
-                    'status' => 'processed', // <-- KONSISTEN dengan FakultasStaffController
+                    'status' => 'processed',
                     'approved_by_prodi' => $user->id,
                     'approved_at_prodi' => now()
                 ]);
@@ -434,7 +438,8 @@ class SuratController extends Controller
             
             return response()->json([
                 'success' => true,
-                'message' => $message
+                'message' => $message,
+                'redirect_url' => route('staff.pengajuan.index') // FIXED: Redirect to index
             ]);
             
         } catch (\Exception $e) {
@@ -454,238 +459,11 @@ class SuratController extends Controller
     }
 
     /**
-     * Display pengajuan list
+     * Display pengajuan list for staff
+     * This redirects to the correct staff pengajuan route
      */
-    public function pengajuanIndex(Request $request)
+    public function pengajuanIndex()
     {
-        $user = Auth::user();
-        
-        if (!$user->hasRole(['staff_prodi', 'kaprodi'])) {
-            abort(403);
-        }
-        
-        $query = PengajuanSurat::with(['prodi', 'jenisSurat']);
-        
-        if ($user->prodi_id) {
-            $query->where('prodi_id', $user->prodi_id);
-        }
-        
-        $pengajuans = $query->latest()->paginate(15);
-        
-        return view('staff.pengajuan.index', compact('pengajuans'));
-    }
-
-    /**
-     * Show pengajuan detail
-     */
-    public function pengajuanShow($id)
-    {
-        $pengajuan = PengajuanSurat::with(['prodi', 'jenisSurat'])->findOrFail($id);
-        
-        $user = Auth::user();
-        if ($user->prodi_id && $pengajuan->prodi_id !== $user->prodi_id) {
-            abort(403);
-        }
-        
-        return view('shared.pengajuan.show', compact('pengajuan'));
-    }
-
-    /**
-     * Approve pengajuan - CONSOLIDATED AND ENHANCED
-     */
-    public function approvePengajuan(Request $request, $id)
-    {
-        $pengajuan = PengajuanSurat::with(['prodi', 'jenisSurat'])->findOrFail($id);
-        
-        if ($pengajuan->status !== 'pending') {
-            return redirect()->back()->with('error', 'Pengajuan sudah diproses sebelumnya.');
-        }
-        
-        DB::beginTransaction();
-        try {
-            $draftStatus = StatusSurat::where('kode_status', 'draft')->first();
-            if (!$draftStatus) {
-                throw new \Exception('Status draft tidak ditemukan di database');
-            }
-            
-            // Generate nomor surat
-            $nomorSurat = $this->generateEnhancedNomorSurat($pengajuan);
-            
-            // Create surat
-            $surat = Surat::create([
-                'nomor_surat' => $nomorSurat,
-                'tanggal_surat' => now(),
-                'perihal' => $this->generatePerihal($pengajuan),
-                'isi_surat' => $this->generateContentFromPengajuan($pengajuan),
-                'tipe_surat' => 'keluar',
-                'sifat_surat' => 'biasa',
-                'jenis_id' => $pengajuan->jenis_surat_id,
-                'status_id' => $draftStatus->id,
-                'created_by' => Auth::id(),
-                'prodi_id' => $pengajuan->prodi_id,
-                'fakultas_id' => $pengajuan->prodi->fakultas_id ?? 1,
-            ]);
-            
-            // Update pengajuan
-            $pengajuan->update([
-                'status' => 'processed',
-                'surat_id' => $surat->id,
-                'processed_by' => Auth::id(),
-                'processed_at' => now(),
-                'approved_by' => Auth::id(),
-                'approved_at' => now()
-            ]);
-            
-            // Create tracking
-            Tracking::create([
-                'surat_id' => $surat->id,
-                'user_id' => Auth::id(),
-                'action' => 'created_from_pengajuan',
-                'keterangan' => "Surat dibuat dari pengajuan {$pengajuan->tracking_token}",
-                'data_after' => $surat->toArray(),
-                'ip_address' => request()->ip(),
-                'user_agent' => request()->userAgent(),
-            ]);
-            
-            DB::commit();
-            
-            return redirect()->route('surat.edit', $surat->id)
-                ->with('success', 'Pengajuan berhasil di-approve! Silakan edit draft surat.');
-                        
-        } catch (\Exception $e) {
-            DB::rollback();
-            Log::error('Failed to approve pengajuan: ' . $e->getMessage());
-            return redirect()->back()->with('error', 'Gagal approve pengajuan: ' . $e->getMessage());
-        }
-    }
-
-    /**
-     * Reject pengajuan
-     */
-    public function rejectPengajuan(Request $request, $id)
-    {
-        $request->validate(['reason' => 'required|string|min:10']);
-        
-        $pengajuan = PengajuanSurat::findOrFail($id);
-        
-        if ($pengajuan->status !== 'pending') {
-            return redirect()->back()->with('error', 'Pengajuan sudah diproses sebelumnya.');
-        }
-        
-        $pengajuan->update([
-            'status' => 'rejected',
-            'rejected_by' => Auth::id(),
-            'rejected_at' => now(),
-            'rejection_reason' => $request->reason
-        ]);
-        
-        return redirect()->route('surat.pengajuan.index')
-            ->with('success', 'Pengajuan telah ditolak.');
-    }
-
-    /**
-     * Generate content from pengajuan
-     */
-    private function generateContentFromPengajuan($pengajuan)
-    {
-        $additionalData = is_array($pengajuan->additional_data) 
-            ? $pengajuan->additional_data 
-            : (is_string($pengajuan->additional_data) ? json_decode($pengajuan->additional_data, true) : []);
-        
-        $content = "<h3>SURAT " . strtoupper($pengajuan->jenisSurat->nama_jenis) . "</h3>";
-        $content .= "<p>Yang bertanda tangan di bawah ini menerangkan bahwa:</p>";
-        $content .= "<table style='width: 100%; margin: 20px 0;'>";
-        $content .= "<tr><td width='30%'>Nama</td><td>: " . $pengajuan->nama_mahasiswa . "</td></tr>";
-        $content .= "<tr><td>NIM</td><td>: " . $pengajuan->nim . "</td></tr>";
-        $content .= "<tr><td>Program Studi</td><td>: " . $pengajuan->prodi->nama_prodi . "</td></tr>";
-        $content .= "<tr><td>Keperluan</td><td>: " . $pengajuan->keperluan . "</td></tr>";
-        
-        // Add semester and tahun akademik if available
-        if (isset($additionalData['semester'])) {
-            $content .= "<tr><td>Semester</td><td>: " . $additionalData['semester'] . "</td></tr>";
-        }
-        if (isset($additionalData['tahun_akademik'])) {
-            $content .= "<tr><td>Tahun Akademik</td><td>: " . $additionalData['tahun_akademik'] . "</td></tr>";
-        }
-        
-        $content .= "</table>";
-        
-        // Add parent data for MA surat
-        if ($pengajuan->jenisSurat->kode_surat == 'MA' && !empty($additionalData)) {
-            $content .= "<p><strong>Data Orang Tua/Wali:</strong></p>";
-            $content .= "<table style='width: 100%; margin: 20px 0;'>";
-            
-            if (isset($additionalData['nama_orang_tua'])) {
-                $content .= "<tr><td width='30%'>Nama</td><td>: " . $additionalData['nama_orang_tua'] . "</td></tr>";
-            }
-            if (isset($additionalData['tempat_lahir_ortu']) && isset($additionalData['tanggal_lahir_ortu'])) {
-                $content .= "<tr><td>Tempat/Tgl Lahir</td><td>: " . $additionalData['tempat_lahir_ortu'] . ", " . $additionalData['tanggal_lahir_ortu'] . "</td></tr>";
-            }
-            if (isset($additionalData['pekerjaan_ortu'])) {
-                $content .= "<tr><td>Pekerjaan</td><td>: " . $additionalData['pekerjaan_ortu'] . "</td></tr>";
-            }
-            if (isset($additionalData['alamat_rumah_ortu'])) {
-                $content .= "<tr><td>Alamat</td><td>: " . $additionalData['alamat_rumah_ortu'] . "</td></tr>";
-            }
-            
-            $content .= "</table>";
-        }
-        
-        $content .= "<p>Demikian surat ini dibuat untuk dapat dipergunakan sebagaimana mestinya.</p>";
-        
-        return $content;
-    }
-
-    /**
-     * Generate enhanced nomor surat
-     */
-    private function generateEnhancedNomorSurat($pengajuan)
-    {
-        $jenisKode = $pengajuan->jenisSurat->kode_surat;
-        $tahun = date('Y');
-        $bulan = $this->getRomanMonth(date('n'));
-        
-        $lastNumber = Surat::whereHas('jenisSurat', function($q) use ($jenisKode) {
-            $q->where('kode_surat', $jenisKode);
-        })
-        ->where('prodi_id', $pengajuan->prodi_id)
-        ->whereYear('tanggal_surat', $tahun)
-        ->count();
-        
-        $nomorUrut = $lastNumber + 1;
-        
-        return sprintf('%03d/%s/%s/%s/%s', 
-            $nomorUrut, 
-            $jenisKode, 
-            $pengajuan->prodi->kode_prodi, 
-            $bulan, 
-            $tahun
-        );
-    }
-
-    /**
-     * Generate perihal
-     */
-    private function generatePerihal($pengajuan)
-    {
-        return "{$pengajuan->jenisSurat->nama_jenis} - {$pengajuan->nama_mahasiswa} ({$pengajuan->nim})";
-    }
-
-    /**
-     * Get roman month
-     */
-    private function getRomanMonth($month)
-    {
-        $romans = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
-        return $romans[$month - 1];
-    }
-
-    /**
-     * Tracking view
-     */
-    public function tracking($id)
-    {
-        $surat = Surat::with(['currentStatus', 'createdBy'])->findOrFail($id);
-        return view('staff.surat.tracking', compact('surat'));
+        return redirect()->route('staff.pengajuan.index');
     }
 }

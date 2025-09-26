@@ -1,8 +1,17 @@
+<!-- fakultas.surat.index -->
+
+
+
 @extends('layouts.app')
 
 @section('title', 'Daftar Surat Fakultas')
 
 @section('content')
+   @php
+       if (!isset($pengajuans)) {
+           $pengajuans = isset($pengajuan) ? collect([$pengajuan]) : collect([]);
+       }
+   @endphp
 <div class="container mx-auto px-4 sm:px-6 lg:px-8">
     <!-- Page Header -->
     <div class="mb-6">
@@ -613,16 +622,6 @@ function generateSurat(id) {
     });
 }
 
-// Auto-hide alerts after 5 seconds
-document.addEventListener('DOMContentLoaded', function() {
-    const alerts = document.querySelectorAll('.bg-green-50, .bg-red-50');
-    alerts.forEach(alert => {
-        setTimeout(() => {
-            alert.style.transition = 'opacity 0.5s';
-            alert.style.opacity = '0';
-            setTimeout(() => alert.remove(), 500);
-        }, 5000);
-    });
-});
+
 </script>
 @endpush

@@ -46,7 +46,7 @@ class FakultasStaffController extends Controller
                                    ->whereHas('prodi', function($q) use ($fakultasId) {
                                        $q->where('fakultas_id', $fakultasId);
                                    })
-                                   ->where('status', 'processed');
+                                   ->whereIn('status', ['processed', 'approved_prodi','sedang_ditandatangani', 'completed']);
         
         // Apply filters untuk both queries
         if ($request->search) {
@@ -71,48 +71,64 @@ class FakultasStaffController extends Controller
         $surats = $suratQuery->get();
         $pengajuans = $pengajuanQuery->get();
         
-        // Transform pengajuan ke format yang cocok untuk tabel
 $pengajuanItems = $pengajuans->map(function($pengajuan) {
+    // ✅ Update status display berdasarkan status
+    $statusDisplay = match($pengajuan->status) {
+        'processed' => 'Perlu Generate Surat',
+        'approved_prodi' => 'Disetujui Prodi',
+        'sedang_ditandatangani' => 'Sedang TTD Fisik',
+        'completed' => 'Selesai',
+        default => $pengajuan->status_label
+    };
+    
+    $statusClass = match($pengajuan->status) {
+        'processed' => 'bg-blue-100 text-blue-800',
+        'approved_prodi' => 'bg-green-100 text-green-800',
+        'sedang_ditandatangani' => 'bg-orange-100 text-orange-800',
+        'completed' => 'bg-gray-100 text-gray-800',
+        default => 'bg-gray-100 text-gray-600'
+    };
+
     return (object)[
         'id' => $pengajuan->id,
         'type' => 'pengajuan',
-        'nomor_surat' => $pengajuan->tracking_token, // Ini untuk ditampilkan
-        'tracking_token' => $pengajuan->tracking_token, // Backup field
-        'nim' => $pengajuan->nim, // Tambahkan field nim langsung
-        'nama_mahasiswa' => $pengajuan->nama_mahasiswa, // Tambahkan nama langsung
+        'nomor_surat' => $pengajuan->tracking_token,
+        'tracking_token' => $pengajuan->tracking_token,
+        'nim' => $pengajuan->nim,
+        'nama_mahasiswa' => $pengajuan->nama_mahasiswa,
         'perihal' => $pengajuan->jenisSurat->nama_jenis . ' - ' . $pengajuan->nama_mahasiswa,
         'prodi' => $pengajuan->prodi,
         'created_at' => $pengajuan->created_at,
-        'status_display' => 'Perlu Generate Surat',
-        'status_class' => 'bg-blue-100 text-blue-800',
+        'status_display' => $statusDisplay,  // ✅ Gunakan variable yang sudah dibuat
+        'status_class' => $statusClass,      // ✅ Gunakan variable yang sudah dibuat
         'createdBy' => (object)['nama' => $pengajuan->nama_mahasiswa, 'name' => $pengajuan->nama_mahasiswa],
-        'currentStatus' => (object)['kode_status' => 'pending_generate'],
+        'currentStatus' => (object)['kode_status' => $pengajuan->status],
         'original_pengajuan' => $pengajuan
     ];
 });
-        
-        // Transform existing surats
-        $suratItems = $surats->map(function($surat) {
-            return (object)[
-                'id' => $surat->id,
-                'type' => 'surat',
-                'nomor_surat' => $surat->nomor_surat,
-                'perihal' => $surat->perihal,
-                'prodi' => $surat->prodi,
-                'created_at' => $surat->created_at,
-                'status_display' => $surat->currentStatus->nama_status ?? 'Disetujui Kaprodi',
-                'status_class' => match($surat->currentStatus->kode_status ?? 'disetujui_kaprodi') {
-                    'disetujui_kaprodi' => 'bg-yellow-100 text-yellow-800',
-                    'diproses_fakultas' => 'bg-blue-100 text-blue-800',
-                    'disetujui_fakultas' => 'bg-green-100 text-green-800',
-                    'ditolak_fakultas' => 'bg-red-100 text-red-800',
-                    default => 'bg-gray-100 text-gray-800'
-                },
-                'createdBy' => $surat->createdBy,
-                'currentStatus' => $surat->currentStatus,
-                'original_surat' => $surat
-            ];
-        });
+
+// Transform existing surats
+$suratItems = $surats->map(function($surat) {
+    return (object)[
+        'id' => $surat->id,
+        'type' => 'surat',
+        'nomor_surat' => $surat->nomor_surat,
+        'perihal' => $surat->perihal,
+        'prodi' => $surat->prodi,
+        'created_at' => $surat->created_at,
+        'status_display' => $surat->currentStatus->nama_status ?? 'Disetujui Kaprodi',
+        'status_class' => match($surat->currentStatus->kode_status ?? 'disetujui_kaprodi') {
+            'disetujui_kaprodi' => 'bg-yellow-100 text-yellow-800',
+            'diproses_fakultas' => 'bg-blue-100 text-blue-800',
+            'disetujui_fakultas' => 'bg-green-100 text-green-800',
+            'ditolak_fakultas' => 'bg-red-100 text-red-800',
+            default => 'bg-gray-100 text-gray-800'
+        },
+        'createdBy' => $surat->createdBy,
+        'currentStatus' => $surat->currentStatus,
+        'original_surat' => $surat
+    ];
+});
         
         // Combine and sort
         $allItems = $pengajuanItems->concat($suratItems)->sortByDesc('created_at')->values();
@@ -163,61 +179,27 @@ public function show($id)
                        ->with('error', 'Anda tidak memiliki akses ke fakultas manapun');
     }
     
+    // Initialize variables dengan default value
+    $surat = null;
+    $pengajuan = null;
+    
     // Cari di surat dulu
     $surat = Surat::with([
-        'jenisSurat', 
-        'currentStatus', 
-        'createdBy.jabatan', 
-        'tujuanJabatan', 
-        'prodi.fakultas',
-        'statusHistories.user',
+        'jenisSurat', 'currentStatus', 'createdBy.jabatan', 
+        'tujuanJabatan', 'prodi.fakultas', 'statusHistories.user', 
         'statusHistories.status'
     ])->find($id);
     
-    if ($surat) {
-        if ($surat->prodi->fakultas_id !== $fakultasId) {
-            return redirect()->route('fakultas.surat.index')
-                           ->with('error', 'Anda tidak memiliki akses ke surat ini');
-        }
-        
+    if ($surat && $surat->prodi->fakultas_id === $fakultasId) {
         $surat->type = 'surat';
-        return view('fakultas.surat.show', compact('surat'));
+        return view('fakultas.surat.show', compact('surat', 'pengajuan'));
     }
     
     // Cari di pengajuan
     $pengajuan = PengajuanSurat::with(['jenisSurat', 'prodi.fakultas'])->find($id);
     
-    if ($pengajuan) {
-        if ($pengajuan->prodi->fakultas_id !== $fakultasId) {
-            return redirect()->route('fakultas.surat.index')
-                           ->with('error', 'Anda tidak memiliki akses ke pengajuan ini');
-        }
-        
-        // Debug untuk melihat data
-        \Log::info('Pengajuan Data Debug:', [
-            'id' => $pengajuan->id,
-            'additional_data_raw' => $pengajuan->additional_data,
-            'type' => gettype($pengajuan->additional_data)
-        ]);
-        
-        // Parse additional_data dengan benar
-        $additionalData = null;
-        if (!empty($pengajuan->additional_data)) {
-            if (is_string($pengajuan->additional_data)) {
-                try {
-                    $additionalData = json_decode($pengajuan->additional_data, true);
-                    \Log::info('Decoded additional_data:', $additionalData ?? []);
-                } catch (\Exception $e) {
-                    \Log::error('Failed to decode additional_data: ' . $e->getMessage());
-                }
-            } elseif (is_array($pengajuan->additional_data)) {
-                $additionalData = $pengajuan->additional_data;
-            } elseif (is_object($pengajuan->additional_data)) {
-                $additionalData = (array) $pengajuan->additional_data;
-            }
-        }
-        
-        // Transform pengajuan ke format surat untuk view
+    if ($pengajuan && $pengajuan->prodi->fakultas_id === $fakultasId) {
+        // Transform untuk compatibility
         $surat = new \stdClass();
         $surat->id = $pengajuan->id;
         $surat->type = 'pengajuan';
@@ -234,27 +216,14 @@ public function show($id)
         ];
         $surat->statusHistories = collect([]);
         $surat->isi_surat = null;
-        
-        // IMPORTANT: Pass the original pengajuan with additional_data properly set
         $surat->original_pengajuan = $pengajuan;
         
-        // Also ensure additional_data is properly attached to pengajuan
-        // This is crucial for the view to access the data
-        if ($additionalData) {
-            $pengajuan->additional_data = $additionalData;
-        }
-        
-        \Log::info('Final surat object:', [
-            'has_original_pengajuan' => isset($surat->original_pengajuan),
-            'additional_data_exists' => !empty($additionalData),
-            'additional_data_keys' => $additionalData ? array_keys($additionalData) : []
-        ]);
-        
-        return view('fakultas.surat.show', compact('surat'));
+        return view('fakultas.surat.show', compact('surat', 'pengajuan'));
     }
     
-    return redirect()->route('fakultas.surat.index')
-                   ->with('error', 'Data tidak ditemukan');
+    // Jika tidak ditemukan, tetap kirim null values
+    return view('fakultas.surat.show', compact('surat', 'pengajuan'))
+           ->with('error', 'Data tidak ditemukan');
 }
 
     /**
@@ -800,5 +769,272 @@ private function getRomanMonth($month)
         }
         
         return null;
+    }
+
+    /**
+     * Generate PDF untuk pengajuan dan mark as completed
+     */
+    public function generateSuratPDF(Request $request, $id)
+    {
+        $user = Auth::user();
+        $pengajuan = PengajuanSurat::with(['prodi', 'jenisSurat'])->findOrFail($id);
+        
+        if (!in_array($pengajuan->status, ['processed', 'approved_prodi'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Pengajuan tidak dapat di-generate PDF. Status: ' . $pengajuan->status
+            ], 400);
+        }
+        
+        try {
+            DB::beginTransaction();
+            
+            // Generate PDF content (simplified for now)
+            $pdfContent = $this->generatePDFContent($pengajuan);
+            
+            // Save PDF file
+            $fileName = "surat_" . $pengajuan->jenisSurat->kode_surat . "_" . $pengajuan->nim . "_" . now()->format('Y-m-d') . ".pdf";
+            $filePath = "surat_generated/" . $fileName;
+            
+            Storage::disk('public')->put($filePath, $pdfContent);
+            
+            // Create SuratGenerated record
+            $suratGenerated = \App\Models\SuratGenerated::create([
+                'pengajuan_id' => $pengajuan->id,
+                'file_path' => $filePath,
+                'original_filename' => $fileName,
+                'file_size' => strlen($pdfContent),
+                'mime_type' => 'application/pdf',
+                'generated_by' => $user->id,
+                'generated_at' => now(),
+                'is_final' => true,
+                'version' => 1
+            ]);
+            
+            // Update pengajuan status to completed
+            $pengajuan->update([
+                'status' => 'completed',
+                'surat_generated_id' => $suratGenerated->id,
+                'completed_by' => $user->id,
+                'completed_at' => now()
+            ]);
+            
+            DB::commit();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'PDF berhasil di-generate dan pengajuan telah selesai',
+                'download_url' => route('tracking.download', $pengajuan->id)
+            ]);
+            
+        } catch (\Exception $e) {
+            DB::rollback();
+            \Log::error('Error generating PDF', [
+                'pengajuan_id' => $id,
+                'error' => $e->getMessage()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal generate PDF: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    
+    /**
+     * Generate PDF content (placeholder - replace with actual PDF generation)
+     */
+    private function generatePDFContent($pengajuan)
+    {
+        // This is a placeholder - replace with actual PDF generation using TCPDF, DOMPDF, or similar
+        $additionalData = json_decode($pengajuan->additional_data, true) ?? [];
+        
+        $content = "
+        SURAT KETERANGAN MASIH KULIAH
+        
+        Mahasiswa:
+        NIM: {$pengajuan->nim}
+        Nama: {$pengajuan->nama_mahasiswa}
+        Prodi: {$pengajuan->prodi->nama_prodi}
+        
+        Keperluan: {$pengajuan->keperluan}
+        ";
+        
+        if (isset($additionalData['orang_tua'])) {
+            $content .= "
+        
+        Data Orang Tua:
+        Nama: " . ($additionalData['orang_tua']['nama'] ?? 'N/A') . "
+        Pekerjaan: " . ($additionalData['orang_tua']['pekerjaan'] ?? 'N/A');
+        }
+        
+        // Return as simple PDF content (replace with actual PDF library)
+        return $content;
+    }
+
+    /**
+     * Kirim surat ke pengaju (mark as completed without PDF generation)
+     */
+    public function kirimKePengaju(Request $request, $id)
+    {
+        $user = Auth::user();
+        $pengajuan = PengajuanSurat::with(['prodi', 'jenisSurat'])->findOrFail($id);
+        
+        if (!in_array($pengajuan->status, ['processed', 'approved_prodi'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Pengajuan tidak dapat dikirim. Status: ' . $pengajuan->status
+            ], 400);
+        }
+        
+        try {
+            DB::beginTransaction();
+            
+            // Update pengajuan status to completed
+            $pengajuan->update([
+                'status' => 'completed',
+                'completed_by' => $user->id,
+                'completed_at' => now(),
+                'completion_note' => $request->input('note', 'Surat telah selesai dan dapat digunakan')
+            ]);
+            
+            // Log activity
+            \Log::info('Pengajuan sent to applicant', [
+                'pengajuan_id' => $pengajuan->id,
+                'nim' => $pengajuan->nim,
+                'tracking_token' => $pengajuan->tracking_token,
+                'completed_by' => $user->id
+            ]);
+            
+            DB::commit();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Surat berhasil dikirim ke pengaju. Status pengajuan telah selesai.',
+                'tracking_url' => route('tracking.show', $pengajuan->tracking_token)
+            ]);
+            
+        } catch (\Exception $e) {
+            DB::rollback();
+            \Log::error('Error sending to applicant', [
+                'pengajuan_id' => $id,
+                'error' => $e->getMessage()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengirim ke pengaju: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Preview pengajuan before finalization
+     */
+    public function previewPengajuan($id)
+    {
+        $user = Auth::user();
+        $user->load('prodi.fakultas');
+        
+        $fakultasId = $user->prodi?->fakultas_id;
+        if (!$fakultasId) {
+            return redirect()->route('fakultas.surat.index')
+                           ->with('error', 'Anda tidak memiliki akses ke fakultas manapun');
+        }
+        
+        $pengajuan = PengajuanSurat::with(['jenisSurat', 'prodi.fakultas'])
+                                   ->where('id', $id)
+                                   ->first();
+        
+        if (!$pengajuan || $pengajuan->prodi->fakultas_id !== $fakultasId) {
+            return redirect()->route('fakultas.surat.index')
+                           ->with('error', 'Pengajuan tidak ditemukan');
+        }
+        
+        // Parse additional data for display
+        $additionalData = $this->parseAdditionalData($pengajuan->additional_data);
+        
+        return view('fakultas.surat.preview', compact('pengajuan', 'additionalData'));
+    }
+    
+    /**
+     * Edit pengajuan data before finalization
+     */
+    public function editPengajuan($id)
+    {
+        $user = Auth::user();
+        $user->load('prodi.fakultas');
+        
+        $fakultasId = $user->prodi?->fakultas_id;
+        if (!$fakultasId) {
+            return redirect()->route('fakultas.surat.index')
+                           ->with('error', 'Anda tidak memiliki akses');
+        }
+        
+        $pengajuan = PengajuanSurat::with(['jenisSurat', 'prodi'])
+                                   ->where('id', $id)
+                                   ->first();
+        
+        if (!$pengajuan || $pengajuan->prodi->fakultas_id !== $fakultasId) {
+            return redirect()->route('fakultas.surat.index')
+                           ->with('error', 'Pengajuan tidak ditemukan');
+        }
+        
+        // Only allow edit for certain statuses
+        if (!in_array($pengajuan->status, ['processed', 'approved_prodi'])) {
+            return redirect()->route('fakultas.surat.show', $id)
+                           ->with('error', 'Pengajuan tidak dapat diedit pada status ini');
+        }
+        
+        $additionalData = $this->parseAdditionalData($pengajuan->additional_data);
+        
+        return view('fakultas.surat.edit', compact('pengajuan', 'additionalData'));
+    }
+    
+    /**
+     * Update pengajuan data
+     */
+    public function updatePengajuan(Request $request, $id)
+    {
+        $request->validate([
+            'keperluan' => 'required|string|max:500',
+            'additional_data' => 'nullable|array'
+        ]);
+        
+        $user = Auth::user();
+        $user->load('prodi.fakultas');
+        
+        $fakultasId = $user->prodi?->fakultas_id;
+        if (!$fakultasId) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+        
+        $pengajuan = PengajuanSurat::where('id', $id)->first();
+        
+        if (!$pengajuan || $pengajuan->prodi->fakultas_id !== $fakultasId) {
+            return response()->json(['success' => false, 'message' => 'Pengajuan tidak ditemukan'], 404);
+        }
+        
+        try {
+            // Update pengajuan data
+            $pengajuan->update([
+                'keperluan' => $request->keperluan,
+                'additional_data' => json_encode($request->additional_data),
+                'updated_by_fakultas' => $user->id,
+                'updated_at' => now()
+            ]);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Data pengajuan berhasil diperbarui',
+                'redirect' => route('fakultas.surat.preview', $id)
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal update data: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }

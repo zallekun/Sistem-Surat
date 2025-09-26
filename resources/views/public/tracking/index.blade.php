@@ -1,394 +1,427 @@
+{{-- resources/views/public/tracking/index.blade.php --}}
 @extends('layouts.public')
 
-@section('title', 'Tracking Pengajuan Surat')
+@section('title', 'Tracking Surat')
+
+@push('head')
+<style>
+:root {
+    --primary-gradient: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+    --success-gradient: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+    --info-gradient: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+    --warning-gradient: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+}
+
+.gradient-bg {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+}
+
+.tracking-card {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.tracking-card:hover {
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    transform: translateY(-5px);
+}
+
+.card-header-gradient {
+    background: var(--primary-gradient);
+    padding: 2rem;
+    text-align: center;
+}
+
+.icon-circle {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+    transition: all 0.3s ease;
+}
+
+.icon-circle:hover {
+    transform: scale(1.1);
+}
+
+.stats-card {
+    background: white;
+    border-radius: 20px;
+    padding: 1.5rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    height: 100%;
+}
+
+.stats-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+.stats-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 15px;
+    font-size: 1.5rem;
+    color: white;
+}
+
+.btn-gradient {
+    background: var(--primary-gradient);
+    border: none;
+    border-radius: 25px;
+    font-weight: 600;
+    padding: 12px 30px;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-gradient::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.btn-gradient:hover::before {
+    left: 100%;
+}
+
+.btn-gradient:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(59, 130, 246, 0.4);
+}
+
+.enhanced-input {
+    border-radius: 15px;
+    border: 2px solid #e5e7eb;
+    padding: 12px 20px;
+    transition: all 0.3s ease;
+    background: rgba(255, 255, 255, 0.9);
+}
+
+.enhanced-input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+    transform: scale(1.02);
+}
+
+.loading-spinner {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #3b82f6;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    animation: spin 1s linear infinite;
+    display: inline-block;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.fade-in {
+    animation: fadeIn 0.6s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+</style>
+@endpush
 
 @section('content')
-<div class="max-w-4xl mx-auto py-12">
-    <!-- Header -->
-    <div class="text-center mb-8">
-        <h1 class="text-3xl font-bold text-gray-900">Tracking Pengajuan Surat</h1>
-        <p class="mt-2 text-gray-600">Masukkan token tracking untuk melihat status pengajuan Anda</p>
-    </div>
+<div class="gradient-bg min-h-screen py-8">
+    <div class="max-w-4xl mx-auto px-4">
+        <!-- Main Tracking Card -->
+        <div class="tracking-card fade-in">
+            <!-- Header -->
+            <div class="card-header-gradient">
+                <div class="icon-circle bg-white bg-opacity-20 border-3 border-white border-opacity-30 text-white">
+                    <i class="fas fa-search text-3xl"></i>
+                </div>
+                <h2 class="text-3xl font-bold text-white mb-2">Tracking Pengajuan Surat</h2>
+                <p class="text-white text-opacity-75">Lacak status pengajuan surat Anda dengan mudah dan cepat</p>
+            </div>
 
-    <!-- Search Form -->
-    <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
-        <form id="trackingForm" class="space-y-4">
-            <div>
-                <label for="tracking_token" class="block text-sm font-medium text-gray-700 mb-2">
-                    Token Tracking <span class="text-red-500">*</span>
-                </label>
-                <div class="flex space-x-3">
-                    <input type="text" 
-                           id="tracking_token" 
-                           name="tracking_token"
-                           class="flex-1 border border-gray-300 rounded-md px-4 py-3 focus:ring-blue-500 focus:border-blue-500 text-lg"
-                           placeholder="Contoh: TRK-36064A72"
-                           pattern="TRK-[A-Z0-9]{8}"
-                           title="Format: TRK-XXXXXXXX"
-                           required>
-                    <button type="submit" 
-                            class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md transition-colors flex items-center">
-                        <i class="fas fa-search mr-2"></i>
-                        Tracking
+            <!-- Body -->
+            <div class="p-8">
+                <!-- Error/Success Messages -->
+                @if($errors->any())
+                    <div class="bg-red-50 border-l-4 border-red-400 p-4 mb-6 rounded-lg">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-exclamation-triangle text-red-400 text-xl"></i>
+                            </div>
+                            <div class="ml-3">
+                                <h3 class="text-sm font-medium text-red-800">Terjadi Kesalahan</h3>
+                                <ul class="mt-2 text-sm text-red-700 list-disc list-inside">
+                                    @foreach($errors->all() as $error)
+                                        <li>{{ $error }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
+                @if(session('success'))
+                    <div class="bg-green-50 border-l-4 border-green-400 p-4 mb-6 rounded-lg">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-check-circle text-green-400 text-xl"></i>
+                            </div>
+                            <div class="ml-3">
+                                <h3 class="text-sm font-medium text-green-800">Berhasil</h3>
+                                <p class="text-sm text-green-700">{{ session('success') }}</p>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
+                <!-- Tracking Form -->
+                <form action="{{ route('tracking.search') }}" method="POST" class="mb-8" id="trackingForm">
+                    @csrf
+                    
+                    <div class="mb-6">
+                        <label for="token" class="block text-sm font-bold text-gray-700 mb-2">
+                            <i class="fas fa-key text-blue-600 mr-2"></i>
+                            Token Tracking
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fas fa-barcode text-gray-400"></i>
+                            </div>
+                            <input type="text" 
+                                   class="enhanced-input block w-full pl-10 pr-4 @error('token') border-red-300 @enderror" 
+                                   id="token" 
+                                   name="token" 
+                                   placeholder="Contoh: TRK-TEST001"
+                                   value="{{ old('token') }}"
+                                   required
+                                   autocomplete="off">
+                        </div>
+                        @error('token')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                        <p class="mt-2 text-sm text-gray-600">
+                            <i class="fas fa-lightbulb text-yellow-500 mr-1"></i>
+                            Token diberikan setelah pengajuan surat berhasil disubmit
+                        </p>
+                    </div>
+
+                    <button type="submit" class="btn-gradient w-full text-white font-bold py-3 px-6" id="trackingBtn">
+                        <span class="btn-text flex items-center justify-center">
+                            <i class="fas fa-search mr-2"></i>
+                            Lacak Status Pengajuan
+                        </span>
+                        <span class="loading-text hidden flex items-center justify-center">
+                            <div class="loading-spinner mr-2"></div>
+                            Mencari...
+                        </span>
                     </button>
+                </form>
+
+                <!-- Testing Info -->
+                <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6 rounded-lg">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-info-circle text-blue-400 text-xl"></i>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-sm font-medium text-blue-800 mb-2">Token untuk Testing</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                                <div>
+                                    <code class="bg-white px-2 py-1 rounded cursor-pointer hover:bg-gray-100 transition-colors" 
+                                          onclick="fillToken('TRK-TEST001')">TRK-TEST001</code>
+                                    <div class="text-xs text-blue-600 mt-1">Syahrul Ramadhan (Pending)</div>
+                                </div>
+                                <div>
+                                    <code class="bg-white px-2 py-1 rounded cursor-pointer hover:bg-gray-100 transition-colors" 
+                                          onclick="fillToken('TRK-A6C2BCDD')">TRK-A6C2BCDD</code>
+                                    <div class="text-xs text-blue-600 mt-1">User zzzzz (Processed)</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <p class="text-xs text-gray-500 mt-1">
-                    Token tracking diberikan saat Anda mengirim pengajuan surat
-                </p>
-            </div>
-        </form>
-    </div>
 
-    <!-- Loading State -->
-    <div id="loadingState" class="hidden">
-        <div class="bg-white rounded-lg shadow-lg p-8 text-center">
-            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p class="text-gray-600">Mencari pengajuan Anda...</p>
-        </div>
-    </div>
+                <!-- Quick Stats -->
+                <div class="grid grid-cols-3 gap-4 mb-8">
+                    <div class="stats-card">
+                        <div class="stats-icon bg-gradient-to-r from-blue-500 to-purple-600">
+                            <i class="fas fa-file-alt"></i>
+                        </div>
+                        <h4 class="text-sm font-medium text-gray-600 mb-1">Total</h4>
+                        <div class="text-2xl font-bold text-blue-600">{{ \App\Models\PengajuanSurat::count() }}</div>
+                    </div>
+                    <div class="stats-card">
+                        <div class="stats-icon bg-gradient-to-r from-green-500 to-green-600">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <h4 class="text-sm font-medium text-gray-600 mb-1">Selesai</h4>
+                        <div class="text-2xl font-bold text-green-600">{{ \App\Models\PengajuanSurat::where('status', 'completed')->count() }}</div>
+                    </div>
+                    <div class="stats-card">
+                        <div class="stats-icon bg-gradient-to-r from-yellow-500 to-orange-500">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <h4 class="text-sm font-medium text-gray-600 mb-1">Proses</h4>
+                        <div class="text-2xl font-bold text-yellow-600">{{ \App\Models\PengajuanSurat::whereIn('status', ['pending', 'processed', 'approved_prodi'])->count() }}</div>
+                    </div>
+                </div>
 
-    <!-- Error State -->
-    <div id="errorState" class="hidden">
-        <div class="bg-red-50 border border-red-200 rounded-lg p-6">
-            <div class="flex items-center">
-                <i class="fas fa-exclamation-triangle text-red-500 text-xl mr-3"></i>
-                <div>
-                    <h3 class="text-red-800 font-medium">Pengajuan Tidak Ditemukan</h3>
-                    <p class="text-red-700 text-sm mt-1" id="errorMessage">
-                        Token tracking tidak valid atau tidak ditemukan. Pastikan Anda memasukkan token dengan benar.
+                <!-- Divider -->
+                <div class="border-t border-gray-200 my-8"></div>
+
+                <!-- New Application Section -->
+                <div class="text-center">
+                    <div class="icon-circle bg-green-50 border-3 border-green-200 text-green-600 mx-auto mb-4">
+                        <i class="fas fa-plus text-2xl"></i>
+                    </div>
+                    <p class="text-gray-600 mb-4">
+                        <i class="fas fa-question-circle text-blue-500 mr-1"></i>
+                        Belum punya token tracking?
                     </p>
+                    <a href="{{ route('public.pengajuan.create') }}" 
+                       class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-full text-white bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transform transition hover:scale-105">
+                        <i class="fas fa-plus mr-2"></i>
+                        Ajukan Surat Baru
+                    </a>
+                </div>
+
+                <!-- Help Section -->
+                <div class="mt-8 bg-gray-50 rounded-lg p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                        <i class="fas fa-question-circle text-blue-600 mr-2"></i>
+                        Bantuan
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
+                        <div class="flex items-start">
+                            <i class="fas fa-arrow-right text-blue-500 mt-1 mr-3 flex-shrink-0"></i>
+                            <span>Token tracking dikirim via email setelah pengajuan</span>
+                        </div>
+                        <div class="flex items-start">
+                            <i class="fas fa-arrow-right text-blue-500 mt-1 mr-3 flex-shrink-0"></i>
+                            <span>Format token: TRK-XXXXXXXX</span>
+                        </div>
+                        <div class="flex items-start">
+                            <i class="fas fa-arrow-right text-blue-500 mt-1 mr-3 flex-shrink-0"></i>
+                            <span>Token bersifat case-insensitive</span>
+                        </div>
+                        <div class="flex items-start">
+                            <i class="fas fa-arrow-right text-blue-500 mt-1 mr-3 flex-shrink-0"></i>
+                            <span>Hubungi admin jika token hilang</span>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <!-- Results -->
-    <div id="resultsContainer" class="hidden">
-        <!-- Dynamic content will be loaded here -->
-    </div>
-
-    <!-- Info Box -->
-    <div class="bg-blue-50 border border-blue-200 rounded-lg p-6 mt-8">
-        <h3 class="text-blue-800 font-medium mb-3">
-            <i class="fas fa-info-circle mr-2"></i>
-            Informasi Tracking
-        </h3>
-        <div class="text-blue-700 text-sm space-y-2">
-            <p><strong>Status Pengajuan:</strong></p>
-            <ul class="list-disc list-inside ml-4 space-y-1">
-                <li><span class="font-medium">Pending:</span> Pengajuan sedang dalam antrian review</li>
-                <li><span class="font-medium">Processing:</span> Pengajuan sedang diproses oleh staff</li>
-                <li><span class="font-medium">Approved:</span> Pengajuan disetujui, surat sedang disiapkan</li>
-                <li><span class="font-medium">Completed:</span> Surat sudah selesai dan dapat diambil</li>
-                <li><span class="font-medium">Rejected:</span> Pengajuan ditolak dengan alasan tertentu</li>
-            </ul>
-            <p class="mt-3"><strong>Catatan:</strong> Jika ada masalah dengan tracking, hubungi bagian akademik dengan menyebutkan token tracking Anda.</p>
         </div>
     </div>
 </div>
+@endsection
 
+@push('scripts')
 <script>
-document.getElementById('trackingForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    
-    const token = document.getElementById('tracking_token').value.trim();
-    
-    if (!token) {
-        showError('Token tracking tidak boleh kosong');
-        return;
-    }
-    
-    // Show loading
-    showLoading();
-    
-    try {
-        const response = await fetch('/tracking/api', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: JSON.stringify({ tracking_token: token })
+document.addEventListener('DOMContentLoaded', function() {
+    const tokenInput = document.getElementById('token');
+    const trackingBtn = document.getElementById('trackingBtn');
+    const trackingForm = document.getElementById('trackingForm');
+    const btnText = trackingBtn.querySelector('.btn-text');
+    const loadingText = trackingBtn.querySelector('.loading-text');
+
+    // Auto uppercase token input
+    tokenInput.addEventListener('input', function(e) {
+        e.target.value = e.target.value.toUpperCase();
+        
+        // Visual feedback
+        if (e.target.value.length > 0) {
+            e.target.style.transform = 'scale(1.02)';
+        } else {
+            e.target.style.transform = 'scale(1)';
+        }
+    });
+
+    // Form submission with loading state
+    trackingForm.addEventListener('submit', function(e) {
+        if (tokenInput.value.trim() === '') {
+            e.preventDefault();
+            tokenInput.focus();
+            tokenInput.classList.add('border-red-300');
+            return false;
+        }
+
+        // Show loading state
+        trackingBtn.disabled = true;
+        btnText.classList.add('hidden');
+        loadingText.classList.remove('hidden');
+    });
+
+    // Enhanced hover effects
+    document.querySelectorAll('.stats-card').forEach((card, index) => {
+        card.style.animationDelay = `${index * 0.1}s`;
+        card.classList.add('fade-in');
+        
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-5px) scale(1.02)';
         });
         
-        const data = await response.json();
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0) scale(1)';
+        });
+    });
+
+    // Input validation
+    tokenInput.addEventListener('input', function() {
+        const value = this.value.trim();
+        const isValid = value.length >= 8 && value.includes('-');
         
-        if (data.success && data.pengajuan) {
-            showResults(data.pengajuan);
-        } else {
-            showError(data.message || 'Pengajuan tidak ditemukan');
+        this.classList.remove('border-red-300', 'border-green-300');
+        
+        if (value.length > 0) {
+            if (isValid) {
+                this.classList.add('border-green-300');
+            } else if (value.length > 3) {
+                this.classList.add('border-yellow-300');
+            }
         }
-        
-    } catch (error) {
-        console.error('Error:', error);
-        showError('Terjadi kesalahan sistem. Silakan coba lagi.');
-    }
+    });
 });
 
-function showLoading() {
-    document.getElementById('loadingState').classList.remove('hidden');
-    document.getElementById('errorState').classList.add('hidden');
-    document.getElementById('resultsContainer').classList.add('hidden');
-}
-
-function showError(message) {
-    document.getElementById('errorMessage').textContent = message;
-    document.getElementById('errorState').classList.remove('hidden');
-    document.getElementById('loadingState').classList.add('hidden');
-    document.getElementById('resultsContainer').classList.add('hidden');
-}
-
-function showResults(pengajuan) {
-    const container = document.getElementById('resultsContainer');
+// Fill token from examples
+function fillToken(token) {
+    const tokenInput = document.getElementById('token');
+    tokenInput.value = token;
+    tokenInput.dispatchEvent(new Event('input'));
+    tokenInput.focus();
     
-    // Parse additional data dengan struktur baru
-    let additionalDataHtml = '';
-    let universalDataHtml = '';
-    
-    if (pengajuan.additional_data) {
-        try {
-            const additionalData = JSON.parse(pengajuan.additional_data);
-            
-            // UNIVERSAL DATA - semester, tahun akademik, dosen wali (untuk semua jenis surat)
-            if (additionalData.semester || additionalData.tahun_akademik || additionalData.dosen_wali) {
-                universalDataHtml = `
-                    <div class="bg-blue-50 p-4 rounded-lg mb-4">
-                        <h4 class="font-medium text-blue-800 mb-3">
-                            <i class="fas fa-graduation-cap mr-2"></i>
-                            Data Akademik
-                        </h4>
-                        <div class="grid md:grid-cols-3 gap-3 text-sm">
-                            ${additionalData.semester ? `<div><strong>Semester:</strong> ${additionalData.semester}</div>` : ''}
-                            ${additionalData.tahun_akademik ? `<div><strong>Tahun Akademik:</strong> ${additionalData.tahun_akademik}</div>` : ''}
-                            ${additionalData.dosen_wali?.nama ? `<div><strong>Dosen Wali:</strong> ${additionalData.dosen_wali.nama}</div>` : ''}
-                        </div>
-                        ${additionalData.dosen_wali?.nid ? `
-                            <div class="text-sm mt-2">
-                                <strong>NID Dosen Wali:</strong> ${additionalData.dosen_wali.nid}
-                            </div>
-                        ` : ''}
-                    </div>
-                `;
-            }
-            
-            // SPECIFIC DATA berdasarkan jenis surat
-            if (additionalData.orang_tua) {
-                additionalDataHtml = `
-                    <div class="bg-yellow-50 p-4 rounded-lg mt-4">
-                        <h4 class="font-medium text-yellow-800 mb-3">
-                            <i class="fas fa-users mr-2"></i>
-                            Biodata Orang Tua (Mahasiswa Aktif)
-                        </h4>
-                        <div class="grid md:grid-cols-2 gap-3 text-sm">
-                            <div><strong>Nama:</strong> ${additionalData.orang_tua.nama || '-'}</div>
-                            <div><strong>Pekerjaan:</strong> ${additionalData.orang_tua.pekerjaan || '-'}</div>
-                            <div><strong>Tempat Lahir:</strong> ${additionalData.orang_tua.tempat_lahir || '-'}</div>
-                            <div><strong>Tanggal Lahir:</strong> ${additionalData.orang_tua.tanggal_lahir || '-'}</div>
-                            ${additionalData.orang_tua.pendidikan_terakhir ? `<div><strong>Pendidikan:</strong> ${additionalData.orang_tua.pendidikan_terakhir}</div>` : ''}
-                            ${additionalData.orang_tua.nip ? `<div><strong>NIP:</strong> ${additionalData.orang_tua.nip}</div>` : ''}
-                        </div>
-                        ${additionalData.orang_tua.alamat_rumah ? `
-                            <div class="mt-3 text-sm">
-                                <strong>Alamat Rumah:</strong> ${additionalData.orang_tua.alamat_rumah}
-                            </div>
-                        ` : ''}
-                        ${additionalData.orang_tua.alamat_instansi ? `
-                            <div class="mt-2 text-sm">
-                                <strong>Alamat Instansi:</strong> ${additionalData.orang_tua.alamat_instansi}
-                            </div>
-                        ` : ''}
-                    </div>
-                `;
-            }
-            
-            // Kerja Praktek data
-            if (additionalData.kerja_praktek) {
-                additionalDataHtml = `
-                    <div class="bg-green-50 p-4 rounded-lg mt-4">
-                        <h4 class="font-medium text-green-800 mb-3">
-                            <i class="fas fa-briefcase mr-2"></i>
-                            Data Kerja Praktek
-                        </h4>
-                        <div class="grid md:grid-cols-2 gap-3 text-sm">
-                            <div><strong>Perusahaan:</strong> ${additionalData.kerja_praktek.nama_perusahaan || '-'}</div>
-                            <div><strong>Bidang Kerja:</strong> ${additionalData.kerja_praktek.bidang_kerja || '-'}</div>
-                            <div><strong>Periode Mulai:</strong> ${additionalData.kerja_praktek.periode_mulai || '-'}</div>
-                            <div><strong>Periode Selesai:</strong> ${additionalData.kerja_praktek.periode_selesai || '-'}</div>
-                        </div>
-                        ${additionalData.kerja_praktek.alamat_perusahaan ? `
-                            <div class="mt-3 text-sm">
-                                <strong>Alamat Perusahaan:</strong> ${additionalData.kerja_praktek.alamat_perusahaan}
-                            </div>
-                        ` : ''}
-                    </div>
-                `;
-            }
-            
-            // Tugas Akhir data
-            if (additionalData.tugas_akhir) {
-                additionalDataHtml = `
-                    <div class="bg-purple-50 p-4 rounded-lg mt-4">
-                        <h4 class="font-medium text-purple-800 mb-3">
-                            <i class="fas fa-book mr-2"></i>
-                            Data Tugas Akhir
-                        </h4>
-                        <div class="text-sm space-y-2">
-                            ${additionalData.tugas_akhir.judul_ta ? `<div><strong>Judul:</strong> ${additionalData.tugas_akhir.judul_ta}</div>` : ''}
-                            ${additionalData.tugas_akhir.dosen_pembimbing1 ? `<div><strong>Pembimbing 1:</strong> ${additionalData.tugas_akhir.dosen_pembimbing1}</div>` : ''}
-                            ${additionalData.tugas_akhir.dosen_pembimbing2 ? `<div><strong>Pembimbing 2:</strong> ${additionalData.tugas_akhir.dosen_pembimbing2}</div>` : ''}
-                            ${additionalData.tugas_akhir.lokasi_penelitian ? `<div><strong>Lokasi Penelitian:</strong> ${additionalData.tugas_akhir.lokasi_penelitian}</div>` : ''}
-                        </div>
-                    </div>
-                `;
-            }
-            
-            // Keterangan khusus data
-            if (additionalData.keterangan_khusus) {
-                additionalDataHtml = `
-                    <div class="bg-indigo-50 p-4 rounded-lg mt-4">
-                        <h4 class="font-medium text-indigo-800 mb-3">
-                            <i class="fas fa-info-circle mr-2"></i>
-                            Keterangan Khusus
-                        </h4>
-                        <div class="text-sm">
-                            ${additionalData.keterangan_khusus}
-                        </div>
-                    </div>
-                `;
-            }
-            
-        } catch (e) {
-            console.error('Error parsing additional data:', e);
-        }
-    }
-    
-    container.innerHTML = `
-        <div class="bg-white rounded-lg shadow-lg overflow-hidden">
-            <!-- Header with Status -->
-            <div class="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6">
-                <div class="flex justify-between items-center">
-                    <div>
-                        <h2 class="text-xl font-bold">Pengajuan Ditemukan</h2>
-                        <p class="text-blue-100 text-sm">Token: ${pengajuan.tracking_token}</p>
-                    </div>
-                    <div class="text-right">
-                        <span class="px-3 py-1 rounded-full text-sm font-medium ${getStatusClass(pengajuan.status)}">
-                            ${getStatusText(pengajuan.status)}
-                        </span>
-                        <p class="text-blue-100 text-xs mt-1">${formatDate(pengajuan.created_at)}</p>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Content -->
-            <div class="p-6">
-                <div class="grid md:grid-cols-2 gap-6 mb-6">
-                    <!-- Pengajuan Info -->
-                    <div>
-                        <h3 class="font-semibold text-gray-800 mb-3">
-                            <i class="fas fa-file-alt mr-2 text-blue-600"></i>
-                            Informasi Surat
-                        </h3>
-                        <div class="space-y-2 text-sm">
-                            <div><strong>Jenis Surat:</strong> ${pengajuan.jenis_surat?.nama_jenis || 'N/A'}</div>
-                            <div><strong>Kode:</strong> ${pengajuan.jenis_surat?.kode_surat || 'N/A'}</div>
-                            <div><strong>Tanggal Pengajuan:</strong> ${formatDate(pengajuan.created_at)}</div>
-                        </div>
-                    </div>
-                    
-                    <!-- Mahasiswa Info -->
-                    <div>
-                        <h3 class="font-semibold text-gray-800 mb-3">
-                            <i class="fas fa-user-graduate mr-2 text-green-600"></i>
-                            Data Mahasiswa
-                        </h3>
-                        <div class="space-y-2 text-sm">
-                            <div><strong>NIM:</strong> ${pengajuan.nim}</div>
-                            <div><strong>Nama:</strong> ${pengajuan.nama_mahasiswa}</div>
-                            <div><strong>Program Studi:</strong> ${pengajuan.prodi?.nama_prodi || 'N/A'}</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Keperluan -->
-                <div class="mb-4">
-                    <h3 class="font-semibold text-gray-800 mb-2">
-                        <i class="fas fa-clipboard-list mr-2 text-purple-600"></i>
-                        Keperluan
-                    </h3>
-                    <div class="bg-gray-50 p-3 rounded border text-sm">
-                        ${pengajuan.keperluan}
-                    </div>
-                </div>
-                
-                <!-- Universal Data - SEMESTER, TAHUN AKADEMIK, DOSEN WALI -->
-                ${universalDataHtml}
-                
-                <!-- Specific Additional Data -->
-                ${additionalDataHtml}
-                
-                <!-- Timeline/Next Steps -->
-                <div class="mt-6 p-4 bg-blue-50 rounded-lg">
-                    <h4 class="font-medium text-blue-800 mb-2">
-                        <i class="fas fa-clock mr-2"></i>
-                        Status & Langkah Selanjutnya
-                    </h4>
-                    <p class="text-blue-700 text-sm">
-                        ${getStatusDescription(pengajuan.status)}
-                    </p>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    container.classList.remove('hidden');
-    document.getElementById('loadingState').classList.add('hidden');
-    document.getElementById('errorState').classList.add('hidden');
-}
-
-function getStatusClass(status) {
-    const classes = {
-        pending: 'bg-yellow-100 text-yellow-800',
-        processing: 'bg-blue-100 text-blue-800', 
-        approved: 'bg-green-100 text-green-800',
-        completed: 'bg-green-100 text-green-800',
-        rejected: 'bg-red-100 text-red-800'
-    };
-    return classes[status] || 'bg-gray-100 text-gray-800';
-}
-
-function getStatusText(status) {
-    const texts = {
-        pending: 'Menunggu Review',
-        processing: 'Sedang Diproses',
-        approved: 'Disetujui',
-        completed: 'Selesai',
-        rejected: 'Ditolak'
-    };
-    return texts[status] || 'Unknown';
-}
-
-function getStatusDescription(status) {
-    const descriptions = {
-        pending: 'Pengajuan Anda sedang dalam antrian review. Staff akan memproses dalam 1-2 hari kerja.',
-        processing: 'Pengajuan sedang diproses oleh staff akademik. Mohon tunggu konfirmasi selanjutnya.',
-        approved: 'Pengajuan Anda telah disetujui. Surat sedang dalam proses pembuatan.',
-        completed: 'Surat sudah selesai dibuat dan dapat diambil di bagian akademik.',
-        rejected: 'Pengajuan ditolak. Silakan hubungi bagian akademik untuk informasi lebih lanjut.'
-    };
-    return descriptions[status] || 'Status tidak diketahui.';
-}
-
-function formatDate(dateString) {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('id-ID', { 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
+    // Visual feedback
+    event.target.style.background = '#10b981';
+    event.target.style.color = 'white';
+    setTimeout(() => {
+        event.target.style.background = '';
+        event.target.style.color = '';
+    }, 1000);
 }
 </script>
-@endsection
+@endpush
