@@ -226,40 +226,81 @@
                 </div>
                 
                 <!-- Actions Footer -->
-                <div class="bg-gray-50 px-6 py-4 border-t border-gray-200">
-                    <div class="flex justify-between items-center">
-                        <a href="<?php echo e(route('staff.pengajuan.index')); ?>" 
-                           class="inline-flex items-center px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white text-sm font-medium rounded-md transition-colors">
-                            <i class="fas fa-arrow-left mr-2"></i>
-                            Kembali
-                        </a>
-                        
-                        <div class="flex space-x-2">
-                            <?php if($pengajuan->status === 'pending' && auth()->user()->hasRole(['staff_prodi', 'kaprodi'])): ?>
-                                <button onclick="showApproveConfirm()" 
-                                        class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-md transition-colors">
-                                    <i class="fas fa-check mr-2"></i>
-                                    Setujui
-                                </button>
-                                
-                                <button onclick="showRejectModal()" 
-                                        class="inline-flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-md transition-colors">
-                                    <i class="fas fa-times mr-2"></i>
-                                    Tolak
-                                </button>
-                            <?php elseif(in_array($pengajuan->status, ['processed', 'approved_prodi'])): ?>
-                                <span class="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 text-sm font-medium rounded-md">
-                                    <i class="fas fa-check-circle mr-2"></i>
-                                    Sudah Disetujui Prodi
-                                </span>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </div>
-            </div>
+<div class="bg-gray-50 px-6 py-4 border-t border-gray-200">
+    <div class="flex justify-between items-center">
+        <a href="<?php echo e(route('staff.pengajuan.index')); ?>" 
+           class="inline-flex items-center px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white text-sm font-medium rounded-md transition-colors">
+            <i class="fas fa-arrow-left mr-2"></i>
+            Kembali
+        </a>
+        
+        <div class="flex space-x-2">
+            
+            <?php if($pengajuan->status === 'pending' && auth()->user()->hasRole(['staff_prodi', 'kaprodi'])): ?>
+                <button onclick="showApproveConfirm()" 
+                        class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-md transition-colors">
+                    <i class="fas fa-check mr-2"></i>
+                    Setujui
+                </button>
+                
+                <button onclick="showRejectModal()" 
+                        class="inline-flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-md transition-colors">
+                    <i class="fas fa-times mr-2"></i>
+                    Tolak
+                </button>
+            
+            
+            <?php elseif($pengajuan->status === 'approved_prodi'): ?>
+                <?php if($pengajuan->needsSuratPengantar() && !$pengajuan->hasSuratPengantar()): ?>
+                    <a href="<?php echo e(route('staff.pengajuan.pengantar.preview', $pengajuan->id)); ?>" 
+                       class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">
+                        <i class="fas fa-file-alt mr-2"></i>Generate Surat Pengantar
+                    </a>
+                <?php else: ?>
+                    <span class="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 text-sm font-medium rounded-md">
+                        <i class="fas fa-check-circle mr-2"></i>
+                        Sudah Disetujui - Menunggu Proses Pengantar
+                    </span>
+                <?php endif; ?>
+            
+            
+            <?php elseif($pengajuan->status === 'pengantar_generated'): ?>
+                <span class="inline-flex items-center px-4 py-2 bg-green-100 text-green-800 text-sm font-medium rounded-md">
+                    <i class="fas fa-check-double mr-2"></i>
+                    Surat Pengantar Sudah Dibuat
+                </span>
+            
+            <?php else: ?>
+                <span class="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-800 text-sm font-medium rounded-md">
+                    <i class="fas fa-info-circle mr-2"></i>
+                    Status: <?php echo e(ucwords(str_replace('_', ' ', $pengajuan->status))); ?>
+
+                </span>
+            <?php endif; ?>
         </div>
     </div>
 </div>
+
+
+<?php if($pengajuan->hasSuratPengantar()): ?>
+    <div class="bg-green-50 border border-green-200 rounded-lg p-4 mt-4">
+        <h4 class="font-semibold text-green-800 mb-2">
+            <i class="fas fa-check-circle mr-2"></i>Surat Pengantar Sudah Dibuat
+        </h4>
+        <div class="text-sm text-green-700 space-y-1">
+            <p><strong>Nomor:</strong> <?php echo e($pengajuan->surat_pengantar_nomor); ?></p>
+            <p><strong>Dibuat oleh:</strong> <?php echo e($pengajuan->suratPengantarGeneratedBy->nama ?? 'N/A'); ?></p>
+            <p><strong>Tanggal:</strong> <?php echo e($pengajuan->surat_pengantar_generated_at?->format('d/m/Y H:i')); ?></p>
+            <?php if($pengajuan->nota_dinas_number): ?>
+                <p><strong>No. Nota Dinas:</strong> <?php echo e($pengajuan->nota_dinas_number); ?></p>
+            <?php endif; ?>
+        </div>
+        <a href="<?php echo e($pengajuan->surat_pengantar_url); ?>" target="_blank"
+           class="inline-flex items-center px-3 py-1 bg-green-600 text-white rounded text-sm mt-2 hover:bg-green-700">
+            <i class="fas fa-download mr-2"></i>Download Surat Pengantar
+        </a>
+    </div>
+<?php endif; ?>
 
 <!-- Keep existing modals unchanged -->
 <!-- Modal Konfirmasi Approve -->
@@ -290,7 +331,7 @@
         <!-- Content -->
         <div class="p-6">
             <p class="text-gray-700 mb-4">
-                Apakah Anda yakin ingin menyetujui pengajuan surat ini? Pengajuan akan diteruskan ke fakultas untuk proses selanjutnya.
+                Apakah Anda yakin ingin menyetujui pengajuan surat ini? Sebelum pengajuan diteruskan ke fakultas akan ada proses membuat surat pengantar.
             </p>
             
             <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">

@@ -469,6 +469,43 @@ class SuratFSIController extends Controller
         
         return $pdf->download($fileName);
     }
+
+    private function generatePengantarPDF($pengajuan, $suratData, $ttdKaprodi)
+{
+    $kodeProdi = strtolower($pengajuan->prodi->kode_prodi);
+    $kodeJenis = strtolower($pengajuan->jenisSurat->kode_surat);
+    
+    // Cek template spesifik prodi
+    $specificTemplate = "surat.pdf.pengantar-{$kodeJenis}-{$kodeProdi}";
+    $defaultTemplate = "surat.pdf.pengantar-{$kodeJenis}-default";
+    
+    // Fallback ke default jika template prodi belum dibuat
+    if (!view()->exists($specificTemplate)) {
+        $specificTemplate = $defaultTemplate;
+    }
+    
+    // Prepare data untuk template
+    $data = [
+        'pengajuan' => $pengajuan,
+        'surat_data' => $suratData,
+        'ttd_kaprodi' => $ttdKaprodi,
+        'prodi' => $pengajuan->prodi,
+        'fakultas' => $pengajuan->prodi->fakultas,
+        'kaprodi' => $pengajuan->prodi->kaprodi,
+        'nomor_surat' => $suratData['nomor_surat'] ?? $pengajuan->surat_pengantar_nomor,
+        'tanggal_surat' => now()->locale('id')->isoFormat('D MMMM Y')
+    ];
+    
+    $pdf = PDF::loadView($specificTemplate, $data)
+        ->setPaper('a4', 'portrait')
+        ->setOptions([
+            'isHtml5ParserEnabled' => true,
+            'isRemoteEnabled' => true,
+            'defaultFont' => 'Times New Roman'
+        ]);
+    
+    return $pdf;
+}
     
     /**
      * NEW: Get view path based on jenis surat

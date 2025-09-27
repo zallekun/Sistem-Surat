@@ -1,0 +1,232 @@
+=== SISTEM SURAT PENGAJUAN MAHASISWA - STRUCTURE ANALYZER ===
+
+Base Path: C:\laragon\www\sistem-surat
+
+Analysis Date: 2025-09-26 08:08:55
+
+
+============================================================
+DATABASE STRUCTURE
+============================================================
+  
+📋 Table: users
+    Purpose: User authentication & roles (mahasiswa, staff_prodi, staff_fakultas, kaprodi)
+    Key Fields: id, name, email, role, prodi_id, fakultas_id
+    Relationships: belongsTo: prodi, belongsTo: fakultas
+  
+📋 Table: fakultas
+    Purpose: Master data fakultas
+    Key Fields: id, nama_fakultas, kode_fakultas
+    Relationships: hasMany: prodi, hasMany: users
+  
+📋 Table: prodi
+    Purpose: Master data program studi
+    Key Fields: id, nama_prodi, kode_prodi, fakultas_id
+    Relationships: belongsTo: fakultas, hasMany: users, hasMany: pengajuan_surats
+  
+📋 Table: jenis_surats
+    Purpose: Master jenis surat (MA, KP, TA, SKM)
+    Key Fields: id, nama_jenis, kode_surat, template_path
+    Relationships: hasMany: pengajuan_surats
+  
+📋 Table: pengajuan_surats
+    Purpose: CORE TABLE - Data pengajuan surat mahasiswa
+    Key Fields: id, tracking_token, nim, nama_mahasiswa, email, jenis_surat_id, prodi_id, keperluan, additional_data, status, approved_by_prodi, approved_at_prodi, rejected_by_prodi, rejection_reason_prodi, completed_by, completed_at, download_url
+    Relationships: belongsTo: prodi, belongsTo: jenisSurat
+  
+📊 STATUS FLOW UNTUK PENGAJUAN MAHASISWA:
+    • pending: Menunggu review dari staff prodi
+    • approved_prodi: Disetujui prodi, diteruskan ke fakultas
+    • processed: Sedang diproses di fakultas
+    • sedang_ditandatangani: Menunggu tanda tangan fisik
+    • completed: Surat selesai dan dapat didownload
+    • rejected_prodi: Ditolak oleh prodi
+    • rejected_fakultas: Ditolak oleh fakultas
+
+============================================================
+MODELS STRUCTURE
+============================================================
+  
+🏗️ Model: User.php
+    ✅ EXISTS
+    Relationships:
+      ❌ belongsTo: prodi
+      ❌ belongsTo: fakultas
+    Key Methods:
+      ❌ hasRole()
+      ❌ isStaffProdi()
+      ❌ isStaffFakultas()
+  
+🏗️ Model: PengajuanSurat.php
+    ✅ EXISTS
+    Relationships:
+      ❌ belongsTo: prodi
+      ❌ belongsTo: jenisSurat
+      ❌ belongsTo: user
+    Key Methods:
+      ❌ generateToken()
+      ❌ canBeProcessed()
+      ✅ markAsPrinted()
+  
+🏗️ Model: JenisSurat.php
+    ✅ EXISTS
+    Relationships:
+      ❌ hasMany: pengajuan_surats
+    Key Methods:
+      ❌ getTemplatePathAttribute()
+  
+🏗️ Model: Prodi.php
+    ✅ EXISTS
+    Relationships:
+      ❌ belongsTo: fakultas
+      ❌ hasMany: users
+      ❌ hasMany: pengajuan_surats
+  
+🏗️ Model: Fakultas.php
+    ✅ EXISTS
+    Relationships:
+      ❌ hasMany: prodi
+      ❌ hasMany: users
+
+============================================================
+CONTROLLERS STRUCTURE
+============================================================
+  
+🎮 Controller: PengajuanSuratController.php
+    Purpose: Handle pengajuan dari mahasiswa (public)
+    Middleware: Array
+    ❌ NOT FOUND
+  
+🎮 Controller: StaffPengajuanController.php
+    Purpose: Handle review pengajuan oleh staff prodi
+    Middleware: Array
+    ✅ EXISTS
+    Methods:
+      ✅ index()
+      ✅ show()
+      ❌ processPengajuan()
+      ❌ getStatistics()
+  
+🎮 Controller: FakultasStaffController.php
+    Purpose: Handle surat yang sudah disetujui prodi
+    Middleware: Array
+    ✅ EXISTS
+    Methods:
+      ✅ index()
+      ✅ show()
+      ✅ processPengajuanFromProdi()
+  
+🎮 Controller: SuratFSIController.php
+    Purpose: Generate dan manage surat FSI
+    Middleware: Array
+    ✅ EXISTS
+    Methods:
+      ✅ preview()
+      ❌ generatePDF()
+      ✅ printSurat()
+      ❌ uploadSigned()
+
+============================================================
+VIEWS STRUCTURE
+============================================================
+  
+📄 View Directory: pengajuan/
+    Purpose: Views untuk mahasiswa mengajukan surat
+    ❌ DIRECTORY NOT FOUND
+  
+📄 View Directory: staff/pengajuan/
+    Purpose: Views untuk staff prodi review pengajuan
+    ✅ DIRECTORY EXISTS
+      ✅ index.blade.php
+      ✅ show.blade.php
+  
+📄 View Directory: fakultas/surat/
+    Purpose: Views untuk staff fakultas manage surat
+    ✅ DIRECTORY EXISTS
+      ✅ index.blade.php
+      ✅ show.blade.php
+  
+📄 View Directory: surat/fsi/
+    Purpose: Views untuk preview dan edit surat
+    ✅ DIRECTORY EXISTS
+      ✅ preview-editable.blade.php
+  
+📄 View Directory: surat/pdf/
+    Purpose: Templates PDF untuk print surat
+    ✅ DIRECTORY EXISTS
+      ✅ surat-ma.blade.php
+      ✅ surat-kp.blade.php
+      ❌ surat-ta.blade.php
+
+============================================================
+ROUTES STRUCTURE
+============================================================
+  ✅ Route file exists: web.php
+    
+Public Routes (Mahasiswa):
+      ✅ GET /pengajuan
+      ❌ GET /pengajuan/create
+      ✅ POST /pengajuan
+      ❌ GET /pengajuan/track
+    
+Staff Prodi Routes:
+      ❌ GET /staff/pengajuan
+      ❌ GET /staff/pengajuan/{id}
+      ❌ POST /staff/pengajuan/{id}/process
+    
+Staff Fakultas Routes:
+      ❌ GET /fakultas/surat
+      ❌ GET /fakultas/surat/{id}
+      ❌ GET /fakultas/surat/fsi/preview/{id}
+      ❌ POST /fakultas/surat/fsi/print/{id}
+
+============================================================
+MIGRATIONS
+============================================================
+  ✅ Migration directory exists
+    ✅ create_users_table
+    ✅ create_fakultas_table
+    ✅ create_prodi_table
+    ❌ create_jenis_surats_table
+    ✅ create_pengajuan_surats_table
+
+============================================================
+SEEDERS
+============================================================
+  ✅ Seeder directory exists
+    ❌ RolePermissionSeeder.php
+    ✅ FakultasSeeder.php
+    ✅ ProdiSeeder.php
+    ✅ JenisSuratSeeder.php
+    ✅ UserSeeder.php
+
+============================================================
+SYSTEM SUMMARY
+============================================================
+  🎯 FOCUS: Sistem Pengajuan Surat Mahasiswa
+  📋 Core Feature: Mahasiswa dapat mengajukan surat secara online
+  👥 User Roles:
+       • Mahasiswa: Mengajukan surat
+       • Staff Prodi: Review dan approve pengajuan
+       • Staff Fakultas: Generate dan manage surat
+       • Kaprodi: Approve pengajuan (sama seperti staff prodi)
+  
+📊 Workflow:
+    1. Mahasiswa submit pengajuan surat online
+    2. Staff Prodi/Kaprodi review dan approve/reject
+    3. Staff Fakultas generate surat dan print untuk TTD
+    4. Setelah TTD, upload link surat signed
+    5. Status completed, surat dapat didownload mahasiswa
+  
+🔧 Tech Stack:
+    • Laravel (Backend)
+    • Blade Templates (Views)
+    • Tailwind CSS (Styling)
+    • DomPDF (PDF Generation)
+    • Spatie Roles & Permissions
+  
+📄 Supported Letter Types:
+    • MA: Surat Mahasiswa Aktif
+    • KP: Surat Kerja Praktek
+    • TA: Surat Tugas Akhir
+    • SKM: Surat Keterangan Mahasiswa

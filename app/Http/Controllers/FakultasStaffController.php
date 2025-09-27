@@ -22,90 +22,109 @@ class FakultasStaffController extends Controller
     /**
      * Display combined list: surats + pengajuan for fakultas staff
      */
-    public function index(Request $request)
-    {
-        $user = Auth::user();
-        $user->load('prodi.fakultas', 'role');
-        
-        $fakultasId = $user->prodi?->fakultas_id;
-        if (!$fakultasId) {
-            return redirect()->back()->with('error', 'Anda tidak memiliki akses ke fakultas manapun');
-        }
-        
-        // 1. Get existing surats (surat yang sudah dibuat prodi)
-        $suratQuery = Surat::with(['jenisSurat', 'currentStatus', 'createdBy', 'tujuanJabatan', 'prodi.fakultas'])
-                      ->whereHas('prodi', function($q) use ($fakultasId) {
-                          $q->where('fakultas_id', $fakultasId);
-                      })
-                      ->whereHas('currentStatus', function($q) {
-                          $q->where('kode_status', 'disetujui_kaprodi');
-                      });
-        
-        // 2. Get pengajuan yang sudah disetujui prodi
-        $pengajuanQuery = PengajuanSurat::with(['prodi', 'jenisSurat'])
-                                   ->whereHas('prodi', function($q) use ($fakultasId) {
-                                       $q->where('fakultas_id', $fakultasId);
-                                   })
-                                   ->whereIn('status', ['processed', 'approved_prodi','sedang_ditandatangani', 'completed']);
-        
-        // Apply filters untuk both queries
-        if ($request->search) {
+public function index(Request $request)
+{
+    $user = Auth::user();
+    $user->load('prodi.fakultas', 'role');
+    
+    $fakultasId = $user->prodi?->fakultas_id;
+    if (!$fakultasId) {
+        return redirect()->back()->with('error', 'Anda tidak memiliki akses ke fakultas manapun');
+    }
+    
+    // 1. Get existing surats (surat yang sudah dibuat prodi)
+    $suratQuery = Surat::with(['jenisSurat', 'currentStatus', 'createdBy', 'tujuanJabatan', 'prodi.fakultas'])
+                  ->whereHas('prodi', function($q) use ($fakultasId) {
+                      $q->where('fakultas_id', $fakultasId);
+                  })
+                  ->whereHas('currentStatus', function($q) {
+                      $q->where('kode_status', 'disetujui_kaprodi');
+                  });
+    
+    // 2. Get pengajuan yang SIAP diproses fakultas
+    $pengajuanQuery = PengajuanSurat::with(['prodi', 'jenisSurat'])
+                          ->whereHas('prodi', function($q) use ($fakultasId) {
+                              $q->where('fakultas_id', $fakultasId);
+                          })
+                          ->where(function($q) {
+                              // ✅ MA yang sudah approved_prodi langsung masuk
+                              $q->where(function($subQ) {
+                                  $subQ->where('status', 'approved_prodi')
+                                       ->whereHas('jenisSurat', function($js) {
+                                           $js->where('kode_surat', 'MA');
+                                       });
+                              })
+                              // ✅ KP/TA HANYA setelah ada surat pengantar
+                              ->orWhere(function($subQ) {
+                                  $subQ->where('status', 'pengantar_generated')
+                                       ->whereNotNull('surat_pengantar_url')
+                                       ->whereHas('jenisSurat', function($js) {
+                                           $js->whereIn('kode_surat', ['KP', 'TA']);
+                                       });
+                              })
+                              // ✅ Yang sudah diproses fakultas (semua jenis)
+                              ->orWhereIn('status', ['processed', 'sedang_ditandatangani', 'completed']);
+                          });
+    
+    // Apply filters untuk both queries
+    if ($request->search) {
         $suratQuery->where(function($q) use ($request) {
             $q->where('perihal', 'like', '%' . $request->search . '%')
               ->orWhere('nomor_surat', 'like', '%' . $request->search . '%');
         });
-            
-            $pengajuanQuery->where(function($q) use ($request) {
+        
+        $pengajuanQuery->where(function($q) use ($request) {
             $q->where('nim', 'like', "%{$request->search}%")
               ->orWhere('nama_mahasiswa', 'like', "%{$request->search}%")
               ->orWhere('tracking_token', 'like', "%{$request->search}%");
         });
     }
-        
-        if ($request->prodi_id) {
-            $suratQuery->where('prodi_id', $request->prodi_id);
-            $pengajuanQuery->where('prodi_id', $request->prodi_id);
-        }
-        
-        // Get data
-        $surats = $suratQuery->get();
-        $pengajuans = $pengajuanQuery->get();
-        
-$pengajuanItems = $pengajuans->map(function($pengajuan) {
-    // ✅ Update status display berdasarkan status
-    $statusDisplay = match($pengajuan->status) {
-        'processed' => 'Perlu Generate Surat',
-        'approved_prodi' => 'Disetujui Prodi',
-        'sedang_ditandatangani' => 'Sedang TTD Fisik',
-        'completed' => 'Selesai',
-        default => $pengajuan->status_label
-    };
     
-    $statusClass = match($pengajuan->status) {
-        'processed' => 'bg-blue-100 text-blue-800',
-        'approved_prodi' => 'bg-green-100 text-green-800',
-        'sedang_ditandatangani' => 'bg-orange-100 text-orange-800',
-        'completed' => 'bg-gray-100 text-gray-800',
-        default => 'bg-gray-100 text-gray-600'
-    };
+    if ($request->prodi_id) {
+        $suratQuery->where('prodi_id', $request->prodi_id);
+        $pengajuanQuery->where('prodi_id', $request->prodi_id);
+    }
+    
+    // Get data
+    $surats = $suratQuery->get();
+    $pengajuans = $pengajuanQuery->get();
+    
+    $pengajuanItems = $pengajuans->map(function($pengajuan) {
+        $statusDisplay = match($pengajuan->status) {
+            'approved_prodi' => 'Disetujui Prodi - Perlu Generate Surat',
+            'pengantar_generated' => 'Surat Pengantar Siap - Perlu Generate Surat Final',
+            'processed' => 'Perlu Generate Surat',
+            'sedang_ditandatangani' => 'Sedang TTD Fisik',
+            'completed' => 'Selesai',
+            default => ucwords(str_replace('_', ' ', $pengajuan->status))
+        };
+        
+        $statusClass = match($pengajuan->status) {
+            'approved_prodi' => 'bg-green-100 text-green-800',
+            'pengantar_generated' => 'bg-blue-100 text-blue-800',
+            'processed' => 'bg-yellow-100 text-yellow-800',
+            'sedang_ditandatangani' => 'bg-orange-100 text-orange-800',
+            'completed' => 'bg-gray-100 text-gray-800',
+            default => 'bg-gray-100 text-gray-600'
+        };
 
-    return (object)[
-        'id' => $pengajuan->id,
-        'type' => 'pengajuan',
-        'nomor_surat' => $pengajuan->tracking_token,
-        'tracking_token' => $pengajuan->tracking_token,
-        'nim' => $pengajuan->nim,
-        'nama_mahasiswa' => $pengajuan->nama_mahasiswa,
-        'perihal' => $pengajuan->jenisSurat->nama_jenis . ' - ' . $pengajuan->nama_mahasiswa,
-        'prodi' => $pengajuan->prodi,
-        'created_at' => $pengajuan->created_at,
-        'status_display' => $statusDisplay,  // ✅ Gunakan variable yang sudah dibuat
-        'status_class' => $statusClass,      // ✅ Gunakan variable yang sudah dibuat
-        'createdBy' => (object)['nama' => $pengajuan->nama_mahasiswa, 'name' => $pengajuan->nama_mahasiswa],
-        'currentStatus' => (object)['kode_status' => $pengajuan->status],
-        'original_pengajuan' => $pengajuan
-    ];
-});
+        return (object)[
+            'id' => $pengajuan->id,
+            'type' => 'pengajuan',
+            'nomor_surat' => $pengajuan->tracking_token,
+            'tracking_token' => $pengajuan->tracking_token,
+            'nim' => $pengajuan->nim,
+            'nama_mahasiswa' => $pengajuan->nama_mahasiswa,
+            'perihal' => $pengajuan->jenisSurat->nama_jenis . ' - ' . $pengajuan->nama_mahasiswa,
+            'prodi' => $pengajuan->prodi,
+            'created_at' => $pengajuan->created_at,
+            'status_display' => $statusDisplay,
+            'status_class' => $statusClass,
+            'createdBy' => (object)['nama' => $pengajuan->nama_mahasiswa, 'name' => $pengajuan->nama_mahasiswa],
+            'currentStatus' => (object)['kode_status' => $pengajuan->status],
+            'original_pengajuan' => $pengajuan
+        ];
+    });
 
 // Transform existing surats
 $suratItems = $surats->map(function($surat) {
@@ -187,7 +206,7 @@ public function show($id)
     $surat = Surat::with([
         'jenisSurat', 'currentStatus', 'createdBy.jabatan', 
         'tujuanJabatan', 'prodi.fakultas', 'statusHistories.user', 
-        'statusHistories.status'
+        'statusHistories.status', 'suratPengantarGeneratedBy'
     ])->find($id);
     
     if ($surat && $surat->prodi->fakultas_id === $fakultasId) {

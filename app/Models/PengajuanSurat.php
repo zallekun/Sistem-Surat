@@ -50,7 +50,13 @@ class PengajuanSurat extends Model
         'completed_by',         // NEW - user yang menyelesaikan
         'surat_generated_id',   // NEW - link ke surat_generated
         'notes',
-        'direct_to_fakultas'
+        'direct_to_fakultas',
+        'surat_pengantar_url',
+        'surat_pengantar_nomor',
+        'surat_pengantar_generated_at',
+        'surat_pengantar_generated_by',
+        'ttd_kaprodi_image',
+        'nota_dinas_number',
     ];
 
     protected $casts = [
@@ -65,8 +71,26 @@ class PengajuanSurat extends Model
         'rejected_at_fakultas' => 'datetime',
         'printed_at' => 'datetime',     // NEW
         'completed_at' => 'datetime',   // NEW
-        'direct_to_fakultas' => 'boolean'
+        'direct_to_fakultas' => 'boolean',
+        'surat_pengantar_generated_at' => 'datetime'
     ];
+
+    // Tambah relationship
+public function suratPengantarGeneratedBy()
+{
+    return $this->belongsTo(User::class, 'surat_pengantar_generated_by');
+}
+
+// Helper method
+public function hasSuratPengantar()
+{
+    return !empty($this->surat_pengantar_url);
+}
+
+public function needsSuratPengantar()
+{
+    return in_array($this->jenisSurat->kode_surat, ['KP', 'TA']);
+}
 
     // EXISTING RELATIONSHIPS
     public function prodi()
@@ -228,6 +252,26 @@ class PengajuanSurat extends Model
     {
         return in_array($this->status, ['approved_fakultas', 'processed']); // Include processed for legacy
     }
+    
+    public function canGeneratePengantar()
+{
+    // Only KP and TA need surat pengantar
+    if (!in_array($this->jenisSurat->kode_surat, ['KP', 'TA'])) {
+        return false;
+    }
+    
+    // Must be approved by prodi
+    if ($this->status !== 'approved_prodi') {
+        return false;
+    }
+    
+    // Should not have surat pengantar yet
+    if (!empty($this->surat_pengantar_url)) {
+        return false;
+    }
+    
+    return true;
+}
 
     // NEW HELPER METHODS FOR NEW WORKFLOW
     public function canEditSurat(): bool
