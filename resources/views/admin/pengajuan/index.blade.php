@@ -12,11 +12,14 @@
                 <div class="flex justify-between items-center">
                     <div>
                         <h2 class="text-xl font-bold text-gray-800">Kelola Pengajuan</h2>
-                        <p class="text-sm text-gray-500 mt-0.5">Semua pengajuan surat dari semua prodi</p>
+                        <p class="text-sm text-gray-500 mt-0.5">Manajemen semua pengajuan surat</p>
                     </div>
-                    <span class="text-sm text-gray-500">
-                        Total: {{ $pengajuans->total() }} pengajuan
-                    </span>
+                    <div class="flex gap-2">
+                        <a href="{{ route('admin.pengajuan.export', request()->query()) }}" 
+                        class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium transition">
+                            <i class="fas fa-download mr-2"></i>Export Excel
+                        </a>
+                    </div>
                 </div>
             </div>
 

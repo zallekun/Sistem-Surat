@@ -8,6 +8,9 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use App\Models\AuditTrail;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\AuditTrailExport;
 
 class AdminDashboardController extends Controller
 {
@@ -105,4 +108,59 @@ class AdminDashboardController extends Controller
             'stuckPengajuan'
         ));
     }
+
+    public function auditTrail(Request $request)
+{
+    $query = AuditTrail::with('user');
+    
+    if ($request->search) {
+        $query->where(function($q) use ($request) {
+            $q->where('reason', 'like', "%{$request->search}%")
+              ->orWhere('model_id', $request->search);
+        });
+    }
+    
+    if ($request->action) {
+        $query->where('action', $request->action);
+    }
+    
+    if ($request->user_id) {
+        $query->where('user_id', $request->user_id);
+    }
+    
+    if ($request->date) {
+        $query->whereDate('created_at', $request->date);
+    }
+    
+    $logs = $query->latest()->paginate(20);
+    $users = User::whereHas('roles', function($q) {
+        $q->where('name', 'admin');
+    })->get();
+    
+    return view('admin.audit-trail.index', compact('logs', 'users'));
+}
+
+public function auditTrailShow($id)
+{
+    $log = AuditTrail::with('user')->findOrFail($id);
+    
+    return response()->json([
+        'action' => ucfirst(str_replace('_', ' ', $log->action)),
+        'user_name' => $log->user->nama ?? 'Unknown',
+        'created_at' => $log->created_at->format('d F Y, H:i:s'),
+        'ip_address' => $log->ip_address,
+        'reason' => $log->reason,
+        'old_data' => $log->old_data,
+        'new_data' => $log->new_data,
+    ]);
+}
+
+public function auditTrailExport(Request $request)
+{
+    $filters = $request->only(['action', 'user_id', 'date']);
+    
+    $filename = 'audit_trail_' . date('Y-m-d_His') . '.xlsx';
+    
+    return Excel::download(new AuditTrailExport($filters), $filename);
+}
 }

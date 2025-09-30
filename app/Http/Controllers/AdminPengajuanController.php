@@ -9,6 +9,10 @@ use App\Models\JenisSurat;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
+use App\Models\AuditTrail;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\PengajuanExport;
 
 class AdminPengajuanController extends Controller
 {
@@ -224,4 +228,225 @@ class AdminPengajuanController extends Controller
         
         return null;
     }
+
+    /**
+     * Force complete pengajuan yang stuck
+     */
+    public function forceComplete(Request $request, $id)
+    {
+        $request->validate([
+            'reason' => 'required|string|max:500',
+        ]);
+        
+        $pengajuan = PengajuanSurat::withTrashed()->findOrFail($id);
+        
+        try {
+            DB::beginTransaction();
+            
+            $oldData = [
+                'status' => $pengajuan->status,
+                'completed_at' => $pengajuan->completed_at,
+                'completed_by' => $pengajuan->completed_by,
+            ];
+            
+            // Force complete
+            $pengajuan->update([
+                'status' => 'completed',
+                'completed_at' => now(),
+                'completed_by' => Auth::id(),
+            ]);
+            
+            // Log to approval_histories
+            $pengajuan->logApproval(
+                action: 'admin_force_complete',
+                notes: 'Admin force complete: ' . $request->reason
+            );
+            
+            // Log to audit trail
+            AuditTrail::create([
+                'user_id' => Auth::id(),
+                'action' => 'force_complete',
+                'model_type' => PengajuanSurat::class,
+                'model_id' => $pengajuan->id,
+                'old_data' => $oldData,
+                'new_data' => [
+                    'status' => 'completed',
+                    'completed_at' => $pengajuan->completed_at,
+                    'completed_by' => $pengajuan->completed_by,
+                ],
+                'reason' => $request->reason,
+                'ip_address' => $request->ip(),
+            ]);
+            
+            DB::commit();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Pengajuan berhasil di-force complete',
+            ]);
+            
+        } catch (\Exception $e) {
+            DB::rollback();
+            
+            Log::error('Error force completing pengajuan', [
+                'error' => $e->getMessage(),
+                'pengajuan_id' => $id,
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal force complete pengajuan',
+            ], 500);
+        }
+    }
+
+    /**
+     * Reopen pengajuan yang rejected
+     */
+    public function reopen(Request $request, $id)
+    {
+        $request->validate([
+            'reason' => 'required|string|max:500',
+            'reset_to' => 'required|in:pending,approved_prodi',
+        ]);
+        
+        $pengajuan = PengajuanSurat::withTrashed()->findOrFail($id);
+        
+        // Cek apakah bisa direopen
+        if (!in_array($pengajuan->status, ['rejected_prodi', 'rejected_fakultas'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Hanya pengajuan yang rejected yang bisa direopen',
+            ], 400);
+        }
+        
+        try {
+            DB::beginTransaction();
+            
+            $oldData = [
+                'status' => $pengajuan->status,
+                'rejected_by_prodi' => $pengajuan->rejected_by_prodi,
+                'rejected_at_prodi' => $pengajuan->rejected_at_prodi,
+                'rejection_reason_prodi' => $pengajuan->rejection_reason_prodi,
+            ];
+            
+            // Reset status
+            $pengajuan->update([
+                'status' => $request->reset_to,
+                'rejected_by_prodi' => null,
+                'rejected_at_prodi' => null,
+                'rejection_reason_prodi' => null,
+            ]);
+            
+            // Log to approval_histories
+            $pengajuan->logApproval(
+                action: 'admin_reopen',
+                notes: 'Admin reopen to ' . $request->reset_to . ': ' . $request->reason
+            );
+            
+            // Log to audit trail
+            AuditTrail::create([
+                'user_id' => Auth::id(),
+                'action' => 'reopen',
+                'model_type' => PengajuanSurat::class,
+                'model_id' => $pengajuan->id,
+                'old_data' => $oldData,
+                'new_data' => [
+                    'status' => $request->reset_to,
+                ],
+                'reason' => $request->reason,
+                'ip_address' => $request->ip(),
+            ]);
+            
+            DB::commit();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Pengajuan berhasil direopen',
+            ]);
+            
+        } catch (\Exception $e) {
+            DB::rollback();
+            
+            Log::error('Error reopening pengajuan', [
+                'error' => $e->getMessage(),
+                'pengajuan_id' => $id,
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal reopen pengajuan',
+            ], 500);
+        }
+    }
+
+    /**
+     * Change status manually
+     */
+    public function changeStatus(Request $request, $id)
+    {
+        $request->validate([
+            'reason' => 'required|string|max:500',
+            'new_status' => 'required|in:pending,approved_prodi,approved_fakultas,completed,rejected_prodi,rejected_fakultas',
+        ]);
+        
+        $pengajuan = PengajuanSurat::withTrashed()->findOrFail($id);
+        
+        try {
+            DB::beginTransaction();
+            
+            $oldStatus = $pengajuan->status;
+            
+            $pengajuan->update([
+                'status' => $request->new_status,
+            ]);
+            
+            // Log to approval_histories
+            $pengajuan->logApproval(
+                action: 'admin_change_status',
+                notes: "Admin change status from {$oldStatus} to {$request->new_status}: {$request->reason}"
+            );
+            
+            // Log to audit trail
+            AuditTrail::create([
+                'user_id' => Auth::id(),
+                'action' => 'change_status',
+                'model_type' => PengajuanSurat::class,
+                'model_id' => $pengajuan->id,
+                'old_data' => ['status' => $oldStatus],
+                'new_data' => ['status' => $request->new_status],
+                'reason' => $request->reason,
+                'ip_address' => $request->ip(),
+            ]);
+            
+            DB::commit();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Status berhasil diubah',
+            ]);
+            
+        } catch (\Exception $e) {
+            DB::rollback();
+            
+            Log::error('Error changing status', [
+                'error' => $e->getMessage(),
+                'pengajuan_id' => $id,
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengubah status',
+            ], 500);
+        }
+    }
+
+    public function export(Request $request)
+{
+    $filters = $request->only(['search', 'prodi_id', 'status', 'jenis_surat_id', 'date_from', 'date_to']);
+    
+    $filename = 'pengajuan_' . date('Y-m-d_His') . '.xlsx';
+    
+    return Excel::download(new PengajuanExport($filters), $filename);
+}
 }

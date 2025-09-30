@@ -25,7 +25,7 @@
             width: 260px;
             background: white;
             box-shadow: 2px 0 8px rgba(0,0,0,0.1);
-            z-index: 1000;
+            z-index: 40;
             overflow-y: auto;
         }
         
@@ -33,6 +33,7 @@
             margin-left: 260px;
             min-height: 100vh;
             position: relative;
+            background: transparent;
         }
         
         .bg-image-wrapper {
@@ -41,7 +42,7 @@
             left: 260px;
             right: 0;
             bottom: 0;
-            z-index: 0;
+            z-index: -1;
         }
         
         .bg-image-wrapper::before {
@@ -55,12 +56,13 @@
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
-            opacity: 0.40;
+            opacity: 0.20;
+            pointer-events: none;
         }
         
         .content-overlay {
             position: relative;
-            z-index: 1;
+            z-index: 2;
         }
         
         .nav-item {
@@ -127,7 +129,7 @@
 <body class="antialiased bg-gray-50" x-data="{ sidebarOpen: false }">
     
     <!-- Sidebar -->
-    <div class="sidebar" :class="{ 'open': sidebarOpen }">
+    <div class="sidebar z-40" :class="{ 'open': sidebarOpen }">
         <!-- Logo -->
         <div class="p-4 border-b border-gray-200">
             <a href="<?php echo e(route('dashboard')); ?>" class="flex items-center">
@@ -184,6 +186,34 @@
                     <a href="<?php echo e(route('admin.users.index')); ?>" class="nav-item <?php echo e(request()->routeIs('admin.users.*') ? 'active' : ''); ?>">
                         <i class="fas fa-users-cog"></i>
                         <span>Kelola User</span>
+                    </a>
+                    
+                    
+                    <div class="px-4 py-2">
+                        <p class="text-xs font-semibold text-gray-500 uppercase">Master Data</p>
+                    </div>
+                    
+                    <a href="<?php echo e(route('admin.prodi.index')); ?>" class="nav-item <?php echo e(request()->routeIs('admin.prodi.*') ? 'active' : ''); ?>">
+                        <i class="fas fa-building"></i>
+                        <span>Prodi</span>
+                    </a>
+                    
+                    <a href="<?php echo e(route('admin.jenis-surat.index')); ?>" class="nav-item <?php echo e(request()->routeIs('admin.jenis-surat.*') ? 'active' : ''); ?>">
+                        <i class="fas fa-file-alt"></i>
+                        <span>Jenis Surat</span>
+                    </a>
+                    
+                    <a href="<?php echo e(route('admin.fakultas.index')); ?>" class="nav-item <?php echo e(request()->routeIs('admin.fakultas.*') ? 'active' : ''); ?>">
+                        <i class="fas fa-university"></i>
+                        <span>Fakultas</span>
+                    </a>
+                        <div class="px-4 py-2 mt-2">
+                    <p class="text-xs font-semibold text-gray-500 uppercase">Logs & Reports</p>
+                    </div>
+                    
+                    <a href="<?php echo e(route('admin.audit-trail.index')); ?>" class="nav-item <?php echo e(request()->routeIs('admin.audit-trail.*') ? 'active' : ''); ?>">
+                        <i class="fas fa-clipboard-list"></i>
+                        <span>Audit Trail</span>
                     </a>
                 <?php endif; ?>
                 
@@ -288,7 +318,7 @@
                 </header>
             <?php endif; ?>
             
-            <main>
+            <main class="relative z-10 min-h-screen">
                 <?php echo $__env->yieldContent('content'); ?>
             </main>
         </div>
@@ -332,8 +362,6 @@
             <button @click="show = false" class="ml-4 font-bold">&times;</button>
         </div>
     </div>
-    
-    <script src="//unpkg.com/alpinejs" defer></script>
     <?php echo \Livewire\Mechanisms\FrontendAssets\FrontendAssets::scripts(); ?>
 
     <?php echo $__env->yieldPushContent('scripts'); ?>

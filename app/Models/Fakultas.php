@@ -20,4 +20,14 @@ class Fakultas extends Model
         'wadek2_id',
         'wadek3_id'
     ];
+
+        public function prodi()
+    {
+        return $this->hasMany(Prodi::class, 'fakultas_id');
+    }
+    
+    public function users()
+    {
+        return $this->hasManyThrough(User::class, Prodi::class);
+    }
 }

@@ -9,6 +9,7 @@ use App\Models\StatusSurat;
 use App\Models\PengajuanSurat;
 use Illuminate\Support\Facades\DB;
 
+
 class DashboardController extends Controller
 {
     public function index()

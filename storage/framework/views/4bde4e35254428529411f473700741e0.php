@@ -1,21 +1,21 @@
-{{-- resources/views/admin/pengajuan/show.blade.php --}}
-@extends('layouts.app')
 
-@section('title', 'Detail Pengajuan')
-@section('content')
+
+
+<?php $__env->startSection('title', 'Detail Pengajuan'); ?>
+<?php $__env->startSection('content'); ?>
 
 <div class="py-6 px-4 sm:px-6 lg:px-8">
     <div class="max-w-5xl mx-auto">
         <!-- Back Button -->
         <div class="mb-4">
-            <a href="{{ route('admin.pengajuan.index') }}" class="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
+            <a href="<?php echo e(route('admin.pengajuan.index')); ?>" class="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
                 <i class="fas fa-arrow-left mr-2"></i>
                 Kembali ke Daftar Pengajuan
             </a>
         </div>
 
         <!-- Alert if Stuck -->
-        @if($isStuck)
+        <?php if($isStuck): ?>
             <div class="bg-orange-50 border-l-4 border-orange-500 p-4 mb-6 rounded-r-lg">
                 <div class="flex">
                     <div class="flex-shrink-0">
@@ -24,15 +24,15 @@
                     <div class="ml-3">
                         <h3 class="text-sm font-medium text-orange-800">Pengajuan Stuck!</h3>
                         <p class="text-sm text-orange-700 mt-1">
-                            Pengajuan ini sudah {{ $stuckDays }} hari tanpa progress di status "{{ $pengajuan->status }}".
+                            Pengajuan ini sudah <?php echo e($stuckDays); ?> hari tanpa progress di status "<?php echo e($pengajuan->status); ?>".
                         </p>
                     </div>
                 </div>
             </div>
-        @endif
+        <?php endif; ?>
 
         <!-- Alert if Deleted -->
-        @if($pengajuan->trashed())
+        <?php if($pengajuan->trashed()): ?>
             <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-r-lg">
                 <div class="flex items-center justify-between">
                     <div class="flex">
@@ -42,17 +42,18 @@
                         <div class="ml-3">
                             <h3 class="text-sm font-medium text-red-800">Pengajuan Telah Dihapus</h3>
                             <p class="text-sm text-red-700 mt-1">
-                                Dihapus pada {{ $pengajuan->deleted_at->format('d F Y, H:i') }}
+                                Dihapus pada <?php echo e($pengajuan->deleted_at->format('d F Y, H:i')); ?>
+
                             </p>
                         </div>
                     </div>
-                    <button onclick="restorePengajuan({{ $pengajuan->id }})"
+                    <button onclick="restorePengajuan(<?php echo e($pengajuan->id); ?>)"
                             class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-medium">
                         <i class="fas fa-undo mr-1"></i>Pulihkan
                     </button>
                 </div>
             </div>
-        @endif
+        <?php endif; ?>
 
         <!-- Header Card -->
         <div class="bg-white/95 backdrop-blur-sm shadow-sm rounded-xl overflow-hidden mb-6">
@@ -60,10 +61,10 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <h2 class="text-xl font-bold">Detail Pengajuan</h2>
-                        <p class="text-sm text-white/90 mt-1">{{ $pengajuan->jenisSurat->nama_jenis ?? 'Surat' }}</p>
+                        <p class="text-sm text-white/90 mt-1"><?php echo e($pengajuan->jenisSurat->nama_jenis ?? 'Surat'); ?></p>
                     </div>
                     <div class="text-right">
-                        @php
+                        <?php
                             $statusBadge = match($pengajuan->status) {
                                 'pending' => ['bg' => 'bg-yellow-500', 'icon' => 'fa-clock'],
                                 'approved_prodi' => ['bg' => 'bg-blue-500', 'icon' => 'fa-check'],
@@ -72,10 +73,11 @@
                                 'rejected_prodi', 'rejected_fakultas' => ['bg' => 'bg-red-500', 'icon' => 'fa-times-circle'],
                                 default => ['bg' => 'bg-gray-500', 'icon' => 'fa-circle']
                             };
-                        @endphp
+                        ?>
                         <div class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-white/20">
-                            <i class="fas {{ $statusBadge['icon'] }} mr-1.5"></i>
-                            {{ ucfirst(str_replace('_', ' ', $pengajuan->status)) }}
+                            <i class="fas <?php echo e($statusBadge['icon']); ?> mr-1.5"></i>
+                            <?php echo e(ucfirst(str_replace('_', ' ', $pengajuan->status))); ?>
+
                         </div>
                     </div>
                 </div>
@@ -94,31 +96,31 @@
                         <div class="grid grid-cols-2 gap-4">
                             <div>
                                 <label class="text-xs font-medium text-gray-500 uppercase">Tracking Token</label>
-                                <p class="text-sm font-mono text-blue-600 font-medium mt-1">{{ $pengajuan->tracking_token }}</p>
+                                <p class="text-sm font-mono text-blue-600 font-medium mt-1"><?php echo e($pengajuan->tracking_token); ?></p>
                             </div>
                             <div>
                                 <label class="text-xs font-medium text-gray-500 uppercase">Program Studi</label>
-                                <p class="text-sm text-gray-900 mt-1">{{ $pengajuan->prodi->nama_prodi ?? '-' }}</p>
+                                <p class="text-sm text-gray-900 mt-1"><?php echo e($pengajuan->prodi->nama_prodi ?? '-'); ?></p>
                             </div>
                             <div>
                                 <label class="text-xs font-medium text-gray-500 uppercase">Tanggal Pengajuan</label>
-                                <p class="text-sm text-gray-900 mt-1">{{ $pengajuan->created_at->format('d F Y, H:i') }}</p>
+                                <p class="text-sm text-gray-900 mt-1"><?php echo e($pengajuan->created_at->format('d F Y, H:i')); ?></p>
                             </div>
                             <div>
                                 <label class="text-xs font-medium text-gray-500 uppercase">Last Update</label>
-                                <p class="text-sm text-gray-900 mt-1">{{ $pengajuan->updated_at->format('d F Y, H:i') }}</p>
-                                <p class="text-xs text-gray-500 mt-0.5">{{ $pengajuan->updated_at->diffForHumans() }}</p>
+                                <p class="text-sm text-gray-900 mt-1"><?php echo e($pengajuan->updated_at->format('d F Y, H:i')); ?></p>
+                                <p class="text-xs text-gray-500 mt-0.5"><?php echo e($pengajuan->updated_at->diffForHumans()); ?></p>
                             </div>
-                            @if($pengajuan->completed_at)
+                            <?php if($pengajuan->completed_at): ?>
                                 <div>
                                     <label class="text-xs font-medium text-gray-500 uppercase">Tanggal Selesai</label>
-                                    <p class="text-sm text-gray-900 mt-1">{{ $pengajuan->completed_at->format('d F Y, H:i') }}</p>
+                                    <p class="text-sm text-gray-900 mt-1"><?php echo e($pengajuan->completed_at->format('d F Y, H:i')); ?></p>
                                 </div>
                                 <div>
                                     <label class="text-xs font-medium text-gray-500 uppercase">Processing Time</label>
-                                    <p class="text-sm text-gray-900 mt-1">{{ $pengajuan->created_at->diffForHumans($pengajuan->completed_at, true) }}</p>
+                                    <p class="text-sm text-gray-900 mt-1"><?php echo e($pengajuan->created_at->diffForHumans($pengajuan->completed_at, true)); ?></p>
                                 </div>
-                            @endif
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
@@ -132,19 +134,19 @@
                         <div class="grid grid-cols-2 gap-4">
                             <div>
                                 <label class="text-xs font-medium text-gray-500 uppercase">NIM</label>
-                                <p class="text-sm text-gray-900 mt-1">{{ $pengajuan->mahasiswa->nim ?? $pengajuan->nim }}</p>
+                                <p class="text-sm text-gray-900 mt-1"><?php echo e($pengajuan->mahasiswa->nim ?? $pengajuan->nim); ?></p>
                             </div>
                             <div>
                                 <label class="text-xs font-medium text-gray-500 uppercase">Nama Lengkap</label>
-                                <p class="text-sm text-gray-900 mt-1">{{ $pengajuan->mahasiswa->nama ?? $pengajuan->nama_mahasiswa }}</p>
+                                <p class="text-sm text-gray-900 mt-1"><?php echo e($pengajuan->mahasiswa->nama ?? $pengajuan->nama_mahasiswa); ?></p>
                             </div>
                             <div>
                                 <label class="text-xs font-medium text-gray-500 uppercase">Email</label>
-                                <p class="text-sm text-gray-900 mt-1">{{ $pengajuan->mahasiswa->email ?? $pengajuan->email ?? '-' }}</p>
+                                <p class="text-sm text-gray-900 mt-1"><?php echo e($pengajuan->mahasiswa->email ?? $pengajuan->email ?? '-'); ?></p>
                             </div>
                             <div>
                                 <label class="text-xs font-medium text-gray-500 uppercase">No. Telepon</label>
-                                <p class="text-sm text-gray-900 mt-1">{{ $pengajuan->mahasiswa->phone ?? $pengajuan->phone ?? '-' }}</p>
+                                <p class="text-sm text-gray-900 mt-1"><?php echo e($pengajuan->mahasiswa->phone ?? $pengajuan->phone ?? '-'); ?></p>
                             </div>
                         </div>
                     </div>
@@ -158,33 +160,33 @@
                     <div class="p-6">
                         <div class="mb-4">
                             <label class="text-xs font-medium text-gray-500 uppercase">Jenis Surat</label>
-                            <p class="text-sm text-gray-900 mt-1">{{ $pengajuan->jenisSurat->nama_jenis ?? '-' }}</p>
+                            <p class="text-sm text-gray-900 mt-1"><?php echo e($pengajuan->jenisSurat->nama_jenis ?? '-'); ?></p>
                         </div>
                         <div>
                             <label class="text-xs font-medium text-gray-500 uppercase">Keperluan</label>
-                            <p class="text-sm text-gray-900 mt-1">{{ $pengajuan->keperluan ?? '-' }}</p>
+                            <p class="text-sm text-gray-900 mt-1"><?php echo e($pengajuan->keperluan ?? '-'); ?></p>
                         </div>
                         
-                        @if($additionalData && !empty($additionalData))
+                        <?php if($additionalData && !empty($additionalData)): ?>
                             <div class="mt-4 pt-4 border-t border-gray-200">
                                 <label class="text-xs font-medium text-gray-500 uppercase mb-2 block">Data Tambahan</label>
                                 <div class="space-y-2">
-                                    @foreach($additionalData as $key => $value)
-                                        @if(!in_array($key, ['_token', 'mahasiswa_id', 'nim', 'nama_mahasiswa']))
+                                    <?php $__currentLoopData = $additionalData; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $key => $value): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                        <?php if(!in_array($key, ['_token', 'mahasiswa_id', 'nim', 'nama_mahasiswa'])): ?>
                                             <div class="flex justify-between py-2 border-b border-gray-100">
-                                                <span class="text-xs text-gray-600">{{ ucfirst(str_replace('_', ' ', $key)) }}</span>
-                                                <span class="text-sm text-gray-900 font-medium">{{ is_array($value) ? json_encode($value) : $value }}</span>
+                                                <span class="text-xs text-gray-600"><?php echo e(ucfirst(str_replace('_', ' ', $key))); ?></span>
+                                                <span class="text-sm text-gray-900 font-medium"><?php echo e(is_array($value) ? json_encode($value) : $value); ?></span>
                                             </div>
-                                        @endif
-                                    @endforeach
+                                        <?php endif; ?>
+                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                 </div>
                             </div>
-                        @endif
+                        <?php endif; ?>
                     </div>
                 </div>
 
                 <!-- Timeline Approval -->
-                @if($pengajuan->approvalHistories && $pengajuan->approvalHistories->count() > 0)
+                <?php if($pengajuan->approvalHistories && $pengajuan->approvalHistories->count() > 0): ?>
                 <div class="bg-white/95 backdrop-blur-sm shadow-sm rounded-xl overflow-hidden">
                     <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
                         <h3 class="text-lg font-semibold text-gray-900">Timeline Approval</h3>
@@ -192,106 +194,108 @@
                     <div class="p-6">
                         <div class="flow-root">
                             <ul class="-mb-8">
-                                @foreach($pengajuan->approvalHistories->sortBy('created_at') as $history)
+                                <?php $__currentLoopData = $pengajuan->approvalHistories->sortBy('created_at'); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $history): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                 <li>
                                     <div class="relative pb-8">
-                                        @if(!$loop->last)
+                                        <?php if(!$loop->last): ?>
                                             <span class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200"></span>
-                                        @endif
+                                        <?php endif; ?>
                                         <div class="relative flex space-x-3">
                                             <div>
-                                                @php
+                                                <?php
                                                     $iconColor = in_array($history->action, ['approved_prodi', 'approved_fakultas', 'completed']) ? 'bg-green-500' : 
                                                                 (in_array($history->action, ['rejected_prodi', 'rejected_fakultas']) ? 'bg-red-500' : 'bg-blue-500');
                                                     $icon = in_array($history->action, ['approved_prodi', 'approved_fakultas', 'completed']) ? 'fa-check' : 
                                                            (in_array($history->action, ['rejected_prodi', 'rejected_fakultas']) ? 'fa-times' : 'fa-circle');
-                                                @endphp
-                                                <span class="h-8 w-8 rounded-full flex items-center justify-center ring-8 ring-white {{ $iconColor }}">
-                                                    <i class="fas {{ $icon }} text-white text-xs"></i>
+                                                ?>
+                                                <span class="h-8 w-8 rounded-full flex items-center justify-center ring-8 ring-white <?php echo e($iconColor); ?>">
+                                                    <i class="fas <?php echo e($icon); ?> text-white text-xs"></i>
                                                 </span>
                                             </div>
                                             <div class="flex-1 min-w-0">
                                                 <div>
                                                     <div class="text-sm">
-                                                        <span class="font-medium text-gray-900">{{ $history->action_label }}</span>
+                                                        <span class="font-medium text-gray-900"><?php echo e($history->action_label); ?></span>
                                                     </div>
                                                     <p class="mt-0.5 text-xs text-gray-500">
-                                                        {{ $history->created_at->format('d F Y, H:i') }}
-                                                        @if($history->performedBy)
-                                                            • oleh {{ $history->performedBy->nama }}
-                                                        @endif
+                                                        <?php echo e($history->created_at->format('d F Y, H:i')); ?>
+
+                                                        <?php if($history->performedBy): ?>
+                                                            • oleh <?php echo e($history->performedBy->nama); ?>
+
+                                                        <?php endif; ?>
                                                     </p>
                                                 </div>
-                                                @if($history->notes)
+                                                <?php if($history->notes): ?>
                                                     <div class="mt-2 text-sm text-gray-700">
-                                                        <p class="italic">{{ $history->notes }}</p>
+                                                        <p class="italic"><?php echo e($history->notes); ?></p>
                                                     </div>
-                                                @endif
+                                                <?php endif; ?>
                                             </div>
                                         </div>
                                     </div>
                                 </li>
-                                @endforeach
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                             </ul>
                         </div>
                     </div>
                 </div>
-                @endif
+                <?php endif; ?>
             </div>
 
             <!-- Sidebar Actions -->
             <div class="space-y-6">
                 <!-- Admin Actions -->
-                @if(!$pengajuan->trashed())
+                <?php if(!$pengajuan->trashed()): ?>
                 <div class="bg-white/95 backdrop-blur-sm shadow-sm rounded-xl overflow-hidden">
                     <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
                         <h3 class="text-lg font-semibold text-gray-900">Admin Actions</h3>
                     </div>
                     <div class="p-6 space-y-3">
-                        {{-- Download Surat --}}
-                        @if($pengajuan->surat_pengantar_url)
-                            <a href="{{ $pengajuan->surat_pengantar_url }}" 
+                        
+                        <?php if($pengajuan->surat_pengantar_url): ?>
+                            <a href="<?php echo e($pengajuan->surat_pengantar_url); ?>" 
                             target="_blank"
                             class="w-full inline-flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium transition">
                                 <i class="fas fa-download mr-2"></i>Download Surat
                             </a>
-                        @endif
+                        <?php endif; ?>
                         
-                        {{-- Force Complete --}}
-                        @if($isStuck || in_array($pengajuan->status, ['approved_prodi', 'approved_fakultas']))
+                        
+                        <?php if($isStuck || in_array($pengajuan->status, ['approved_prodi', 'approved_fakultas'])): ?>
                             <button onclick="showForceCompleteModal()" 
                                     class="w-full inline-flex items-center justify-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium transition">
                                 <i class="fas fa-bolt mr-2"></i>Force Complete
                             </button>
-                        @endif
+                        <?php endif; ?>
                         
-                        {{-- Reopen --}}
-                        @if(in_array($pengajuan->status, ['rejected_prodi', 'rejected_fakultas']))
+                        
+                        <?php if(in_array($pengajuan->status, ['rejected_prodi', 'rejected_fakultas'])): ?>
                             <button onclick="showReopenModal()" 
                                     class="w-full inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition">
                                 <i class="fas fa-undo mr-2"></i>Reopen Pengajuan
                             </button>
-                        @endif
+                        <?php endif; ?>
                         
-                        {{-- Change Status --}}
+                        
                         <button onclick="showChangeStatusModal()" 
                                 class="w-full inline-flex items-center justify-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-medium transition">
                             <i class="fas fa-sync mr-2"></i>Change Status
                         </button>
                         
-                        {{-- Delete --}}
-                        <button onclick="deletePengajuan({{ $pengajuan->id }})" 
+                        
+                        <button onclick="deletePengajuan(<?php echo e($pengajuan->id); ?>)" 
                                 class="w-full inline-flex items-center justify-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-medium transition">
                             <i class="fas fa-trash mr-2"></i>Hapus Pengajuan
                         </button>
                         
-                        <a href="{{ route('admin.pengajuan.index') }}" 
+                        <a href="<?php echo e(route('admin.pengajuan.index')); ?>" 
                         class="w-full inline-flex items-center justify-center px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 text-sm font-medium transition">
                             <i class="fas fa-arrow-left mr-2"></i>Kembali
                         </a>
                     </div>
                 </div>
-                @endif
+                <?php endif; ?>
 
 
                 <!-- Status Info -->
@@ -302,22 +306,22 @@
                     <div class="p-6 space-y-3">
                         <div class="flex items-center justify-between py-2">
                             <span class="text-sm text-gray-600">Current Status</span>
-                            <span class="text-sm font-medium text-gray-900">{{ ucfirst(str_replace('_', ' ', $pengajuan->status)) }}</span>
+                            <span class="text-sm font-medium text-gray-900"><?php echo e(ucfirst(str_replace('_', ' ', $pengajuan->status))); ?></span>
                         </div>
                         <div class="flex items-center justify-between py-2 border-t border-gray-100">
                             <span class="text-sm text-gray-600">Prodi</span>
-                            <span class="text-sm font-medium text-gray-900">{{ $pengajuan->prodi->nama_prodi ?? '-' }}</span>
+                            <span class="text-sm font-medium text-gray-900"><?php echo e($pengajuan->prodi->nama_prodi ?? '-'); ?></span>
                         </div>
                         <div class="flex items-center justify-between py-2 border-t border-gray-100">
                             <span class="text-sm text-gray-600">Fakultas</span>
-                            <span class="text-sm font-medium text-gray-900">{{ $pengajuan->prodi->fakultas->nama_fakultas ?? '-' }}</span>
+                            <span class="text-sm font-medium text-gray-900"><?php echo e($pengajuan->prodi->fakultas->nama_fakultas ?? '-'); ?></span>
                         </div>
-                        @if($isStuck)
+                        <?php if($isStuck): ?>
                             <div class="flex items-center justify-between py-2 border-t border-gray-100">
                                 <span class="text-sm text-orange-600 font-medium">Stuck Duration</span>
-                                <span class="text-sm font-bold text-orange-600">{{ $stuckDays }} hari</span>
+                                <span class="text-sm font-bold text-orange-600"><?php echo e($stuckDays); ?> hari</span>
                             </div>
-                        @endif
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
@@ -325,7 +329,7 @@
     </div>
 </div>
 
-{{-- Force Complete Modal --}}
+
 <div id="forceCompleteModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
     <div class="bg-white rounded-xl shadow-xl max-w-md w-full mx-4">
         <div class="p-6">
@@ -352,7 +356,7 @@
     </div>
 </div>
 
-{{-- Reopen Modal --}}
+
 <div id="reopenModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
     <div class="bg-white rounded-xl shadow-xl max-w-md w-full mx-4">
         <div class="p-6">
@@ -386,7 +390,7 @@
     </div>
 </div>
 
-{{-- Change Status Modal --}}
+
 <div id="changeStatusModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
     <div class="bg-white rounded-xl shadow-xl max-w-md w-full mx-4">
         <div class="p-6">
@@ -399,7 +403,7 @@
             </div>
             <div class="mb-4">
                 <label class="block text-sm font-medium text-gray-700 mb-2">Status Saat Ini</label>
-                <input type="text" value="{{ ucfirst(str_replace('_', ' ', $pengajuan->status)) }}" class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100" readonly>
+                <input type="text" value="<?php echo e(ucfirst(str_replace('_', ' ', $pengajuan->status))); ?>" class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100" readonly>
             </div>
             <div class="mb-4">
                 <label class="block text-sm font-medium text-gray-700 mb-2">Status Baru</label>
@@ -452,10 +456,10 @@
     </div>
 </div>
 
-@push('scripts')
+<?php $__env->startPush('scripts'); ?>
 <script>
 let deleteId = null;
-const pengajuanId = {{ $pengajuan->id }};
+const pengajuanId = <?php echo e($pengajuan->id); ?>;
 const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
 
 // Force Complete
@@ -613,7 +617,7 @@ function confirmDelete() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            window.location.href = '{{ route("admin.pengajuan.index") }}';
+            window.location.href = '<?php echo e(route("admin.pengajuan.index")); ?>';
         } else {
             alert(data.message || 'Gagal menghapus pengajuan');
         }
@@ -649,4 +653,5 @@ function restorePengajuan(id) {
     });
 }
 </script>
-@endpush
+<?php $__env->stopPush(); ?>
+<?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\laragon\www\sistem-surat\resources\views/admin/pengajuan/show.blade.php ENDPATH**/ ?>

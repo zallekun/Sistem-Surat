@@ -18,6 +18,7 @@ use App\Http\Controllers\FakultasArsipController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AdminPengajuanController;
 use App\Http\Controllers\AdminUserController;
+use App\Http\Controllers\AdminJenisSuratController;
 
 /*
 |--------------------------------------------------------------------------
@@ -28,6 +29,8 @@ use App\Http\Controllers\AdminUserController;
 Route::get('/', function () {
     return view('welcome');
 });
+
+
 
 /*
 |--------------------------------------------------------------------------
@@ -46,6 +49,57 @@ Route::middleware(['auth'])->group(function () {
         Route::patch('/', [ProfileController::class, 'update'])->name('update');
         Route::delete('/', [ProfileController::class, 'destroy'])->name('destroy');
     });
+});
+
+    // Admin Routes
+Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function() {
+    
+    // Dashboard
+    Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+    
+    // Pengajuan Management
+    Route::get('/pengajuan', [AdminPengajuanController::class, 'index'])->name('pengajuan.index');
+    Route::get('/pengajuan/{id}', [AdminPengajuanController::class, 'show'])->name('pengajuan.show');
+    Route::delete('/pengajuan/{id}', [AdminPengajuanController::class, 'destroy'])->name('pengajuan.destroy');
+    Route::post('/pengajuan/{id}/restore', [AdminPengajuanController::class, 'restore'])->name('pengajuan.restore');
+    
+    // User Management
+    Route::resource('users', AdminUserController::class);
+    Route::post('/users/{id}/reset-password', [AdminUserController::class, 'resetPassword'])->name('users.reset-password');
+    Route::post('/users/{id}/toggle-status', [AdminUserController::class, 'toggleStatus'])->name('users.toggle-status');
+});
+
+// Admin Master Data Routes
+Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function() {
+    // ... existing routes
+    
+    // Master Data - Prodi
+    Route::resource('prodi', App\Http\Controllers\AdminProdiController::class);
+    
+    // Master Data - Jenis Surat
+    Route::resource('jenis-surat', App\Http\Controllers\AdminJenisSuratController::class);
+    
+    // Master Data - Fakultas
+    Route::resource('fakultas', App\Http\Controllers\AdminFakultasController::class);
+
+        // Audit Trail
+    Route::get('/audit-trail', [AdminDashboardController::class, 'auditTrail'])->name('audit-trail.index');
+    Route::get('/audit-trail/{id}', [AdminDashboardController::class, 'auditTrailShow'])->name('audit-trail.show');
+
+     // Export
+    Route::get('/pengajuan/export', [AdminPengajuanController::class, 'export'])->name('pengajuan.export');
+    Route::get('/audit-trail/export', [AdminDashboardController::class, 'auditTrailExport'])->name('audit-trail.export');
+});
+
+// Admin Intervention Routes
+Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function() {
+    // ... existing routes
+    
+    // Intervention Actions
+    Route::post('/pengajuan/{id}/force-complete', [AdminPengajuanController::class, 'forceComplete'])->name('pengajuan.force-complete');
+    Route::post('/pengajuan/{id}/reopen', [AdminPengajuanController::class, 'reopen'])->name('pengajuan.reopen');
+    Route::post('/pengajuan/{id}/change-status', [AdminPengajuanController::class, 'changeStatus'])->name('pengajuan.change-status');
+});
     
 
     // Surat (general)
@@ -80,191 +134,6 @@ Route::middleware(['auth'])->group(function () {
                 ->name('surat.create-from-pengajuan');
         });
 
-// Route untuk debug - HAPUS SETELAH SELESAI
-Route::get('/debug/approval/{id}', function($id) {
-    $pengajuan = \App\Models\PengajuanSurat::with(['jenisSurat', 'prodi'])->findOrFail($id);
-    
-    echo "<h1>DEBUG APPROVAL FLOW</h1>";
-    echo "<style>
-        body { font-family: monospace; padding: 20px; }
-        .section { border: 2px solid #ccc; margin: 10px 0; padding: 10px; }
-        .error { background: #ffebee; border-color: #f44336; }
-        .success { background: #e8f5e9; border-color: #4caf50; }
-        .warning { background: #fff3e0; border-color: #ff9800; }
-        h3 { margin-top: 0; }
-        table { border-collapse: collapse; width: 100%; }
-        td, th { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        .code { background: #f5f5f5; padding: 10px; overflow-x: auto; }
-    </style>";
-    
-    // 1. Info Pengajuan
-    echo "<div class='section'>";
-    echo "<h3>📋 Informasi Pengajuan</h3>";
-    echo "<table>";
-    echo "<tr><td><strong>ID</strong></td><td>{$pengajuan->id}</td></tr>";
-    echo "<tr><td><strong>Tracking Token</strong></td><td>{$pengajuan->tracking_token}</td></tr>";
-    echo "<tr><td><strong>Mahasiswa</strong></td><td>{$pengajuan->nama_mahasiswa} ({$pengajuan->nim})</td></tr>";
-    echo "<tr><td><strong>Jenis Surat</strong></td><td>{$pengajuan->jenisSurat->nama_jenis} ({$pengajuan->jenisSurat->kode_surat})</td></tr>";
-    echo "<tr><td><strong>Status Saat Ini</strong></td><td><strong>{$pengajuan->status}</strong></td></tr>";
-    echo "<tr><td><strong>Approved By Prodi</strong></td><td>" . ($pengajuan->approved_by_prodi ?? 'NULL') . "</td></tr>";
-    echo "<tr><td><strong>Approved At Prodi</strong></td><td>" . ($pengajuan->approved_at_prodi ?? 'NULL') . "</td></tr>";
-    echo "</table>";
-    echo "</div>";
-    
-    // 2. Cek Method needsSuratPengantar()
-    echo "<div class='section " . ($pengajuan->needsSuratPengantar() ? 'warning' : 'success') . "'>";
-    echo "<h3>🔍 Cek needsSuratPengantar()</h3>";
-    $needs = $pengajuan->needsSuratPengantar();
-    echo "<p><strong>Result:</strong> " . ($needs ? 'TRUE (Perlu pengantar)' : 'FALSE (Tidak perlu)') . "</p>";
-    echo "<div class='code'>";
-    echo "// Method di Model PengajuanSurat.php<br>";
-    echo "public function needsSuratPengantar() {<br>";
-    echo "&nbsp;&nbsp;return in_array(\$this->jenisSurat->kode_surat, ['KP', 'TA']);<br>";
-    echo "}<br><br>";
-    echo "Kode Surat: {$pengajuan->jenisSurat->kode_surat}<br>";
-    echo "in_array('{$pengajuan->jenisSurat->kode_surat}', ['KP', 'TA']) = " . ($needs ? 'TRUE' : 'FALSE');
-    echo "</div>";
-    echo "</div>";
-    
-    // 3. Cek Method hasSuratPengantar()
-    echo "<div class='section " . ($pengajuan->hasSuratPengantar() ? 'success' : 'error') . "'>";
-    echo "<h3>📄 Cek hasSuratPengantar()</h3>";
-    $has = $pengajuan->hasSuratPengantar();
-    echo "<p><strong>Result:</strong> " . ($has ? 'TRUE (Sudah ada)' : 'FALSE (Belum ada)') . "</p>";
-    echo "<table>";
-    echo "<tr><td><strong>surat_pengantar_url</strong></td><td>" . ($pengajuan->surat_pengantar_url ?? 'NULL') . "</td></tr>";
-    echo "<tr><td><strong>surat_pengantar_nomor</strong></td><td>" . ($pengajuan->surat_pengantar_nomor ?? 'NULL') . "</td></tr>";
-    echo "</table>";
-    echo "</div>";
-    
-    // 4. Simulasi Approval Flow
-    echo "<div class='section warning'>";
-    echo "<h3>⚙️ Simulasi Approval Flow</h3>";
-    echo "<p><strong>Ketika staff prodi klik 'Setujui', ini yang terjadi:</strong></p>";
-    echo "<div class='code'>";
-    echo "// StaffPengajuanController@processPengajuan (Line 86-96)<br><br>";
-    echo "if (\$request->action === 'approve') {<br>";
-    echo "&nbsp;&nbsp;\$pengajuan->status = 'approved_prodi'; // ✅ Set status<br>";
-    echo "&nbsp;&nbsp;\$pengajuan->approved_by_prodi = \$user->id;<br>";
-    echo "&nbsp;&nbsp;\$pengajuan->approved_at_prodi = now();<br>";
-    echo "&nbsp;&nbsp;\$pengajuan->save();<br><br>";
-    echo "&nbsp;&nbsp;// Pesan berbeda berdasarkan jenis surat<br>";
-    echo "&nbsp;&nbsp;if (\$pengajuan->needsSuratPengantar()) {<br>";
-    echo "&nbsp;&nbsp;&nbsp;&nbsp;\$message = 'Silakan generate surat pengantar...';<br>";
-    echo "&nbsp;&nbsp;} else {<br>";
-    echo "&nbsp;&nbsp;&nbsp;&nbsp;\$message = 'Diteruskan ke fakultas...';<br>";
-    echo "&nbsp;&nbsp;}<br>";
-    echo "}<br><br>";
-    echo "<strong>UNTUK PENGAJUAN INI:</strong><br>";
-    echo "- Status AKAN diubah ke: <span style='color: green;'>approved_prodi</span><br>";
-    echo "- Pesan yang muncul: ";
-    if ($pengajuan->needsSuratPengantar()) {
-        echo "'<span style='color: orange;'>Silakan generate surat pengantar untuk diteruskan ke fakultas.</span>'";
-    } else {
-        echo "'<span style='color: blue;'>Pengajuan disetujui dan diteruskan ke fakultas untuk diproses.</span>'";
-    }
-    echo "</div>";
-    echo "</div>";
-    
-    // 5. Cek Tracking History
-    echo "<div class='section'>";
-    echo "<h3>📜 Tracking History</h3>";
-    $histories = $pengajuan->trackingHistory()->orderBy('created_at', 'desc')->limit(5)->get();
-    if ($histories->count() > 0) {
-        echo "<table>";
-        echo "<tr><th>Waktu</th><th>Status</th><th>Deskripsi</th></tr>";
-        foreach ($histories as $h) {
-            echo "<tr>";
-            echo "<td>{$h->created_at->format('Y-m-d H:i:s')}</td>";
-            echo "<td><strong>{$h->status}</strong></td>";
-            echo "<td>{$h->description}</td>";
-            echo "</tr>";
-        }
-        echo "</table>";
-    } else {
-        echo "<p>Tidak ada history</p>";
-    }
-    echo "</div>";
-    
-    // 6. MASALAH POTENSIAL
-    echo "<div class='section error'>";
-    echo "<h3>🚨 KEMUNGKINAN MASALAH</h3>";
-    echo "<ol>";
-    
-    // Cek apakah status berubah ke processed
-    if ($pengajuan->status === 'processed') {
-        echo "<li><strong>STATUS 'processed' TERDETEKSI!</strong><br>";
-        echo "Kemungkinan ada kode lain yang mengubah status ke 'processed' setelah approve.<br>";
-        echo "Periksa:<br>";
-        echo "- PublicSuratController@createSuratFromPengajuan (Line 366-382)<br>";
-        echo "- Apakah ada redirect/ajax yang memanggil route lain?<br>";
-        echo "- Cek JavaScript di view staff.pengajuan.show</li>";
-    }
-    
-    // Cek route
-    echo "<li><strong>Route Check:</strong><br>";
-    echo "URL approve seharusnya: <code>/staff/pengajuan/{$pengajuan->id}/process</code><br>";
-    echo "Method: POST<br>";
-    echo "Action: 'approve'</li>";
-    
-    // Cek method yang tersedia
-    echo "<li><strong>Methods Available:</strong><br>";
-    $reflection = new \ReflectionClass($pengajuan);
-    $methods = $reflection->getMethods(\ReflectionMethod::IS_PUBLIC);
-    $relevantMethods = ['needsSuratPengantar', 'hasSuratPengantar', 'canEditSurat', 'canPrintSurat'];
-    echo "<ul>";
-    foreach ($methods as $method) {
-        if (in_array($method->name, $relevantMethods)) {
-            echo "<li>{$method->name}() - Defined in {$method->class}</li>";
-        }
-    }
-    echo "</ul></li>";
-    
-    echo "</ol>";
-    echo "</div>";
-    
-    // 7. CEK DATABASE LANGSUNG
-    echo "<div class='section'>";
-    echo "<h3>💾 Query Database Raw</h3>";
-    $raw = DB::table('pengajuan_surat')->where('id', $pengajuan->id)->first();
-    echo "<pre>" . json_encode($raw, JSON_PRETTY_PRINT) . "</pre>";
-    echo "</div>";
-    
-    // 8. REKOMENDASI
-    echo "<div class='section success'>";
-    echo "<h3>✅ Rekomendasi Fix</h3>";
-    echo "<ol>";
-    echo "<li>Pastikan controller StaffPengajuanController line 86 menggunakan:<br>";
-    echo "<code>\$pengajuan->status = 'approved_prodi';</code><br>";
-    echo "BUKAN <code>'processed'</code></li>";
-    
-    echo "<li>Cek apakah ada middleware/observer yang mengubah status</li>";
-    
-    echo "<li>Tambahkan logging di StaffPengajuanController:<br>";
-    echo "<code>\\Log::info('After approve', ['status' => \$pengajuan->status]);</code></li>";
-    
-    echo "<li>Cek JavaScript di view untuk memastikan fetch ke route yang benar</li>";
-    echo "</ol>";
-    echo "</div>";
-    
-    // 9. TEST BUTTON
-    echo "<div class='section'>";
-    echo "<h3>🧪 Test Action</h3>";
-    echo "<form method='POST' action='/staff/pengajuan/{$pengajuan->id}/process'>";
-    echo csrf_field();
-    echo "<input type='hidden' name='action' value='approve'>";
-    echo "<button type='submit' style='padding: 10px 20px; background: #4caf50; color: white; border: none; cursor: pointer;'>
-        Simulate Approve
-    </button>";
-    echo "</form>";
-    echo "<p style='color: red;'><strong>WARNING:</strong> Ini akan benar-benar approve pengajuan!</p>";
-    echo "</div>";
-    
-    echo "<hr>";
-    echo "<p><a href='/staff/pengajuan/{$pengajuan->id}'>← Kembali ke Detail Pengajuan</a></p>";
-});
-    });
-
     // Kaprodi Routes
     Route::middleware(['role:kaprodi'])->prefix('kaprodi')->name('kaprodi.')->group(function () {
         Route::get('surat/approval', [SuratController::class, 'approvalList'])->name('surat.approval');
@@ -278,23 +147,7 @@ Route::get('/debug/approval/{id}', function($id) {
         Route::post('surat/{id}/ttd', [SuratController::class, 'tandaTangan'])->name('surat.ttd.process');
     });
 
-// Admin Routes
-Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function() {
-    
-    // Dashboard
-    Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
-    
-    // Pengajuan Management
-    Route::get('/pengajuan', [AdminPengajuanController::class, 'index'])->name('pengajuan.index');
-    Route::get('/pengajuan/{id}', [AdminPengajuanController::class, 'show'])->name('pengajuan.show');
-    Route::delete('/pengajuan/{id}', [AdminPengajuanController::class, 'destroy'])->name('pengajuan.destroy');
-    Route::post('/pengajuan/{id}/restore', [AdminPengajuanController::class, 'restore'])->name('pengajuan.restore');
-    
-    // User Management
-    Route::resource('users', AdminUserController::class);
-    Route::post('/users/{id}/reset-password', [AdminUserController::class, 'resetPassword'])->name('users.reset-password');
-    Route::post('/users/{id}/toggle-status', [AdminUserController::class, 'toggleStatus'])->name('users.toggle-status');
-});
+
 
 
 Route::get('/debug-route', function() {
