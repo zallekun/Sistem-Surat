@@ -1,9 +1,9 @@
-{{-- resources/views/surat/pdf/pengantar-kp-si.blade.php --}}
+
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Nota Dinas - {{ $pengajuan->tracking_token }}</title>
+    <title>Nota Dinas - <?php echo e($pengajuan->tracking_token); ?></title>
     <style>
         @page {
             size: A4;
@@ -43,10 +43,10 @@
             font-weight: bold;
             line-height: 1.3;
         }
-        .kop-text .line1 { font-size: 11pt; }
-        .kop-text .line2 { font-size: 12pt; }
+        .kop-text .line1 { font-size: 13pt; }
+        .kop-text .line2 { font-size: 13pt; }
         .kop-text .line3 { font-size: 13pt; }
-        .kop-text .line4 { font-size: 14pt; font-weight: bold; }
+        .kop-text .line4 { font-size: 13pt; font-weight: bold; }
         .kop-text .alamat { font-size: 9pt; font-weight: normal; margin-top: 5px; }
         
         /* Content styles */
@@ -157,33 +157,52 @@
         }
     </style>
 </head>
+<?php
+    $logoYkepPath = public_path('images/logo-ykep.png');
+    $logoYkep = file_exists($logoYkepPath) 
+        ? 'data:image/png;base64,' . base64_encode(file_get_contents($logoYkepPath))
+        : null;
+    
+    $logoUnjaniPath = public_path('images/logo-unjani.png');
+    $logoUnjani = file_exists($logoUnjaniPath)
+        ? 'data:image/png;base64,' . base64_encode(file_get_contents($logoUnjaniPath))
+        : null;
+?>
 <body>
     <!-- KOP SURAT -->
     <div class="kop-surat">
         <table>
             <tr>
-                <td class="logo-left">
-                    <img src="{{ public_path('images/logo-ykep.png') }}" alt="Logo YKEP">
-                </td>
+            <td style="width: 15%; text-align: center;">
+                <?php if($logoYkep): ?>
+                    <img src="<?php echo e($logoYkep); ?>" style="width: 60px; height: 60px;">
+                <?php else: ?>
+                    <div style="width: 60px; height: 60px; border: 1px solid #000; margin: 0 auto;"></div>
+                <?php endif; ?>
+            </td>
                 <td class="kop-text">
                     <div class="line1">YAYASAN KARTIKA EKA PAKSI</div>
                     <div class="line2">UNIVERSITAS JENDERAL ACHMAD YANI (UNJANI)</div>
                     <div class="line3">FAKULTAS SAINS DAN INFORMATIKA</div>
-                    <div class="line4">PROGRAM STUDI S1 {{ strtoupper($pengajuan->prodi->nama_prodi ?? 'SISTEM INFORMASI') }}</div>
+                    <div class="line4">PROGRAM STUDI S1 <?php echo e(strtoupper($pengajuan->prodi->nama_prodi ?? 'SISTEM INFORMASI')); ?></div>
                     <div class="alamat">
                         Kampus Cimahi : Jl. Terusan Jenderal Sudirman PO. BOX 148 Telp. (022) 6631556 Fax. (022) 6631556
                     </div>
                 </td>
-                <td class="logo-right">
-                    <img src="{{ public_path('images/logo-unjani.png') }}" alt="Logo UNJANI">
-                </td>
+            <td style="width: 15%; text-align: center;">
+                <?php if($logoUnjani): ?>
+                    <img src="<?php echo e($logoUnjani); ?>" style="width: 65px; height: 65px;">
+                <?php else: ?>
+                    <div style="width: 65px; height: 65px; border: 1px solid #000; margin: 0 auto;"></div>
+                <?php endif; ?>
+            </td>
             </tr>
         </table>
     </div>
 
     <!-- JUDUL -->
     <div class="judul">NOTA DINAS</div>
-    <div class="nomor">Nomor : {{ $surat_data['nomor_nota'] ?? $nomor_surat ?? 'ND-70/SI-F.SI/VII/2025' }}</div>
+    <div class="nomor">Nomor : <?php echo e($surat_data['nomor_nota'] ?? $nomor_surat ?? 'ND-70/SI-F.SI/VII/2025'); ?></div>
 
     <!-- METADATA -->
     <div class="metadata">
@@ -191,17 +210,17 @@
             <tr>
                 <td class="label">Kepada</td>
                 <td class="colon">:</td>
-                <td>{{ $surat_data['kepada'] ?? 'Wakil Dekan I FSI' }}</td>
+                <td><?php echo e($surat_data['kepada'] ?? 'Wakil Dekan I FSI'); ?></td>
             </tr>
             <tr>
                 <td class="label">Dari</td>
                 <td class="colon">:</td>
-                <td>{{ $surat_data['dari'] ?? 'Ketua Program Studi ' . ($pengajuan->prodi->nama_prodi ?? 'Sistem Informasi') }}</td>
+                <td><?php echo e($surat_data['dari'] ?? 'Ketua Program Studi ' . ($pengajuan->prodi->nama_prodi ?? 'Sistem Informasi')); ?></td>
             </tr>
             <tr>
                 <td class="label">Perihal</td>
                 <td class="colon">:</td>
-                <td>{{ $surat_data['perihal'] ?? 'Permohonan Pengantar Kerja Praktik' }}</td>
+                <td><?php echo e($surat_data['perihal'] ?? 'Permohonan Pengantar Kerja Praktik'); ?></td>
             </tr>
         </table>
     </div>
@@ -213,14 +232,16 @@
                 <strong>Dasar :</strong>
                 <ol type="a" style="margin-left: 20px; margin-top: 8px; padding-left: 0px; list-style-type: lower-alpha;">
                     <li style="margin-bottom: 8px; text-align: justify;">
-                        {{ $surat_data['dasar_a'] ?? 'Program Kerja Prodi ' . ($pengajuan->prodi->nama_prodi ?? 'Sistem Informasi') . ' 2025, tentang Kalender Kegiatan Akademik Unjani TA. 2024/2025.' }}
+                        <?php echo e($surat_data['dasar_a'] ?? 'Program Kerja Prodi ' . ($pengajuan->prodi->nama_prodi ?? 'Sistem Informasi') . ' 2025, tentang Kalender Kegiatan Akademik Unjani TA. 2024/2025.'); ?>
+
                     </li>
                     <li style="margin-bottom: 8px; text-align: justify;">
-                        {{ $surat_data['dasar_b'] ?? 'Form pengajuan Pembuatan surat pengantar ke instansi/lembaga/perusahaan dari mahasiswa.' }}
+                        <?php echo e($surat_data['dasar_b'] ?? 'Form pengajuan Pembuatan surat pengantar ke instansi/lembaga/perusahaan dari mahasiswa.'); ?>
+
                     </li>
                     <li style="margin-bottom: 8px; text-align: justify;">
-                        {{ $surat_data['dasar_c'] ?? 'Memperhatikan saran, arahan dan pandangan dari pimpinan jurusan, berkaitan dengan kegiatan :' }}<br>
-                        <strong>{{ $surat_data['kegiatan'] ?? 'Pengumpulan data dan survey guna memenuhi tugas besar mata kuliah Kerja Praktik' }}</strong>
+                        <?php echo e($surat_data['dasar_c'] ?? 'Memperhatikan saran, arahan dan pandangan dari pimpinan jurusan, berkaitan dengan kegiatan :'); ?><br>
+                        <strong><?php echo e($surat_data['kegiatan'] ?? 'Pengumpulan data dan survey guna memenuhi tugas besar mata kuliah Kerja Praktik'); ?></strong>
                     </li>
                 </ol>
             </li>
@@ -239,7 +260,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @php
+                        <?php
                             $mahasiswaList = [];
                             
                             // Priority: surat_data > additionalData > pengajuan default
@@ -255,24 +276,26 @@
                                     ['nim' => $pengajuan->nim, 'nama' => $pengajuan->nama_mahasiswa]
                                 ];
                             }
-                        @endphp
+                        ?>
                         
-                        @foreach($mahasiswaList as $index => $mhs)
+                        <?php $__currentLoopData = $mahasiswaList; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $index => $mhs): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                         <tr>
-                            <td class="center">{{ $index + 1 }}.</td>
-                            <td class="center">{{ $mhs['nim'] ?? '' }}</td>
-                            <td>{{ $mhs['nama'] ?? '' }}</td>
+                            <td class="center"><?php echo e($index + 1); ?>.</td>
+                            <td class="center"><?php echo e($mhs['nim'] ?? ''); ?></td>
+                            <td><?php echo e($mhs['nama'] ?? ''); ?></td>
                         </tr>
-                        @endforeach
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                     </tbody>
                 </table>
 
                 <!-- Instansi Info -->
                 <div class="instansi-info">
-                    {{ $surat_data['nama_instansi'] ?? $additionalData['kerja_praktek']['nama_perusahaan'] ?? 'Badan Kesatuan Bangsa dan Politik Kota Cimahi (Bakesbangpol Cimahi)' }}
+                    <?php echo e($surat_data['nama_instansi'] ?? $additionalData['kerja_praktek']['nama_perusahaan'] ?? 'Badan Kesatuan Bangsa dan Politik Kota Cimahi (Bakesbangpol Cimahi)'); ?>
+
                 </div>
                 <div style="margin: 10px 0;">
-                    {{ $surat_data['alamat_instansi'] ?? $additionalData['kerja_praktek']['alamat_perusahaan'] ?? 'Gedung C, Jl. Raden Demang Hardjakusumah Lantai 1, Cibabat, Kec. Cimahi Utara, Kota Cimahi, Jawa Barat 40513' }}
+                    <?php echo e($surat_data['alamat_instansi'] ?? $additionalData['kerja_praktek']['alamat_perusahaan'] ?? 'Gedung C, Jl. Raden Demang Hardjakusumah Lantai 1, Cibabat, Kec. Cimahi Utara, Kota Cimahi, Jawa Barat 40513'); ?>
+
                 </div>
             </li>
 
@@ -280,33 +303,63 @@
         </ol>
     </div>
 
+
+
     <!-- SIGNATURE WITH FIXED POSITIONING -->
-    <div class="signature">
-        <div class="signature-content">
-            <div class="signature-date">
-                {{ $surat_data['tempat_tanggal'] ?? 'Cimahi, ' . ($tanggal_surat ?? '27 September 2025') }}
-            </div>
-            <div class="signature-title">
-                {{ $surat_data['jabatan_ttd'] ?? 'Ketua Prodi' }}
-            </div>
-            <div class="signature-unit">
-                {{ $surat_data['unit_ttd'] ?? $pengajuan->prodi->nama_prodi ?? 'Sistem Informasi' }}
-            </div>
-            
-            <!-- TTD Space with proper positioning -->
-            <div class="signature-space">
-                @if(isset($ttd_kaprodi) && $ttd_kaprodi)
-                    <img src="{{ $ttd_kaprodi }}" class="ttd-image" alt="TTD Kaprodi">
-                @endif
-            </div>
-            
-            <div class="signature-name">
-                {{ $surat_data['nama_ttd'] ?? $kaprodi->nama ?? 'Taebir Hendro Pudjiantoro, S.Si., M.T' }}
-            </div>
-            <div class="signature-nid">
-                NID. {{ $surat_data['nid_ttd'] ?? $kaprodi->nip ?? '412166969' }}
-            </div>
+
+<?php
+    // Data Kaprodi per Prodi
+    $kaprodiData = [
+        'si' => [
+            'nama' => 'Takbir Hendro Pudjiantoro, S.Si., M.T',
+            'nid' => '412166969'
+        ],
+        'ki' => [
+            'nama' => 'Dr. Drs. Jasmansyah, M.Si.',
+            'nid' => '412116964'
+        ],
+        'if' => [
+            'nama' => 'Puspita Nurul, S.Kom., M.T.',
+            'nid' => '412190585'
+        ]
+    ];
+    
+    $kodeProdi = strtolower($pengajuan->prodi->kode_prodi);
+    $currentKaprodi = $kaprodiData[$kodeProdi] ?? $kaprodiData['si'];
+?>
+
+<!-- SIGNATURE WITH FIXED POSITIONING -->
+<div class="signature">
+    <div class="signature-content">
+        <div class="signature-date">
+            <?php echo e($surat_data['tempat_tanggal'] ?? 'Cimahi, ' . ($tanggal_surat ?? now()->locale('id')->isoFormat('D MMMM Y'))); ?>
+
+        </div>
+        <div class="signature-title">
+            <?php echo e($surat_data['jabatan_ttd'] ?? 'Ketua Prodi'); ?>
+
+        </div>
+        <div class="signature-unit">
+            <?php echo e($surat_data['unit_ttd'] ?? $pengajuan->prodi->nama_prodi); ?>
+
+        </div>
+        
+        <!-- TTD Space with proper positioning -->
+        <div class="signature-space">
+            <?php if(isset($ttd_kaprodi) && $ttd_kaprodi): ?>
+                <img src="<?php echo e($ttd_kaprodi); ?>" class="ttd-image" alt="TTD Kaprodi">
+            <?php endif; ?>
+        </div>
+        
+        <div class="signature-name">
+            <?php echo e($surat_data['nama_ttd'] ?? $currentKaprodi['nama']); ?>
+
+        </div>
+        <div class="signature-nid">
+            NID. <?php echo e($surat_data['nid_ttd'] ?? $currentKaprodi['nid']); ?>
+
         </div>
     </div>
+</div>
 </body>
-</html>
+</html><?php /**PATH C:\laragon\www\sistem-surat\resources\views/surat/pdf/pengantar-universal.blade.php ENDPATH**/ ?>

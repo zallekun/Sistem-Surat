@@ -1,244 +1,281 @@
-<!-- layouts.app -->
-
+<!-- layouts/app.blade.php with Sidebar -->
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-
     <title>{{ config('app.name', 'Sistem Persuratan') }} - @yield('title', 'Dashboard')</title>
-
-    <!-- Fonts -->
+    
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
-    
-    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
-
-    <!-- Tailwind CSS CDN sebagai primary karena Vite belum berjalan baik -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Critical CSS untuk fix layout issues -->
     <style>
-        /* Reset dan base styles */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        body {
+            font-family: 'Figtree', sans-serif;
         }
         
-        /* Fix navbar positioning - PENTING! */
-        nav.main-navbar {
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            right: 0 !important;
-            z-index: 1000 !important;
-            background-color: white !important;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
-            height: 64px;
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: 260px;
+            background: white;
+            box-shadow: 2px 0 8px rgba(0,0,0,0.1);
+            z-index: 1000;
+            overflow-y: auto;
         }
         
-        /* Content wrapper dengan padding untuk kompensasi navbar */
-        .content-wrapper {
-            padding-top: 64px !important;
+        .main-content {
+            margin-left: 260px;
             min-height: 100vh;
-            background-color: #f3f4f6;
+            position: relative;
         }
         
-        /* Modal z-index yang benar */
-        #approveModal, 
-        #rejectModal,
+        .bg-image-wrapper {
+            position: fixed;
+            top: 0;
+            left: 260px;
+            right: 0;
+            bottom: 0;
+            z-index: 0;
+        }
+        
+        .bg-image-wrapper::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: url('{{ asset('images/background.webp') }}');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            opacity: 0.40;
+        }
+        
+        .content-overlay {
+            position: relative;
+            z-index: 1;
+        }
+        
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            color: #4b5563;
+            text-decoration: none;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+        }
+        
+        .nav-item:hover {
+            background-color: #f3f4f6;
+            color: #4f46e5;
+            border-left-color: #4f46e5;
+        }
+        
+        .nav-item.active {
+            background-color: #eef2ff;
+            color: #4f46e5;
+            border-left-color: #4f46e5;
+            font-weight: 500;
+        }
+        
+        .nav-item i {
+            width: 20px;
+            margin-right: 0.75rem;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s;
+            }
+            
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .bg-image-wrapper {
+                left: 0;
+            }
+        }
+        
         .modal {
             z-index: 2000 !important;
         }
         
-        #approveModal > div,
-        #rejectModal > div,
-        .modal-content {
-            z-index: 2001 !important;
-        }
-        
-        /* Toast notifications */
-        .toast-notification {
-            z-index: 3000 !important;
-        }
-        
-        /* Alpine.js cloak */
         [x-cloak] {
             display: none !important;
         }
-        
-        /* Dropdown z-index */
-        .dropdown-menu {
-            z-index: 1100 !important;
-        }
-        
-        /* Prevent body scroll saat modal */
-        body.modal-open {
-            overflow: hidden !important;
-        }
     </style>
     
-    <!-- Vite (tetap ada untuk future use) -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    
-    <!-- Stack untuk additional styles dari views -->
     @stack('styles')
-    
-    <!-- Livewire Styles -->
     @livewireStyles
 </head>
-<body class="font-sans antialiased bg-gray-100">
+<body class="antialiased bg-gray-50" x-data="{ sidebarOpen: false }">
     
-    <!-- Fixed Navbar -->
-    <nav class="main-navbar bg-white border-b border-gray-200" x-data="{ open: false }">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <div class="flex">
-                    <!-- Logo -->
-                    <div class="shrink-0 flex items-center">
-                        <a href="{{ route('dashboard') }}" class="text-xl font-semibold text-gray-800">
-                            <i class="fas fa-envelope-open-text mr-2"></i>
-                            Sistem Persuratan
-                        </a>
-                    </div>
-
-                    <!-- Navigation Links (Desktop) -->
-                    <div class="hidden space-x-8 sm:-my-px sm:ml-10 sm:flex">
-                        <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                            <i class="fas fa-tachometer-alt mr-1"></i>
-                            {{ __('Dashboard') }}
-                        </x-nav-link>
-                        
-                        @if(Auth::check())
-                            @php
-                                $user = Auth::user();
-                                $role = $user->role->nama_role ?? '';
-                                $jabatan = $user->jabatan->nama_jabatan ?? '';
-                            @endphp
-                            
-                            @if($role === 'admin')
-                                <x-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">
-                                    <i class="fas fa-users mr-1"></i>
-                                    {{ __('Users') }}
-                                </x-nav-link>
-                            @endif
-                            
-                            @if(in_array($jabatan, ['Staff Program Studi', 'Staff Fakultas']) || in_array($role, ['staff_prodi', 'staff_fakultas']))
-                                <x-nav-link :href="route('staff.pengajuan.index')" :active="request()->routeIs('staff.pengajuan.*')">
-                                    <i class="fas fa-inbox mr-1"></i>
-                                    {{ __('Pengajuan') }}
-                                </x-nav-link>
-                                
-                                <x-nav-link :href="route('staff.surat.create')" :active="request()->routeIs('staff.surat.create')">
-                                    <i class="fas fa-plus-circle mr-1"></i>
-                                    {{ __('Buat Surat') }}
-                                </x-nav-link>
-                            @endif
-                            
-                            @if($jabatan == 'kaprodi' || $role == 'kaprodi')
-                                <x-nav-link :href="route('kaprodi.surat.approval')" :active="request()->routeIs('kaprodi.surat.approval')">
-                                    <i class="fas fa-check-circle mr-1"></i>
-                                    {{ __('Approval') }}
-                                </x-nav-link>
-                            @endif
-                            
-                            @if(in_array($jabatan, ['dekan', 'wd1', 'wd2', 'wd3']))
-                                <x-nav-link :href="route('pimpinan.surat.disposisi')" :active="request()->routeIs('pimpinan.surat.disposisi')">
-                                    <i class="fas fa-file-signature mr-1"></i>
-                                    {{ __('Disposisi') }}
-                                </x-nav-link>
-                            @endif
-                        @endif
-                    </div>
+    <!-- Sidebar -->
+    <div class="sidebar" :class="{ 'open': sidebarOpen }">
+        <!-- Logo -->
+        <div class="p-4 border-b border-gray-200">
+            <a href="{{ route('dashboard') }}" class="flex items-center">
+                <div class="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-envelope-open-text text-white"></i>
                 </div>
-
-                <!-- Settings Dropdown (Desktop) -->
-                <div class="hidden sm:flex sm:items-center sm:ml-6">
-                    <x-dropdown align="right" width="48">
-                        <x-slot name="trigger">
-                            <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
-                                <div class="flex items-center">
-                                    <i class="fas fa-user-circle mr-2"></i>
-                                    <span>{{ Auth::user()->nama ?? 'User' }}</span>
-                                </div>
-                                <div class="ml-1">
-                                    <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                    </svg>
-                                </div>
-                            </button>
-                        </x-slot>
-
-                        <x-slot name="content">
-                            <div class="px-4 py-2 text-xs text-gray-400 border-b">
-                                @if(Auth::check())
-                                    <div class="font-semibold">{{ Auth::user()->nama }}</div>
-                                    <div>{{ ucfirst(str_replace('_', ' ', Auth::user()->role->nama_role ?? 'User')) }}</div>
-                                    @if(Auth::user()->jabatan)
-                                        <div>{{ Auth::user()->jabatan->nama_jabatan }}</div>
-                                    @endif
-                                @endif
-                            </div>
-                            
-                            <x-dropdown-link :href="route('profile.edit')">
-                                <i class="fas fa-user-edit mr-2"></i>
-                                {{ __('Profile') }}
-                            </x-dropdown-link>
-
-                            <!-- Authentication -->
-                            <form method="POST" action="{{ route('logout') }}">
-                                @csrf
-                                <x-dropdown-link :href="route('logout')"
-                                        onclick="event.preventDefault();
-                                                    this.closest('form').submit();">
-                                    <i class="fas fa-sign-out-alt mr-2"></i>
-                                    {{ __('Log Out') }}
-                                </x-dropdown-link>
-                            </form>
-                        </x-slot>
-                    </x-dropdown>
+                <div class="ml-3">
+                    <div class="font-semibold text-gray-800">Sistem Persuratan</div>
+                    <div class="text-xs text-gray-500">FSI</div>
                 </div>
-
-                <!-- Hamburger (Mobile) -->
-                <div class="-mr-2 flex items-center sm:hidden">
-                    <button @click="open = ! open" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 focus:text-gray-500 transition duration-150 ease-in-out">
-                        <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
-                            <path :class="{'hidden': open, 'inline-flex': ! open }" class="inline-flex" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                            <path :class="{'hidden': ! open, 'inline-flex': open }" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
+            </a>
+        </div>
+        
+        <!-- User Info -->
+        <div class="p-4 border-b border-gray-200 bg-gray-50">
+            <div class="flex items-center">
+                <div class="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
+                    <i class="fas fa-user text-indigo-600"></i>
+                </div>
+                <div class="ml-3 flex-1">
+                    <div class="text-sm font-medium text-gray-800">{{ Auth::user()->nama ?? 'User' }}</div>
+                    <div class="text-xs text-gray-500">
+                        {{ ucfirst(str_replace('_', ' ', Auth::user()->role->nama_role ?? '')) }}
+                    </div>
                 </div>
             </div>
         </div>
-
-        <!-- Responsive Navigation Menu -->
-        <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
-            <div class="pt-2 pb-3 space-y-1">
-                <!-- Mobile navigation links here -->
-            </div>
-        </div>
-    </nav>
-
-    <!-- Main Content Wrapper -->
-    <div class="content-wrapper">
-        <!-- Page Heading -->
-        @if (isset($header))
-            <header class="bg-white shadow">
-                <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-                    {{ $header }}
-                </div>
-            </header>
-        @endif
-
-        <!-- Page Content -->
-        <main>
-            @yield('content')
-        </main>
+        
+        <!-- Navigation -->
+        <nav class="py-4">
+            <a href="{{ route('dashboard') }}" class="nav-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>Dashboard</span>
+            </a>
+            
+            @if(Auth::check())
+                @php
+                    $user = Auth::user();
+                    $role = $user->role->nama_role ?? '';
+                    $jabatan = $user->jabatan->nama_jabatan ?? '';
+                @endphp
+                
+                @if($role === 'admin')
+                    <a href="{{ route('admin.users.index') }}" class="nav-item {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
+                        <i class="fas fa-users"></i>
+                        <span>Kelola Users</span>
+                    </a>
+                @endif
+                
+                @if(in_array($jabatan, ['Staff Program Studi']) || in_array($role, ['staff_prodi', 'staff_fakultas']))
+                    <a href="{{ route('staff.pengajuan.index') }}" class="nav-item {{ request()->routeIs('staff.pengajuan.*') ? 'active' : '' }}">
+                        <i class="fas fa-inbox"></i>
+                        <span>Pengajuan</span>
+                    </a>
+                    
+                    <a href="{{ route('staff.surat.create') }}" class="nav-item {{ request()->routeIs('staff.surat.create') ? 'active' : '' }}">
+                        <i class="fas fa-plus-circle"></i>
+                        <span>Buat Surat</span>
+                    </a>
+                @endif
+                
+                @if($jabatan == 'kaprodi' || $role == 'kaprodi')
+                    <a href="{{ route('kaprodi.surat.approval') }}" class="nav-item {{ request()->routeIs('kaprodi.surat.approval') ? 'active' : '' }}">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Approval</span>
+                    </a>
+                @endif
+                
+                @if(in_array($jabatan, ['dekan', 'wd1', 'wd2', 'wd3']))
+                    <a href="{{ route('pimpinan.surat.disposisi') }}" class="nav-item {{ request()->routeIs('pimpinan.surat.disposisi') ? 'active' : '' }}">
+                        <i class="fas fa-file-signature"></i>
+                        <span>Disposisi</span>
+                    </a>
+                    
+                    <a href="{{ route('pimpinan.surat.ttd') }}" class="nav-item {{ request()->routeIs('pimpinan.surat.ttd') ? 'active' : '' }}">
+                        <i class="fas fa-pen-fancy"></i>
+                        <span>Tanda Tangan</span>
+                    </a>
+                @endif
+                
+                <a href="#" class="nav-item">
+                    <i class="fas fa-search"></i>
+                    <span>Tracking Surat</span>
+                </a>
+            @endif
+            
+            <div class="border-t border-gray-200 my-2"></div>
+            
+            <a href="{{ route('profile.edit') }}" class="nav-item {{ request()->routeIs('profile.edit') ? 'active' : '' }}">
+                <i class="fas fa-user-cog"></i>
+                <span>Pengaturan Profil</span>
+            </a>
+            
+            <form method="POST" action="{{ route('logout') }}">
+                @csrf
+                <a href="{{ route('logout') }}" class="nav-item text-red-600 hover:text-red-700 hover:bg-red-50" 
+                    onclick="event.preventDefault(); this.closest('form').submit();">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </a>
+            </form>
+        </nav>
     </div>
-
+    
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Background Image -->
+        <div class="bg-image-wrapper"></div>
+        
+        <!-- Top Bar (Mobile) -->
+        <div class="md:hidden bg-white border-b border-gray-200 p-4 sticky top-0 z-10">
+            <div class="flex items-center justify-between">
+                <button @click="sidebarOpen = !sidebarOpen" class="text-gray-600">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+                <div class="font-semibold text-gray-800">Sistem Persuratan</div>
+                <div class="w-6"></div>
+            </div>
+        </div>
+        
+        <!-- Content Overlay -->
+        <div class="content-overlay">
+            @if (isset($header))
+                <header class="bg-white/90 backdrop-blur-sm shadow">
+                    <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+                        {{ $header }}
+                    </div>
+                </header>
+            @endif
+            
+            <main>
+                @yield('content')
+            </main>
+        </div>
+    </div>
+    
+    <!-- Mobile Sidebar Overlay -->
+    <div x-show="sidebarOpen" 
+         @click="sidebarOpen = false"
+         x-transition:enter="transition-opacity ease-linear duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition-opacity ease-linear duration-300"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+         style="display: none;">
+    </div>
+    
     <!-- Toast Notification -->
     <div x-data="{ show: false, message: '', type: 'success' }"
         x-init="
@@ -255,22 +292,16 @@
             @endif
         "
         x-show="show"
-        x-transition:enter="transition ease-out duration-300"
-        x-transition:enter-start="opacity-0 transform translate-y-2"
-        x-transition:enter-end="opacity-100 transform translate-y-0"
-        x-transition:leave="transition ease-in duration-300"
-        x-transition:leave-start="opacity-100 transform translate-y-0"
-        x-transition:leave-end="opacity-0 transform translate-y-2"
-        class="toast-notification fixed bottom-4 right-4 p-4 rounded-md shadow-lg text-white"
+        x-transition
+        class="fixed bottom-4 right-4 p-4 rounded-lg shadow-lg text-white z-50"
         :class="{ 'bg-green-500': type === 'success', 'bg-red-500': type === 'error' }"
         style="display: none;">
         <div class="flex items-center">
             <span x-text="message"></span>
-            <button @click="show = false" class="ml-4 text-white font-bold text-xl">&times;</button>
+            <button @click="show = false" class="ml-4 font-bold">&times;</button>
         </div>
     </div>
-
-    <!-- Scripts -->
+    
     <script src="//unpkg.com/alpinejs" defer></script>
     @livewireScripts
     @stack('scripts')

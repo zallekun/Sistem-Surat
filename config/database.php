@@ -58,6 +58,11 @@ return [
             'prefix_indexes' => true,
             'strict' => true,
             'engine' => null,
+            'dump' => [
+                'dump_binary_path' => 'C:\laragon\bin\mysql\mysql-8.4.3-winx64\bin', // ganti sesuai versi Laragon kamu
+                'use_single_transaction',
+                'timeout' => 60,
+            ],
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],

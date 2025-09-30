@@ -129,9 +129,13 @@
     <div class="kop-surat">
         <table>
             <tr>
-                <td class="logo-left">
-                    <img src="{{ public_path('images/logo-ykep.png') }}" alt="Logo YKEP">
-                </td>
+            <td class="kop-logo-left">
+            @if(file_exists(public_path('images/logo-ykep.png')))
+                <img src="{{ public_path('images/logo-ykep.png') }}" style="width: 50px; height: 50px;">
+            @else
+                <div class="logo-box">LOGO<br>YKEP</div>
+            @endif
+            </td>
                 <td class="kop-text">
                     <div class="line1">YAYASAN KARTIKA EKA PAKSI</div>
                     <div class="line2">UNIVERSITAS JENDERAL ACHMAD YANI (UNJANI)</div>
@@ -141,9 +145,13 @@
                         Kampus Cimahi : <span id="preview_alamat_kampus" class="editable-field" data-input="edit_alamat_kampus">Jl. Terusan Jenderal Sudirman PO.BOX 148 Telp. (022) 6631556 Fax. (022) 6631556<span class="tooltip-edit">Klik untuk edit</span></span>
                     </div>
                 </td>
-                <td class="logo-right">
-                    <img src="{{ public_path('images/logo-unjani.png') }}" alt="Logo UNJANI">
-                </td>
+            <td class="kop-logo-right">
+            @if(file_exists(public_path('images/logo-unjani.png')))
+                <img src="{{ public_path('images/logo-unjani.png') }}" style="width: 55px; height: 55px;">
+            @else
+                <div class="logo-box">LOGO<br>UNJANI</div>
+            @endif
+            </td>
             </tr>
         </table>
     </div>

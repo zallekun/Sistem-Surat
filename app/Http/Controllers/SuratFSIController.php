@@ -34,14 +34,28 @@ class SuratFSIController extends Controller
             if ($pengajuan->prodi->fakultas_id !== $user->prodi->fakultas_id) {
                 abort(403, "Tidak memiliki akses ke pengajuan ini");
             }
+
+            if ($pengajuan->status === 'approved_prodi' && 
+            in_array($pengajuan->jenisSurat->kode_surat, ['KP', 'TA'])) {
+            return back()->with('error', 'Surat KP/TA harus memiliki surat pengantar terlebih dahulu. Status saat ini tidak dapat di-preview.');
+            }
+        
             
             $allowedStatuses = [
-                'approved_fakultas',
-                'processed',
-                'approved_prodi',
-                'sedang_ditandatangani',
-                'completed'
-            ];
+        'approved_prodi',        // MA only
+        'pengantar_generated',   // KP/TA with pengantar
+        'approved_fakultas',     // Ready for print
+        'sedang_ditandatangani', // Being signed
+        'completed',             // Done
+        'processed'              // Legacy
+    ];
+
+        // Validasi khusus untuk KP/TA
+    if (in_array($pengajuan->jenisSurat->kode_surat, ['KP', 'TA'])) {
+        if ($pengajuan->status === 'approved_prodi' && !$pengajuan->hasSuratPengantar()) {
+            return back()->with('error', 'Surat KP/TA memerlukan surat pengantar terlebih dahulu.');
+        }
+    }
             
             if (!in_array($pengajuan->status, $allowedStatuses)) {
                 return back()->with('error', 'Pengajuan dengan status "' . $pengajuan->status . '" tidak dapat diakses untuk preview');
@@ -76,8 +90,8 @@ class SuratFSIController extends Controller
             $additionalData = $this->parseAdditionalData($pengajuan->additional_data);
             
             // Dynamic capabilities based on status
-            $canEdit = in_array($pengajuan->status, ['approved_fakultas', 'processed', 'approved_prodi']);
-            $canPrint = in_array($pengajuan->status, ['approved_fakultas', 'processed', 'approved_prodi']) && !$pengajuan->printed_at;
+            $canEdit = in_array($pengajuan->status, ['approved_fakultas', 'processed', 'approved_prodi', 'pengantar_generated']);
+            $canPrint = in_array($pengajuan->status, ['approved_fakultas', 'processed', 'approved_prodi', 'pengantar_generated']) && !$pengajuan->printed_at;
             $canUploadSigned = ($pengajuan->status === 'sedang_ditandatangani');
             $isCompleted = ($pengajuan->status === 'completed');
             
@@ -208,55 +222,71 @@ class SuratFSIController extends Controller
     /**
      * Print surat untuk TTD fisik dan update status
      */
-    public function printSurat($id)
-    {
-        try {
-            DB::beginTransaction();
-            
-            $pengajuan = PengajuanSurat::findOrFail($id);
-            $user = Auth::user();
-            
-            // Security check
-            if ($pengajuan->prodi->fakultas_id !== $user->prodi->fakultas_id) {
-                abort(403, "Unauthorized access");
-            }
-            
-            // If already printed, just generate PDF without updating status
-            if ($pengajuan->printed_at) {
-                return $this->generatePrintPDF($pengajuan);
-            }
-            
-            // Check if can print
-            if (!$pengajuan->canPrintSurat()) {
-                return back()->with('error', 'Surat tidak dapat dicetak pada status ini');
-            }
-            
-            // Update status to "sedang ditandatangani"
-            $pengajuan->markAsPrinted($user->id);
-            
-            // Add tracking history
-            TrackingHistory::log(
-                $pengajuan->id,
-                'sedang_ditandatangani',
-                'Surat dicetak untuk proses tanda tangan fisik oleh ' . $user->nama,
-                $user->id
-            );
-            
-            DB::commit();
-            
-            // Generate and return PDF for printing
+public function printSurat($id)
+{
+    try {
+        DB::beginTransaction();
+        
+        $pengajuan = PengajuanSurat::findOrFail($id);
+        $user = Auth::user();
+        
+        // Security check
+        if ($pengajuan->prodi->fakultas_id !== $user->prodi->fakultas_id) {
+            abort(403, "Unauthorized access");
+        }
+        
+        // If already printed, just generate PDF without updating status
+        if ($pengajuan->printed_at) {
             return $this->generatePrintPDF($pengajuan);
-            
-        } catch (\Exception $e) {
-            DB::rollback();
-            Log::error("Error printing surat", [
-                'pengajuan_id' => $id,
-                'error' => $e->getMessage()
+        }
+        
+        // PERBAIKAN: Check if can print menggunakan method yang sudah diperbaiki
+        if (!$pengajuan->canPrintSurat()) {
+            return back()->with('error', 'Surat tidak dapat dicetak pada status: ' . $pengajuan->status_label);
+        }
+        
+        // TAMBAHAN: Untuk KP/TA dari pengantar_generated, update ke approved_fakultas dulu
+        if ($pengajuan->status === 'pengantar_generated') {
+            $pengajuan->update([
+                'status' => 'approved_fakultas',
+                'approved_by_fakultas' => $user->id,
+                'approved_at_fakultas' => now()
             ]);
             
-            return back()->with('error', 'Gagal print surat: ' . $e->getMessage());
+            TrackingHistory::log(
+                $pengajuan->id,
+                'approved_fakultas',
+                'Surat disetujui fakultas dan siap dicetak',
+                $user->id
+            );
         }
+        
+        // Update status to "sedang ditandatangani"
+        $pengajuan->markAsPrinted($user->id);
+        
+        // Add tracking history
+        TrackingHistory::log(
+            $pengajuan->id,
+            'sedang_ditandatangani',
+            'Surat dicetak untuk proses tanda tangan fisik oleh ' . $user->nama,
+            $user->id
+        );
+        
+        DB::commit();
+        
+        // Generate and return PDF for printing
+        return $this->generatePrintPDF($pengajuan);
+        
+    } catch (\Exception $e) {
+        DB::rollback();
+        Log::error("Error printing surat", [
+            'pengajuan_id' => $id,
+            'error' => $e->getMessage()
+        ]);
+        
+        return back()->with('error', 'Gagal print surat: ' . $e->getMessage());
     }
+}
     
     /**
      * Upload link surat yang sudah ditandatangani fisik

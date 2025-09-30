@@ -3,6 +3,35 @@
 
 @section('title', 'Generate Surat Pengantar')
 
+@php
+    // Data Kaprodi per Prodi
+    $kaprodiData = [
+        'si' => [
+            'nama' => 'Takbir Hendro Pudjiantoro, S.Si., M.T',
+            'nid' => '412166969'
+        ],
+        'ki' => [
+            'nama' => 'Dr. Drs. Jasmansyah, M.Si.',
+            'nid' => '412116964'
+        ],
+        'if' => [
+            'nama' => 'Puspita Nurul, S.Kom., M.T.',
+            'nid' => '412190585'
+        ]
+    ];
+    
+    $kodeProdi = strtolower($pengajuan->prodi->kode_prodi);
+    $currentKaprodi = $kaprodiData[$kodeProdi] ?? $kaprodiData['si'];
+    
+    // Override with actual kaprodi if exists
+    if ($kaprodi && $kaprodi->nama) {
+        $currentKaprodi = [
+            'nama' => $kaprodi->nama,
+            'nid' => $kaprodi->nip ?? $currentKaprodi['nid']
+        ];
+    }
+@endphp
+
 @push('styles')
 <style>
 /* A4 Container */
@@ -399,13 +428,13 @@
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Nama Penandatangan</label>
                                 <input type="text" id="edit_nama_ttd" class="form-control" data-preview="preview_nama_ttd"
-                                       value="{{ $kaprodi->nama ?? 'Taebir Hendro Pudjiantoro, S.Si., M.T' }}">
+                                    value="{{ $currentKaprodi['nama'] }}">  <!-- Gunakan $currentKaprodi -->
                             </div>
-                            
+
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">NID</label>
                                 <input type="text" id="edit_nid_ttd" class="form-control" data-preview="preview_nid_ttd"
-                                       value="{{ $kaprodi->nip ?? '412166969' }}">
+                                    value="{{ $currentKaprodi['nid'] }}">  <!-- Gunakan $currentKaprodi -->
                             </div>
 
                             <!-- Upload TTD -->
@@ -478,10 +507,10 @@
                                         <img src="{{ asset('images/logo-ykep.png') }}" style="width: 60px; height: 60px;" alt="Logo YKEP">
                                     </td>
                                     <td style="width: 70%; text-align: center; font-weight: bold; line-height: 1.3; vertical-align: middle;">
-                                        <div style="font-size: 11pt;">YAYASAN KARTIKA EKA PAKSI</div>
-                                        <div style="font-size: 12pt;">UNIVERSITAS JENDERAL ACHMAD YANI (UNJANI)</div>
+                                        <div style="font-size: 13pt;">YAYASAN KARTIKA EKA PAKSI</div>
+                                        <div style="font-size: 13pt;">UNIVERSITAS JENDERAL ACHMAD YANI (UNJANI)</div>
                                         <div style="font-size: 13pt;">FAKULTAS SAINS DAN INFORMATIKA</div>
-                                        <div style="font-size: 14pt; font-weight: bold;">PROGRAM STUDI S1 {{ strtoupper($pengajuan->prodi->nama_prodi) }}</div>
+                                        <div style="font-size: 13pt; font-weight: bold;">PROGRAM STUDI S1 {{ strtoupper($pengajuan->prodi->nama_prodi) }}</div>
                                         <div style="font-size: 9pt; font-weight: normal;">
                                             Kampus Cimahi : Jl. Terusan Jenderal Sudirman PO. BOX 148 Telp. (022) 6631556 Fax. (022) 6631556
                                         </div>
@@ -578,8 +607,18 @@
                                     <div style="height: 60px; margin: 10px 0;" id="ttd-preview-space">
                                         <!-- TTD will appear here after upload -->
                                     </div>
-                                    <p style="text-decoration: underline; font-weight: bold;"><span id="preview_nama_ttd" class="editable-field" data-input="edit_nama_ttd">{{ $kaprodi->nama ?? 'Taebir Hendro Pudjiantoro, S.Si., M.T' }}<span class="tooltip-edit">Klik untuk edit</span></span></p>
-                                    <p>NID. <span id="preview_nid_ttd" class="editable-field" data-input="edit_nid_ttd">{{ $kaprodi->nip ?? '412166969' }}<span class="tooltip-edit">Klik untuk edit</span></span></p>
+                                    <p style="text-decoration: underline; font-weight: bold;">
+                                        <span id="preview_nama_ttd" class="editable-field" data-input="edit_nama_ttd">
+                                            {{ $currentKaprodi['nama'] }}
+                                            <span class="tooltip-edit">Klik untuk edit</span>
+                                        </span>
+                                    </p>
+                                    <p>NID. 
+                                        <span id="preview_nid_ttd" class="editable-field" data-input="edit_nid_ttd">
+                                            {{ $currentKaprodi['nid'] }}
+                                            <span class="tooltip-edit">Klik untuk edit</span>
+                                        </span>
+                                    </p>
                                 </div>
                             </div>
                         </div>

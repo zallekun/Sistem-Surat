@@ -26,7 +26,7 @@ class StaffPengajuanController extends Controller
         }
         
         // Build query for pengajuan
-        $query = PengajuanSurat::with(['prodi', 'jenisSurat']);
+        $query = PengajuanSurat::with(['mahasiswa','prodi', 'jenisSurat']);
         
         // Filter by prodi
         if ($user->prodi_id) {
@@ -131,9 +131,16 @@ class StaffPengajuanController extends Controller
             abort(403, 'Unauthorized');
         }
         
-        $pengajuan = PengajuanSurat::with(['prodi', 'jenisSurat', 'suratPengantarGeneratedBy', 'trackingHistory' => function($query) {
-            $query->orderBy('created_at', 'desc');
-        }])->findOrFail($id);
+        $pengajuan = PengajuanSurat::with([
+            'mahasiswa', 
+            'prodi', 
+            'jenisSurat', 
+            'suratPengantarGeneratedBy',
+            'approvalHistories.performedBy', 
+            'trackingHistory' => function($query) {
+                $query->orderBy('created_at', 'desc');
+            }
+        ])->findOrFail($id);
         
         // Check if user can view this pengajuan
         if ($user->prodi_id && $pengajuan->prodi_id !== $user->prodi_id) {
@@ -148,6 +155,13 @@ class StaffPengajuanController extends Controller
 
 public function processPengajuan(Request $request, $id)
 {
+    \Log::info('=== PROCESS PENGAJUAN CALLED ===', [
+        'pengajuan_id' => $id,
+        'action' => $request->input('action'),
+        'user_id' => auth()->id(),
+        'timestamp' => now(),
+    ]);
+
     $request->validate([
         'action' => 'required|in:approve,reject',
         'rejection_reason' => 'required_if:action,reject|string|max:500'
@@ -159,10 +173,12 @@ public function processPengajuan(Request $request, $id)
         return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
     }
     
-    $pengajuan = PengajuanSurat::where('prodi_id', $user->prodi_id)->findOrFail($id);
+    $pengajuan = PengajuanSurat::with(['mahasiswa', 'jenisSurat'])
+        ->where('prodi_id', $user->prodi_id)
+        ->findOrFail($id);
     
     // Check if pengajuan can still be processed
-    if (!in_array($pengajuan->status, ['pending'])) {
+    if (!in_array($pengajuan->status, ['pending', 'processed'])) {
         return response()->json(['success' => false, 'message' => 'Pengajuan sudah diproses sebelumnya'], 400);
     }
     
@@ -170,20 +186,39 @@ public function processPengajuan(Request $request, $id)
         DB::beginTransaction();
         
         if ($request->action === 'approve') {
+            \Log::info('APPROVING PENGAJUAN', [
+                'pengajuan_id' => $pengajuan->id,
+                'status_before' => $pengajuan->status,
+            ]);
+            
+            // Update status
             $pengajuan->status = 'approved_prodi';
+            
+            // ✅ NEW: Keep old columns for backward compatibility (temporary)
             $pengajuan->approved_by_prodi = $user->id;
             $pengajuan->approved_at_prodi = now();
             
             $pengajuan->save();
             
-            // Tracking history
+            // ✅ NEW: Log to approval_histories
+            $pengajuan->logApproval(
+                action: 'approved_prodi',
+                notes: 'Pengajuan disetujui oleh ' . $user->nama
+            );
+            
+            \Log::info('APPROVAL LOGGED', [
+                'pengajuan_id' => $pengajuan->id,
+                'status_after' => $pengajuan->status,
+            ]);
+            
+            // Tracking history (existing)
             $pengajuan->trackingHistory()->create([
                 'status' => 'approved_prodi',
                 'description' => 'Pengajuan disetujui oleh ' . $user->nama,
                 'created_by' => $user->id
             ]);
             
-            // Pesan berbeda untuk MA vs KP/TA
+            // Message
             if ($pengajuan->needsSuratPengantar()) {
                 $message = 'Pengajuan disetujui. Silakan generate surat pengantar untuk diteruskan ke fakultas.';
             } else {
@@ -192,12 +227,25 @@ public function processPengajuan(Request $request, $id)
             
         } else {
             // Reject
+            \Log::info('REJECTING PENGAJUAN', [
+                'pengajuan_id' => $pengajuan->id,
+                'reason' => $request->rejection_reason,
+            ]);
+            
             $pengajuan->status = 'rejected_prodi';
+            
+            // ✅ NEW: Keep old columns for backward compatibility (temporary)
             $pengajuan->rejection_reason_prodi = $request->rejection_reason;
             $pengajuan->rejected_by_prodi = $user->id;
             $pengajuan->rejected_at_prodi = now();
             
             $pengajuan->save();
+            
+            // ✅ NEW: Log to approval_histories with rejection reason
+            $pengajuan->logApproval(
+                action: 'rejected_prodi',
+                notes: $request->rejection_reason
+            );
             
             $message = 'Pengajuan ditolak dengan alasan: ' . $request->rejection_reason;
             
@@ -222,12 +270,13 @@ public function processPengajuan(Request $request, $id)
         Log::error('Error processing pengajuan', [
             'pengajuan_id' => $id,
             'action' => $request->action,
-            'error' => $e->getMessage()
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
         ]);
         
         return response()->json([
             'success' => false,
-            'message' => 'Terjadi kesalahan sistem'
+            'message' => 'Terjadi kesalahan sistem: ' . $e->getMessage()
         ], 500);
     }
 }
@@ -263,8 +312,12 @@ public function previewPengantar($id)
         abort(403, 'Unauthorized');
     }
     
-    $pengajuan = PengajuanSurat::with(['prodi.fakultas', 'jenisSurat', 'prodi.kaprodi'])
-        ->where('prodi_id', $user->prodi_id)
+        $pengajuan = PengajuanSurat::with([
+            'mahasiswa',
+            'prodi.fakultas', 
+            'jenisSurat', 
+            'prodi.kaprodi'
+        ])->where('prodi_id', $user->prodi_id)
         ->findOrFail($id);
     
     // Validasi: hanya KP/TA yang butuh pengantar
@@ -362,7 +415,9 @@ public function storePengantar(Request $request, $id)
         return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
     }
     
-    $pengajuan = PengajuanSurat::where('prodi_id', $user->prodi_id)->findOrFail($id);
+    $pengajuan = PengajuanSurat::with(['mahasiswa', 'prodi', 'jenisSurat'])
+        ->where('prodi_id', $user->prodi_id)
+        ->findOrFail($id);
     
     if (!$pengajuan->canGeneratePengantar()) {
         return response()->json([
@@ -395,6 +450,16 @@ public function storePengantar(Request $request, $id)
                 'surat_pengantar' => $request->surat_data
             ])
         ]);
+
+                // ✅ NEW: Log to approval_histories
+        $pengajuan->logApproval(
+            action: 'pengantar_generated',
+            notes: 'Surat pengantar berhasil dibuat',
+            metadata: [
+                'nomor_pengantar' => $request->surat_pengantar_nomor,
+                'nota_dinas_number' => $request->nota_dinas_number,
+            ]
+        );
         
         // Log tracking history
         $pengajuan->trackingHistory()->create([
@@ -428,17 +493,23 @@ public function storePengantar(Request $request, $id)
 
 private function generatePengantarPDF($pengajuan, $suratData, $ttdKaprodi)
 {
-    $kodeProdi = strtolower($pengajuan->prodi->kode_prodi);
-    $kodeJenis = strtolower($pengajuan->jenisSurat->kode_surat);
+    // Gunakan satu template untuk semua prodi
+    $templateName = "surat.pdf.pengantar-universal";
     
-    $specificTemplate = "surat.pdf.pengantar-{$kodeJenis}-{$kodeProdi}";
-    // $defaultTemplate = "surat.pdf.pengantar-{$kodeJenis}-default";
-    
-    if (!view()->exists($specificTemplate)) {
-        $specificTemplate = $defaultTemplate;   
+    // Validasi template ada
+    if (!view()->exists($templateName)) {
+        \Log::error('Template PDF universal tidak ditemukan', [
+            'template' => $templateName,
+            'pengajuan_id' => $pengajuan->id
+        ]);
+        
+        throw new \Exception(
+            "Template surat pengantar universal belum tersedia. " .
+            "Harap buat template: resources/views/{$templateName}.blade.php"
+        );
     }
     
-    // PERBAIKAN: Pastikan variabel match dengan yang ada di form
+    // Data untuk template PDF
     $data = [
         'pengajuan' => $pengajuan,
         'surat_data' => $suratData,
@@ -446,29 +517,40 @@ private function generatePengantarPDF($pengajuan, $suratData, $ttdKaprodi)
         'prodi' => $pengajuan->prodi,
         'fakultas' => $pengajuan->prodi->fakultas,
         'kaprodi' => $pengajuan->prodi->kaprodi,
-        'nomor_surat' => $suratData['nomor_nota'] ?? '', // Dari form: edit_nomor_nota
+        'nomor_surat' => $suratData['nomor_nota'] ?? '',
         'tanggal_surat' => $suratData['tempat_tanggal'] ?? now()->locale('id')->isoFormat('D MMMM Y')
     ];
     
-    // Debug log
-    \Log::info('Generating PDF with template: ' . $specificTemplate);
-    \Log::info('Data keys: ' . json_encode(array_keys($data)));
-    \Log::info('Surat data keys: ' . json_encode(array_keys($suratData)));
+    \Log::info('Generating PDF dengan template universal', [
+        'template' => $templateName,
+        'prodi' => $pengajuan->prodi->nama_prodi,
+        'jenis_surat' => $pengajuan->jenisSurat->nama_jenis
+    ]);
     
-    $pdf = PDF::loadView($specificTemplate, $data)
-        ->setPaper('a4', 'portrait')
-        ->setOptions([
-            'isHtml5ParserEnabled' => true,
-            'isRemoteEnabled' => true,
-            'isPhpEnabled' => true,
-            'defaultFont' => 'Times New Roman',
-            'dpi' => 150,
-            'enable-javascript' => true,
-            'javascript-delay' => 5000,
-            'enable-smart-shrinking' => true,
-            'no-stop-slow-scripts' => true
+    try {
+        $pdf = PDF::loadView($templateName, $data)
+            ->setPaper('a4', 'portrait')
+            ->setOptions([
+                'isHtml5ParserEnabled' => true,
+                'isRemoteEnabled' => false, // Disable karena pakai base64
+                'isPhpEnabled' => true,
+                'defaultFont' => 'Times New Roman',
+                'dpi' => 96,
+                'margin-top' => '15mm',
+                'margin-bottom' => '15mm',
+                'margin-left' => '20mm',
+                'margin-right' => '20mm'
+            ]);
+        
+        return $pdf;
+        
+    } catch (\Exception $e) {
+        \Log::error('Error generating PDF', [
+            'template' => $templateName,
+            'error' => $e->getMessage()
         ]);
-    
-    return $pdf;
+        
+        throw new \Exception("Gagal generate PDF: " . $e->getMessage());
+    }
 }
 }

@@ -258,8 +258,6 @@
                     </div>
                 </div>
             </div>
-
-                        <!-- GANTI section KP di Step 2 dengan ini -->
             <div x-show="getSelectedKode() === 'KP'">
                 <h3 class="text-lg font-medium mb-4 text-gray-800">Data Tambahan - Surat Kerja Praktek</h3>
                 
@@ -309,7 +307,6 @@
                         </template>
                     </div>
                 </div>
-                
                 <!-- Data Perusahaan -->
                 <div class="grid md:grid-cols-2 gap-4 mb-4">
                     <div class="md:col-span-2">
@@ -339,33 +336,77 @@
                     </div>
                 </div>
             </div>
-
             <div x-show="getSelectedKode() === 'TA'">
                 <h3 class="text-lg font-medium mb-4 text-gray-800">Data Tambahan - Surat Tugas Akhir</h3>
+                
+                <!-- Jumlah Mahasiswa TA -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Jumlah Mahasiswa TA *</label>
+                    <select x-model="form.jumlah_mahasiswa_ta" 
+                            @change="updateMahasiswaTAList()"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="1">1 Orang (TA Individu)</option>
+                        <option value="2">2 Orang (TA Kelompok)</option>
+                    </select>
+                </div>
+
+                <!-- Dynamic Mahasiswa List -->
+                <div class="mb-6">
+                    <h4 class="font-medium text-gray-700 mb-3">Data Mahasiswa TA</h4>
+                    <div class="space-y-4">
+                        <template x-for="(mahasiswa, index) in form.mahasiswa_ta" :key="index">
+                            <div class="grid md:grid-cols-3 gap-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1" x-text="`Nama Mahasiswa ${index + 1} *`"></label>
+                                    <input type="text" x-model="mahasiswa.nama" 
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        :placeholder="`Nama mahasiswa ${index + 1}`">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1" x-text="`NIM ${index + 1} *`"></label>
+                                    <input type="text" x-model="mahasiswa.nim" 
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        :placeholder="`NIM mahasiswa ${index + 1}`">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1" x-text="`Program Studi ${index + 1} *`"></label>
+                                    <select x-model="mahasiswa.prodi" 
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                        <option value="">Pilih Program Studi</option>
+                                        <template x-for="prodi in prodiOptions" :key="prodi.id">
+                                            <option :value="prodi.nama_prodi" x-text="prodi.nama_prodi"></option>
+                                        </template>
+                                    </select>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+                
+                <!-- Data TA -->
                 <div class="grid md:grid-cols-2 gap-4 mb-4">
                     <div class="md:col-span-2">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Judul Tugas Akhir</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Judul Tugas Akhir *</label>
                         <textarea x-model="form.judul_ta" rows="2" 
-                                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Dosen Pembimbing 1</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Dosen Pembimbing 1 *</label>
                         <input type="text" x-model="form.dosen_pembimbing1" 
-                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Dosen Pembimbing 2</label>
                         <input type="text" x-model="form.dosen_pembimbing2" 
-                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                     </div>
                     <div class="md:col-span-2">
                         <label class="block text-sm font-medium text-gray-700 mb-1">Lokasi Penelitian</label>
                         <textarea x-model="form.lokasi_penelitian" rows="2" 
-                                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
                     </div>
                 </div>
             </div>
-
             <div x-show="getSelectedKode() === 'SKM'">
                 <h3 class="text-lg font-medium mb-4 text-gray-800">Data Tambahan - Surat Keterangan Mahasiswa</h3>
                 <div class="mb-4">
@@ -375,7 +416,6 @@
                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
                 </div>
             </div>
-
             <div class="mt-6 flex justify-between">
                 <button @click="prevStep()" 
                         class="px-6 py-2 border border-gray-300 rounded-md font-medium text-gray-700 hover:bg-gray-50 transition-colors">
@@ -389,7 +429,6 @@
                 </button>
             </div>
         </div>
-
         <!-- Step 3: Konfirmasi -->
         <div x-show="step === 3" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-x-4" x-transition:enter-end="opacity-100 transform translate-x-0">
             <h2 class="text-xl font-semibold mb-6">Konfirmasi Data</h2>
@@ -425,7 +464,6 @@
                     </div>
                 </div>
             </div>
-
             <!-- Data Tambahan Berdasarkan Jenis Surat -->
             
             <!-- Surat Mahasiswa Aktif -->
@@ -451,8 +489,6 @@
                     </div>
                 </div>
             </div>
-
-            <!-- GANTI section KP di Step 3 dengan ini (untuk konfirmasi saja) -->
             <div x-show="getSelectedKode() === 'KP'" class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
                 <h3 class="font-semibold text-yellow-800 mb-3 flex items-center">
                     <i class="fas fa-briefcase mr-2"></i>
@@ -485,7 +521,6 @@
                     </div>
                 </div>
             </div>
-
             <!-- Surat Tugas Akhir -->
             <div x-show="getSelectedKode() === 'TA'" class="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-6">
                 <h3 class="font-semibold text-purple-800 mb-3 flex items-center">
@@ -505,7 +540,6 @@
                     </div>
                 </div>
             </div>
-
             <!-- Surat Keterangan Mahasiswa -->
             <div x-show="getSelectedKode() === 'SKM'" class="bg-indigo-50 border border-indigo-200 rounded-lg p-4 mb-6">
                 <h3 class="font-semibold text-indigo-800 mb-3 flex items-center">
@@ -633,6 +667,8 @@
                 bidang_kerja: '',
 
                 // TA fields
+                jumlah_mahasiswa_ta: '1',  // TAMBAHKAN
+                mahasiswa_ta: [{ nama: '', nim: '', prodi: '' }],  // TAMBAHKAN
                 judul_ta: '',
                 dosen_pembimbing1: '',
                 dosen_pembimbing2: '',
@@ -722,6 +758,20 @@
                 
                 console.log('Updated mahasiswa KP list to', count, 'students:', this.form.mahasiswa_kp);
             },
+
+            // Fungsi untuk update list mahasiswa TA
+            updateMahasiswaTAList() {
+                const count = parseInt(this.form.jumlah_mahasiswa_ta);
+                
+                // Create array with specified count
+                this.form.mahasiswa_ta = Array(count).fill().map(() => ({ 
+                    nama: '', 
+                    nim: '', 
+                    prodi: '' 
+                }));
+                
+                console.log('Updated mahasiswa TA list to', count, 'students:', this.form.mahasiswa_ta);
+            },
             
             toggleJenisSurat(id) {
                 if (this.form.jenis_surat_id === id) {
@@ -806,10 +856,22 @@
                     
                     // TA specific validation
                     if (kode === 'TA') {
-                        const taValid = this.form.judul_ta && 
-                                       this.form.dosen_pembimbing1;
+                        const taBasicValid = this.form.judul_ta && 
+                                            this.form.dosen_pembimbing1;
                         
-                        return basicValid && taValid;
+                        // Validate all mahasiswa entries
+                        const mahasiswaValid = this.form.mahasiswa_ta.every(m => 
+                            m.nama.trim() !== '' && m.nim.trim() !== '' && m.prodi.trim() !== ''
+                        );
+                        
+                        console.log('TA Validation:', {
+                            basicValid,
+                            taBasicValid,
+                            mahasiswaValid,
+                            mahasiswaData: this.form.mahasiswa_ta
+                        });
+                        
+                        return basicValid && taBasicValid && mahasiswaValid;
                     }
                     
                     // SKM specific validation
@@ -919,6 +981,15 @@
                         formData.append('dosen_pembimbing1', this.form.dosen_pembimbing1 || '');
                         formData.append('dosen_pembimbing2', this.form.dosen_pembimbing2 || '');
                         formData.append('lokasi_penelitian', this.form.lokasi_penelitian || '');
+                        formData.append('jumlah_mahasiswa_ta', this.form.jumlah_mahasiswa_ta);
+                        formData.append('mahasiswa_ta', JSON.stringify(this.form.mahasiswa_ta));
+                        
+                        console.log('TA Form Data:', {
+                            jumlah: this.form.jumlah_mahasiswa_ta,
+                            mahasiswa: this.form.mahasiswa_ta,
+                            mahasiswaJSON: JSON.stringify(this.form.mahasiswa_ta)
+                        });
+                        
                         
                     } else if (kode === 'SKM') {
                         formData.append('keterangan_khusus', this.form.keterangan_khusus || '');
@@ -989,10 +1060,10 @@
                 
                 // Reset all form fields with proper defaults
                 Object.keys(this.form).forEach(key => {
-                    if (key === 'mahasiswa_kp') {
+                    if (key === 'mahasiswa_kp' || key === 'mahasiswa_ta') {
                         // Reset to single student
                         this.form[key] = [{ nama: '', nim: '', prodi: '' }];
-                    } else if (key === 'jumlah_mahasiswa_kp') {
+                    } else if (key === 'jumlah_mahasiswa_kp' || key === 'jumlah_mahasiswa_ta') {
                         // Reset to 1 student
                         this.form[key] = '1';
                     } else {

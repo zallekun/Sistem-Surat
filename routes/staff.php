@@ -30,7 +30,7 @@ Route::middleware(['auth', 'role:staff_prodi,kaprodi'])->prefix('staff')->name('
     Route::prefix('pengajuan')->name('pengajuan.')->group(function () {
         Route::get('/', [App\Http\Controllers\StaffPengajuanController::class, 'index'])->name('index');
         Route::get('/{id}', [App\Http\Controllers\StaffPengajuanController::class, 'show'])->name('show');
-        Route::post('/{id}/process', [SuratController::class, 'processProdiPengajuan'])->name('process');
+        Route::post('/{id}/process', [App\Http\Controllers\StaffPengajuanController::class, 'processPengajuan'])->name('process');
         
         // TAMBAHKAN ROUTES SURAT PENGANTAR DI SINI
         Route::get('/{id}/pengantar/preview', [App\Http\Controllers\StaffPengajuanController::class, 'previewPengantar'])

@@ -1,334 +1,439 @@
-<!-- staff.pengajuan.show -->
-
-
 @extends('layouts.app')
 
 @section('title', 'Detail Pengajuan')
 
 @section('content')
-<!-- Container dengan padding yang tepat -->
-<div class="min-h-screen bg-gray-50">
-    <!-- Content container dengan max height -->
-    <div class="py-8 px-4 sm:px-6 lg:px-8">
-        <div class="max-w-4xl mx-auto">
-            <!-- Main Card -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                <!-- Header dengan gradient -->
-                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200">
-                    <div class="flex justify-between items-center">
-                        <h2 class="text-xl font-bold text-gray-800 flex items-center">
-                            <i class="fas fa-file-alt mr-2 text-blue-600"></i>
-                            Detail Pengajuan Surat
-                        </h2>
-                        @php
-                            use App\Helpers\StatusHelper;
-                            $statusColor = StatusHelper::getPengajuanStatusColor($pengajuan->status);
-                            $statusLabel = StatusHelper::getPengajuanStatusLabel($pengajuan->status);
-                        @endphp
-                        <span class="px-3 py-1 rounded-full text-sm font-medium {{ $statusColor }}">
-                            {{ $statusLabel }}
-                        </span>
-                    </div>
+<div class="py-6 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-5xl mx-auto">
+        <!-- Main Card -->
+        <div class="bg-white/95 backdrop-blur-sm rounded-xl shadow-sm overflow-hidden">
+            <!-- Header -->
+            <div class="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xl font-bold text-white flex items-center">
+                        <i class="fas fa-file-alt mr-2"></i>
+                        Detail Pengajuan Surat
+                    </h2>
+                    @php
+                        $statusConfig = [
+                            'pending' => ['bg' => 'bg-yellow-100', 'text' => 'text-yellow-800', 'label' => 'Pending'],
+                            'processed' => ['bg' => 'bg-blue-100', 'text' => 'text-blue-800', 'label' => 'Diproses'],
+                            'approved_prodi' => ['bg' => 'bg-green-100', 'text' => 'text-green-800', 'label' => 'Disetujui Prodi'],
+                            'rejected_prodi' => ['bg' => 'bg-red-100', 'text' => 'text-red-800', 'label' => 'Ditolak'],
+                            'completed' => ['bg' => 'bg-purple-100', 'text' => 'text-purple-800', 'label' => 'Selesai'],
+                            'pengantar_generated' => ['bg' => 'bg-indigo-100', 'text' => 'text-indigo-800', 'label' => 'Surat Pengantar Dibuat'],
+                        ];
+                        $status = $statusConfig[$pengajuan->status] ?? ['bg' => 'bg-gray-100', 'text' => 'text-gray-800', 'label' => ucfirst($pengajuan->status)];
+                    @endphp
+                    <span class="px-3 py-1.5 rounded-full text-sm font-semibold {{ $status['bg'] }} {{ $status['text'] }}">
+                        {{ $status['label'] }}
+                    </span>
                 </div>
+            </div>
 
-                <!-- Content Body -->
-                <div class="p-6 space-y-6">
-                    <!-- Basic Info Grid -->
-                    <div class="grid md:grid-cols-2 gap-4">
-                        <!-- Informasi Pengajuan -->
-                        <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
-                            <h3 class="font-semibold text-blue-800 mb-3 text-sm uppercase tracking-wide">
-                                <i class="fas fa-info-circle mr-2"></i>
-                                Informasi Pengajuan
-                            </h3>
-                            <div class="space-y-2 text-sm">
-                                <div class="flex justify-between">
-                                    <span class="text-gray-600">Token:</span>
-                                    <span class="font-mono bg-white px-2 py-0.5 rounded text-xs">{{ $pengajuan->tracking_token }}</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-gray-600">Tanggal:</span>
-                                    <span class="text-gray-800">{{ $pengajuan->created_at->format('d/m/Y H:i') }}</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-gray-600">Jenis:</span>
-                                    <span class="font-medium">
-                                        {{ $pengajuan->jenisSurat->nama_jenis ?? 'N/A' }}
-                                        <span class="text-xs bg-gray-200 px-1.5 py-0.5 rounded ml-1">{{ $pengajuan->jenisSurat->kode_surat ?? '' }}</span>
+            <!-- Content Body -->
+            <div class="p-6 space-y-5">
+                <!-- Info Cards Grid -->
+                <div class="grid md:grid-cols-2 gap-4">
+                    <!-- Info Pengajuan -->
+                    <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                        <h3 class="font-semibold text-blue-800 mb-3 text-sm flex items-center">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            INFORMASI PENGAJUAN
+                        </h3>
+                        <div class="space-y-2.5 text-sm">
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-700">Token:</span>
+                                <span class="font-mono bg-white px-2.5 py-1 rounded text-xs font-semibold text-blue-600">
+                                    {{ $pengajuan->tracking_token }}
+                                </span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-700">Tanggal:</span>
+                                <span class="font-medium text-gray-900">{{ $pengajuan->created_at->format('d/m/Y H:i') }}</span>
+                            </div>
+                            <div class="flex justify-between items-start">
+                                <span class="text-gray-700">Jenis Surat:</span>
+                                <div class="text-right">
+                                    <div class="font-medium text-gray-900">{{ $pengajuan->jenisSurat->nama_jenis ?? 'N/A' }}</div>
+                                    <span class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-mono">
+                                        {{ $pengajuan->jenisSurat->kode_surat ?? '' }}
                                     </span>
                                 </div>
                             </div>
                         </div>
-                        
-                        <!-- Data Mahasiswa -->
-                        <div class="bg-green-50 p-4 rounded-lg border border-green-100">
-                            <h3 class="font-semibold text-green-800 mb-3 text-sm uppercase tracking-wide">
-                                <i class="fas fa-user-graduate mr-2"></i>
-                                Data Mahasiswa
-                            </h3>
-                            <div class="space-y-2 text-sm">
-                                <div class="flex justify-between">
-                                    <span class="text-gray-600">NIM:</span>
-                                    <span class="font-medium">{{ $pengajuan->nim }}</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-gray-600">Nama:</span>
-                                    <span class="font-medium">{{ $pengajuan->nama_mahasiswa }}</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-gray-600">Prodi:</span>
-                                    <span>{{ $pengajuan->prodi->nama_prodi ?? 'N/A' }}</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-gray-600">Email:</span>
-                                    <span class="text-xs">{{ $pengajuan->email }}</span>
-                                </div>
+                    </div>
+                    
+                    <!-- Data Mahasiswa -->
+                    <div class="bg-green-50 p-4 rounded-lg border border-green-200">
+                        <h3 class="font-semibold text-green-800 mb-3 text-sm flex items-center">
+                            <i class="fas fa-user-graduate mr-2"></i>
+                            DATA MAHASISWA
+                        </h3>
+                        <div class="space-y-2.5 text-sm">
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-700">NIM:</span>
+                                <span class="font-mono font-semibold text-gray-900">{{ $pengajuan->nim }}</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-700">Nama:</span>
+                                <span class="font-medium text-gray-900">{{ $pengajuan->nama_mahasiswa }}</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-700">Prodi:</span>
+                                <span class="text-gray-900">{{ $pengajuan->prodi->nama_prodi ?? 'N/A' }}</span>
+                            </div>
+                            <div class="flex justify-between items-start">
+                                <span class="text-gray-700">Email:</span>
+                                <span class="text-xs text-gray-900 break-all text-right max-w-[200px]">{{ $pengajuan->email }}</span>
                             </div>
                         </div>
                     </div>
-                    
-                    <!-- Keperluan -->
-                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                        <h3 class="font-semibold text-gray-800 mb-2 text-sm uppercase tracking-wide">
-                            <i class="fas fa-clipboard-list mr-2"></i>
-                            Keperluan Surat
-                        </h3>
-                        <p class="text-gray-700 text-sm leading-relaxed">{{ $pengajuan->keperluan }}</p>
-                    </div>
-                    
-                    <!-- Additional Data Section -->
-                    @if($pengajuan->additional_data)
-                        @php
-                            $additionalData = $pengajuan->additional_data;
-                            $jenisSurat = $pengajuan->jenisSurat;
-                        @endphp
-                        
-                        <div class="border-t pt-6">
-                            <h3 class="font-semibold text-gray-800 mb-4 text-sm uppercase tracking-wide">
-                                <i class="fas fa-list-alt mr-2"></i>
-                                Data Tambahan
-                            </h3>
-
-                            {{-- SURAT KERJA PRAKTEK --}}
-                            @if(($jenisSurat->kode_surat ?? '') === 'KP')
-                                @if(isset($additionalData['kerja_praktek']))
-                                <!-- Daftar Mahasiswa KP -->
-                                    @if(isset($additionalData['kerja_praktek']['mahasiswa_kp']) && is_array($additionalData['kerja_praktek']['mahasiswa_kp']))
-                                        <div class="bg-green-50 p-4 rounded-lg border border-green-100">
-                                            <h4 class="font-medium text-green-800 mb-3 text-sm">
-                                                <i class="fas fa-users mr-2"></i>
-                                                Daftar Mahasiswa Kerja Praktek
-                                            </h4>
-                                            
-                                            <div class="bg-white rounded-lg overflow-hidden">
-                                                <table class="min-w-full divide-y divide-gray-200">
-                                                    <thead class="bg-gray-50">
-                                                        <tr>
-                                                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">No</th>
-                                                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Nama</th>
-                                                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">NIM</th>
-                                                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Prodi</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody class="bg-white divide-y divide-gray-200">
-                                                        @foreach($additionalData['kerja_praktek']['mahasiswa_kp'] as $index => $mahasiswa)
-                                                            <tr class="hover:bg-gray-50">
-                                                                <td class="px-3 py-2 text-sm">{{ $index + 1 }}</td>
-                                                                <td class="px-3 py-2 text-sm font-medium">{{ $mahasiswa['nama'] ?? '-' }}</td>
-                                                                <td class="px-3 py-2 text-sm font-mono">{{ $mahasiswa['nim'] ?? '-' }}</td>
-                                                                <td class="px-3 py-2 text-sm">{{ $mahasiswa['prodi'] ?? '-' }}</td>
-                                                            </tr>
-                                                        @endforeach
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </div>
-                                    @endif
-                                    </div>
-                                    <!-- Data Perusahaan -->
-                                    <div class="bg-blue-50 p-4 rounded-lg border border-blue-100 mb-4">
-                                        <h4 class="font-medium text-blue-800 mb-3 text-sm">
-                                            <i class="fas fa-building mr-2"></i>
-                                            Informasi Perusahaan
-                                        </h4>
-                                        <div class="grid md:grid-cols-2 gap-3 text-sm">
-                                            <div>
-                                                <span class="text-gray-600">Nama:</span>
-                                                <span class="font-medium ml-1">{{ $additionalData['kerja_praktek']['nama_perusahaan'] ?? '-' }}</span>
-                                            </div>
-                                            <div>
-                                                <span class="text-gray-600">Bidang:</span>
-                                                <span class="ml-1">{{ $additionalData['kerja_praktek']['bidang_kerja'] ?? '-' }}</span>
-                                            </div>
-                                            <div>
-                                                <span class="text-gray-600">Periode:</span>
-                                                <span class="ml-1">{{ $additionalData['kerja_praktek']['periode_mulai'] ?? '-' }} s.d {{ $additionalData['kerja_praktek']['periode_selesai'] ?? '-' }}</span>
-                                            </div>
-                                            <div>
-                                                <span class="text-gray-600">Jumlah:</span>
-                                                <span class="bg-blue-100 px-2 py-0.5 rounded text-blue-800 font-medium ml-1">
-                                                    {{ $additionalData['kerja_praktek']['jumlah_mahasiswa'] ?? count($additionalData['kerja_praktek']['mahasiswa_kp'] ?? []) }} orang
-                                                </span>
-                                            </div>
-                                        </div>
-                                        
-                                        @if($additionalData['kerja_praktek']['alamat_perusahaan'] ?? false)
-                                            <div class="mt-3 pt-3 border-t border-blue-200">
-                                                <span class="text-gray-600 text-sm">Alamat:</span>
-                                                <p class="mt-1 text-sm">{{ $additionalData['kerja_praktek']['alamat_perusahaan'] }}</p>
-                                            </div>
-                                        @endif
-                                    </div>
-                                @endif
-                            @endif
-
-                            {{-- SURAT MAHASISWA AKTIF --}}
-                            @if(($jenisSurat->kode_surat ?? '') === 'MA')
-                                <!-- Keep existing MA code but with similar compact styling -->
-                                @if(isset($additionalData['semester']) || isset($additionalData['tahun_akademik']))
-                                    <div class="bg-green-50 p-4 rounded-lg border border-green-100 mb-4">
-                                        <h4 class="font-medium text-green-800 mb-3 text-sm">
-                                            <i class="fas fa-graduation-cap mr-2"></i>
-                                            Data Akademik
-                                        </h4>
-                                        <div class="grid md:grid-cols-2 gap-4 text-sm">
-                                            @if($additionalData['semester'] ?? false)
-                                                <div><strong>Semester:</strong> {{ $additionalData['semester'] }}</div>
-                                            @endif
-                                            @if($additionalData['tahun_akademik'] ?? false)
-                                                <div><strong>Tahun Akademik:</strong> {{ $additionalData['tahun_akademik'] }}</div>
-                                            @endif
-                                        </div>
-                                    </div>
-                                @endif
-
-                                @if(isset($additionalData['orang_tua']))
-                                    <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-100">
-                                        <h4 class="font-medium text-yellow-800 mb-3 text-sm">
-                                            <i class="fas fa-users mr-2"></i>
-                                            Biodata Orang Tua
-                                        </h4>
-                                        <div class="grid md:grid-cols-2 gap-3 text-sm">
-                                            <div><strong>Nama:</strong> {{ $additionalData['orang_tua']['nama'] ?? '-' }}</div>
-                                            <div><strong>Tempat Lahir:</strong> {{ $additionalData['orang_tua']['tempat_lahir'] ?? '-' }}</div>
-                                            <div><strong>Tanggal Lahir:</strong> {{ $additionalData['orang_tua']['tanggal_lahir'] ?? '-' }}</div>
-                                            <div><strong>Pekerjaan:</strong> {{ $additionalData['orang_tua']['pekerjaan'] ?? '-' }}</div>
-                                        </div>
-                                    </div>
-                                @endif
-                            @endif
-
-                            {{-- Other types can be added similarly --}}
-                        </div>
-                    @endif
                 </div>
                 
-                <!-- Actions Footer -->
-<div class="bg-gray-50 px-6 py-4 border-t border-gray-200">
-    <div class="flex justify-between items-center">
-        <a href="{{ route('staff.pengajuan.index') }}" 
-           class="inline-flex items-center px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white text-sm font-medium rounded-md transition-colors">
-            <i class="fas fa-arrow-left mr-2"></i>
-            Kembali
-        </a>
-        
-        <div class="flex space-x-2">
-            {{-- STATUS: PENDING - Tombol Approve/Reject --}}
-            @if($pengajuan->status === 'pending' && auth()->user()->hasRole(['staff_prodi', 'kaprodi']))
-                <button onclick="showApproveConfirm()" 
-                        class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-md transition-colors">
-                    <i class="fas fa-check mr-2"></i>
-                    Setujui
-                </button>
+                <!-- Keperluan -->
+                <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <h3 class="font-semibold text-gray-800 mb-2 text-sm flex items-center">
+                        <i class="fas fa-clipboard-list mr-2"></i>
+                        KEPERLUAN SURAT
+                    </h3>
+                    <p class="text-gray-700 text-sm leading-relaxed">{{ $pengajuan->keperluan }}</p>
+                </div>
                 
-                <button onclick="showRejectModal()" 
-                        class="inline-flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-md transition-colors">
-                    <i class="fas fa-times mr-2"></i>
-                    Tolak
-                </button>
-            
-            {{-- STATUS: APPROVED_PRODI - Tombol Generate Pengantar (KP/TA Only) --}}
-            @elseif($pengajuan->status === 'approved_prodi')
-                @if($pengajuan->needsSuratPengantar() && !$pengajuan->hasSuratPengantar())
-                    <a href="{{ route('staff.pengajuan.pengantar.preview', $pengajuan->id) }}" 
-                       class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">
-                        <i class="fas fa-file-alt mr-2"></i>Generate Surat Pengantar
-                    </a>
-                @else
-                    <span class="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 text-sm font-medium rounded-md">
-                        <i class="fas fa-check-circle mr-2"></i>
-                        Sudah Disetujui - Menunggu Proses Pengantar
-                    </span>
+                <!-- Additional Data -->
+                @if($pengajuan->additional_data)
+                    @php
+                        $additionalData = $pengajuan->additional_data;
+                        $jenisSurat = $pengajuan->jenisSurat;
+                    @endphp
+                    
+                    <div class="border-t pt-5">
+                        <h3 class="font-semibold text-gray-800 mb-4 text-sm flex items-center">
+                            <i class="fas fa-list-alt mr-2"></i>
+                            DATA TAMBAHAN
+                        </h3>
+
+                        {{-- SURAT KERJA PRAKTEK --}}
+                        @if(($jenisSurat->kode_surat ?? '') === 'KP' && isset($additionalData['kerja_praktek']))
+                            <!-- Info Perusahaan -->
+                            <div class="bg-blue-50 p-4 rounded-lg border border-blue-200 mb-4">
+                                <h4 class="font-medium text-blue-800 mb-3 text-sm flex items-center">
+                                    <i class="fas fa-building mr-2"></i>
+                                    Informasi Perusahaan
+                                </h4>
+                                <div class="grid md:grid-cols-2 gap-3 text-sm">
+                                    <div>
+                                        <span class="text-gray-700">Nama Perusahaan:</span>
+                                        <div class="font-medium text-gray-900">{{ $additionalData['kerja_praktek']['nama_perusahaan'] ?? '-' }}</div>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-700">Bidang Kerja:</span>
+                                        <div class="text-gray-900">{{ $additionalData['kerja_praktek']['bidang_kerja'] ?? '-' }}</div>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-700">Periode:</span>
+                                        <div class="text-gray-900">
+                                            {{ $additionalData['kerja_praktek']['periode_mulai'] ?? '-' }} s/d 
+                                            {{ $additionalData['kerja_praktek']['periode_selesai'] ?? '-' }}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-700">Jumlah Mahasiswa:</span>
+                                        <span class="inline-block bg-blue-100 px-2.5 py-1 rounded text-blue-800 font-semibold text-xs">
+                                            {{ $additionalData['kerja_praktek']['jumlah_mahasiswa'] ?? count($additionalData['kerja_praktek']['mahasiswa_kp'] ?? []) }} orang
+                                        </span>
+                                    </div>
+                                </div>
+                                
+                                @if($additionalData['kerja_praktek']['alamat_perusahaan'] ?? false)
+                                    <div class="mt-3 pt-3 border-t border-blue-200">
+                                        <span class="text-gray-700 text-sm font-medium">Alamat Perusahaan:</span>
+                                        <p class="mt-1 text-sm text-gray-900">{{ $additionalData['kerja_praktek']['alamat_perusahaan'] }}</p>
+                                    </div>
+                                @endif
+                            </div>
+
+                            <!-- Daftar Mahasiswa KP -->
+                            @if(isset($additionalData['kerja_praktek']['mahasiswa_kp']) && is_array($additionalData['kerja_praktek']['mahasiswa_kp']))
+                                <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                                    <div class="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                                        <h4 class="font-medium text-gray-800 text-sm flex items-center">
+                                            <i class="fas fa-users mr-2"></i>
+                                            Daftar Mahasiswa Kerja Praktek
+                                        </h4>
+                                    </div>
+                                    <div class="overflow-x-auto">
+                                        <table class="min-w-full divide-y divide-gray-200">
+                                            <thead class="bg-gray-50">
+                                                <tr>
+                                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">No</th>
+                                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Nama</th>
+                                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">NIM</th>
+                                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Prodi</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody class="bg-white divide-y divide-gray-100">
+                                                @foreach($additionalData['kerja_praktek']['mahasiswa_kp'] as $index => $mahasiswa)
+                                                    <tr class="hover:bg-gray-50">
+                                                        <td class="px-4 py-3 text-sm text-gray-900">{{ $index + 1 }}</td>
+                                                        <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ $mahasiswa['nama'] ?? '-' }}</td>
+                                                        <td class="px-4 py-3 text-sm font-mono text-gray-900">{{ $mahasiswa['nim'] ?? '-' }}</td>
+                                                        <td class="px-4 py-3 text-sm text-gray-900">{{ $mahasiswa['prodi'] ?? '-' }}</td>
+                                                    </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            @endif
+                        @endif
+
+                        {{-- SURAT TUGAS AKHIR --}}
+                        @if(($jenisSurat->kode_surat ?? '') === 'TA' && isset($additionalData['tugas_akhir']))
+                            <!-- Info Tugas Akhir -->
+                            <div class="bg-indigo-50 p-4 rounded-lg border border-indigo-200 mb-4">
+                                <h4 class="font-medium text-indigo-800 mb-3 text-sm flex items-center">
+                                    <i class="fas fa-book mr-2"></i>
+                                    Informasi Tugas Akhir
+                                </h4>
+                                
+                                @if($additionalData['tugas_akhir']['judul_ta'] ?? false)
+                                    <div class="mb-3">
+                                        <span class="text-gray-700 font-medium text-sm">Judul:</span>
+                                        <p class="mt-1 text-sm text-gray-900 leading-relaxed">{{ $additionalData['tugas_akhir']['judul_ta'] }}</p>
+                                    </div>
+                                @endif
+                                
+                                <div class="grid md:grid-cols-2 gap-3 text-sm">
+                                    @if($additionalData['tugas_akhir']['dosen_pembimbing1'] ?? false)
+                                        <div>
+                                            <span class="text-gray-700">Pembimbing 1:</span>
+                                            <div class="font-medium text-gray-900">{{ $additionalData['tugas_akhir']['dosen_pembimbing1'] }}</div>
+                                        </div>
+                                    @endif
+                                    
+                                    @if($additionalData['tugas_akhir']['dosen_pembimbing2'] ?? false)
+                                        <div>
+                                            <span class="text-gray-700">Pembimbing 2:</span>
+                                            <div class="font-medium text-gray-900">{{ $additionalData['tugas_akhir']['dosen_pembimbing2'] }}</div>
+                                        </div>
+                                    @endif
+                                    
+                                    @if($additionalData['tugas_akhir']['lokasi_penelitian'] ?? false)
+                                        <div class="md:col-span-2">
+                                            <span class="text-gray-700">Lokasi Penelitian:</span>
+                                            <div class="text-gray-900">{{ $additionalData['tugas_akhir']['lokasi_penelitian'] }}</div>
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+
+                            <!-- Daftar Mahasiswa TA -->
+                            @if(isset($additionalData['tugas_akhir']['mahasiswa_ta']) && is_array($additionalData['tugas_akhir']['mahasiswa_ta']))
+                                <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                                    <div class="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                                        <h4 class="font-medium text-gray-800 text-sm flex items-center">
+                                            <i class="fas fa-users mr-2"></i>
+                                            Daftar Mahasiswa Tugas Akhir
+                                            <span class="ml-auto bg-purple-100 px-2.5 py-1 rounded text-purple-800 font-semibold text-xs">
+                                                {{ count($additionalData['tugas_akhir']['mahasiswa_ta']) }} orang
+                                            </span>
+                                        </h4>
+                                    </div>
+                                    <div class="overflow-x-auto">
+                                        <table class="min-w-full divide-y divide-gray-200">
+                                            <thead class="bg-gray-50">
+                                                <tr>
+                                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">No</th>
+                                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Nama</th>
+                                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">NIM</th>
+                                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Prodi</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody class="bg-white divide-y divide-gray-100">
+                                                @foreach($additionalData['tugas_akhir']['mahasiswa_ta'] as $index => $mahasiswa)
+                                                    <tr class="hover:bg-gray-50">
+                                                        <td class="px-4 py-3 text-sm text-gray-900">{{ $index + 1 }}</td>
+                                                        <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ $mahasiswa['nama'] ?? '-' }}</td>
+                                                        <td class="px-4 py-3 text-sm font-mono text-gray-900">{{ $mahasiswa['nim'] ?? '-' }}</td>
+                                                        <td class="px-4 py-3 text-sm text-gray-900">{{ $mahasiswa['prodi'] ?? '-' }}</td>
+                                                    </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            @endif
+                        @endif
+                    </div>
                 @endif
-            
-            {{-- STATUS: PENGANTAR_GENERATED atau lainnya --}}
-            @elseif($pengajuan->status === 'pengantar_generated')
-                <span class="inline-flex items-center px-4 py-2 bg-green-100 text-green-800 text-sm font-medium rounded-md">
-                    <i class="fas fa-check-double mr-2"></i>
-                    Surat Pengantar Sudah Dibuat
-                </span>
-            
-            @else
-                <span class="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-800 text-sm font-medium rounded-md">
-                    <i class="fas fa-info-circle mr-2"></i>
-                    Status: {{ ucwords(str_replace('_', ' ', $pengajuan->status)) }}
-                </span>
+
+                <!-- Surat Pengantar Info -->
+                @if($pengajuan->hasSuratPengantar())
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <h4 class="font-semibold text-green-800 mb-3 flex items-center text-sm">
+                            <i class="fas fa-check-circle mr-2"></i>
+                            SURAT PENGANTAR SUDAH DIBUAT
+                        </h4>
+                        <div class="text-sm text-gray-700 space-y-2">
+                            <div class="grid md:grid-cols-2 gap-2">
+                                <div><span class="font-medium">Nomor:</span> {{ $pengajuan->surat_pengantar_nomor }}</div>
+                                <div><span class="font-medium">Dibuat oleh:</span> {{ $pengajuan->suratPengantarGeneratedBy->nama ?? 'N/A' }}</div>
+                                <div><span class="font-medium">Tanggal:</span> {{ $pengajuan->surat_pengantar_generated_at?->format('d/m/Y H:i') }}</div>
+                                @if($pengajuan->nota_dinas_number)
+                                    <div><span class="font-medium">No. Nota Dinas:</span> {{ $pengajuan->nota_dinas_number }}</div>
+                                @endif
+                            </div>
+                        </div>
+                        <a href="{{ $pengajuan->surat_pengantar_url }}" target="_blank"
+                           class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium mt-3 transition">
+                            <i class="fas fa-download mr-2"></i>
+                            Download Surat Pengantar
+                        </a>
+                    </div>
+                @endif
+            </div>
+
+            <!-- Approval Timeline Section -->
+            @if($pengajuan->approvalHistories->count() > 0)
+            <div class="bg-white/95 backdrop-blur-sm rounded-xl shadow-sm overflow-hidden mt-6">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-900">
+                        <i class="fas fa-history mr-2"></i>Riwayat Persetujuan
+                    </h3>
+                </div>
+                <div class="p-6">
+                    <div class="space-y-4">
+                        @foreach($pengajuan->approvalHistories as $index => $approval)
+                        <div class="flex items-start gap-4">
+                            <!-- Timeline Dot -->
+                            <div class="flex-shrink-0 relative">
+                                @if(!$loop->last)
+                                <div class="absolute top-10 left-1/2 w-0.5 h-full bg-gray-200 -translate-x-1/2"></div>
+                                @endif
+                                
+                                <div class="w-10 h-10 rounded-full flex items-center justify-center relative z-10
+                                    @if($approval->isApproval())
+                                        bg-green-100
+                                    @elseif($approval->isRejection())
+                                        bg-red-100
+                                    @else
+                                        bg-blue-100
+                                    @endif">
+                                    <i class="fas 
+                                        @if($approval->isApproval())
+                                            fa-check text-green-600
+                                        @elseif($approval->isRejection())
+                                            fa-times text-red-600
+                                        @else
+                                            fa-clock text-blue-600
+                                        @endif"></i>
+                                </div>
+                            </div>
+                            
+                            <!-- Content -->
+                            <div class="flex-1">
+                                <div class="flex items-start justify-between">
+                                    <div>
+                                        <span class="font-medium text-gray-900">{{ $approval->action_label }}</span>
+                                        @if($approval->performedBy)
+                                            <span class="text-sm text-gray-600">
+                                                oleh <span class="font-medium">{{ $approval->performedBy->nama }}</span>
+                                            </span>
+                                        @endif
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-xs text-gray-500">
+                                            {{ $approval->created_at->format('d/m/Y H:i') }}
+                                        </div>
+                                        <div class="text-xs text-gray-400">
+                                            {{ $approval->created_at->diffForHumans() }}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                @if($approval->notes)
+                                    <div class="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                        <p class="text-sm text-gray-700">
+                                            <i class="fas fa-comment-alt text-gray-400 mr-1"></i>
+                                            {{ $approval->notes }}
+                                        </p>
+                                    </div>
+                                @endif
+                                
+                                @if($approval->metadata)
+                                    <div class="mt-2">
+                                        <details class="text-xs text-gray-500">
+                                            <summary class="cursor-pointer hover:text-gray-700">Detail metadata</summary>
+                                            <pre class="mt-2 p-2 bg-gray-100 rounded text-xs overflow-x-auto">{{ json_encode($approval->metadata, JSON_PRETTY_PRINT) }}</pre>
+                                        </details>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
             @endif
+
+            <!-- Footer Actions -->
+            <div class="bg-gray-50 px-6 py-4 border-t border-gray-200">
+                <div class="flex flex-col sm:flex-row justify-between items-center gap-3">
+                    <a href="{{ route('staff.pengajuan.index') }}" 
+                       class="inline-flex items-center px-5 py-2.5 bg-gray-600 hover:bg-gray-700 text-white text-sm font-medium rounded-lg transition w-full sm:w-auto justify-center">
+                        <i class="fas fa-arrow-left mr-2"></i>
+                        Kembali
+                    </a>
+                    
+                    <div class="flex gap-2 w-full sm:w-auto">
+                        @if(($pengajuan->status === 'pending' || $pengajuan->status === 'processed') && auth()->user()->hasRole(['staff_prodi', 'kaprodi']))
+                            <button onclick="showApproveConfirm()" 
+                                    class="flex-1 sm:flex-initial inline-flex items-center justify-center px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition">
+                                <i class="fas fa-check mr-2"></i>
+                                Setujui
+                            </button>
+                            
+                            <button onclick="showRejectModal()" 
+                                    class="flex-1 sm:flex-initial inline-flex items-center justify-center px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition">
+                                <i class="fas fa-times mr-2"></i>
+                                Tolak
+                            </button>
+                        @elseif($pengajuan->status === 'approved_prodi' && in_array($pengajuan->jenisSurat->kode_surat, ['KP', 'TA']) && !$pengajuan->hasSuratPengantar())
+                            <a href="{{ route('staff.pengajuan.pengantar.preview', $pengajuan->id) }}" 
+                               class="flex-1 sm:flex-initial inline-flex items-center justify-center px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition">
+                                <i class="fas fa-file-alt mr-2"></i>
+                                Buat Surat Pengantar
+                            </a>
+                        @endif
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
-{{-- INFO BOX SURAT PENGANTAR (Pisah dari buttons, taruh di bawah) --}}
-@if($pengajuan->hasSuratPengantar())
-    <div class="bg-green-50 border border-green-200 rounded-lg p-4 mt-4">
-        <h4 class="font-semibold text-green-800 mb-2">
-            <i class="fas fa-check-circle mr-2"></i>Surat Pengantar Sudah Dibuat
-        </h4>
-        <div class="text-sm text-green-700 space-y-1">
-            <p><strong>Nomor:</strong> {{ $pengajuan->surat_pengantar_nomor }}</p>
-            <p><strong>Dibuat oleh:</strong> {{ $pengajuan->suratPengantarGeneratedBy->nama ?? 'N/A' }}</p>
-            <p><strong>Tanggal:</strong> {{ $pengajuan->surat_pengantar_generated_at?->format('d/m/Y H:i') }}</p>
-            @if($pengajuan->nota_dinas_number)
-                <p><strong>No. Nota Dinas:</strong> {{ $pengajuan->nota_dinas_number }}</p>
-            @endif
-        </div>
-        <a href="{{ $pengajuan->surat_pengantar_url }}" target="_blank"
-           class="inline-flex items-center px-3 py-1 bg-green-600 text-white rounded text-sm mt-2 hover:bg-green-700">
-            <i class="fas fa-download mr-2"></i>Download Surat Pengantar
-        </a>
-    </div>
-@endif
-
-<!-- Keep existing modals unchanged -->
-<!-- Modal Konfirmasi Approve -->
-<div id="approveModal" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center z-[2000]">
-    <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto" 
-         onclick="event.stopPropagation()">
-        <!-- Header -->
-        <div class="sticky top-0 bg-white rounded-t-xl flex items-center justify-between p-6 border-b border-gray-200">
+<!-- Modal Approve -->
+<div id="approveModal" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg" onclick="event.stopPropagation()">
+        <div class="flex items-center justify-between p-6 border-b border-gray-200">
             <div class="flex items-center">
-                <div class="flex-shrink-0 w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                    </svg>
+                <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                    <i class="fas fa-check text-green-600 text-xl"></i>
                 </div>
                 <div class="ml-4">
                     <h3 class="text-xl font-semibold text-gray-900">Konfirmasi Persetujuan</h3>
                     <p class="text-sm text-gray-500 mt-1">Tindakan ini tidak dapat dibatalkan</p>
                 </div>
             </div>
-            <button onclick="closeApproveModal()" 
-                    class="text-gray-400 hover:text-gray-600 transition-colors duration-200 p-2 hover:bg-gray-100 rounded-full">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
+            <button onclick="closeApproveModal()" class="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-full transition">
+                <i class="fas fa-times text-xl"></i>
             </button>
         </div>
         
-        <!-- Content -->
         <div class="p-6">
-            <p class="text-gray-700 mb-4">
-                Apakah Anda yakin ingin menyetujui pengajuan surat ini? Sebelum pengajuan diteruskan ke fakultas akan ada proses membuat surat pengantar.
+            <p class="text-gray-700 mb-4 leading-relaxed">
+                Apakah Anda yakin ingin menyetujui pengajuan surat ini?
             </p>
             
             <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
@@ -340,14 +445,13 @@
             </div>
         </div>
         
-        <!-- Footer -->
-        <div class="sticky bottom-0 bg-gray-50 rounded-b-xl flex justify-end gap-3 p-6 border-t border-gray-200">
+        <div class="flex justify-end gap-3 p-6 bg-gray-50 border-t border-gray-200 rounded-b-xl">
             <button onclick="closeApproveModal()" 
-                    class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+                    class="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">
                 Batal
             </button>
             <button onclick="processPengajuan('approve')" 
-                    class="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700">
+                    class="px-5 py-2.5 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition">
                 Ya, Setujui
             </button>
         </div>
@@ -355,31 +459,23 @@
 </div>
 
 <!-- Modal Reject -->
-<div id="rejectModal" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center z-[2000]">
-    <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto" 
-         onclick="event.stopPropagation()">
-        <!-- Header -->
-        <div class="sticky top-0 bg-white rounded-t-xl flex items-center justify-between p-6 border-b border-gray-200">
+<div id="rejectModal" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg" onclick="event.stopPropagation()">
+        <div class="flex items-center justify-between p-6 border-b border-gray-200">
             <div class="flex items-center">
-                <div class="flex-shrink-0 w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
-                    <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
+                <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                    <i class="fas fa-times text-red-600 text-xl"></i>
                 </div>
                 <div class="ml-4">
                     <h3 class="text-xl font-semibold text-gray-900">Tolak Pengajuan</h3>
                     <p class="text-sm text-gray-500 mt-1">Berikan alasan penolakan yang jelas</p>
                 </div>
             </div>
-            <button onclick="closeRejectModal()" 
-                    class="text-gray-400 hover:text-gray-600 transition-colors duration-200 p-2 hover:bg-gray-100 rounded-full">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
+            <button onclick="closeRejectModal()" class="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-full transition">
+                <i class="fas fa-times text-xl"></i>
             </button>
         </div>
         
-        <!-- Content -->
         <div class="p-6">
             <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
                 <h4 class="text-sm font-medium text-gray-900 mb-2">Detail Pengajuan:</h4>
@@ -394,21 +490,20 @@
                     Alasan Penolakan <span class="text-red-500">*</span>
                 </label>
                 <textarea id="rejectionReason" 
-                          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-sm"
                           rows="4"
-                          placeholder="Tuliskan alasan penolakan..."
+                          placeholder="Tuliskan alasan penolakan dengan jelas..."
                           required></textarea>
             </div>
         </div>
         
-        <!-- Footer -->
-        <div class="sticky bottom-0 bg-gray-50 rounded-b-xl flex justify-end gap-3 p-6 border-t border-gray-200">
+        <div class="flex justify-end gap-3 p-6 bg-gray-50 border-t border-gray-200 rounded-b-xl">
             <button onclick="closeRejectModal()" 
-                    class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+                    class="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">
                 Batal
             </button>
             <button onclick="processPengajuan('reject')" 
-                    class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700">
+                    class="px-5 py-2.5 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition">
                 Tolak Pengajuan
             </button>
         </div>
@@ -417,93 +512,45 @@
 @endsection
 
 @push('scripts')
-
 <script>
-console.log('Script loaded successfully');
-
-// Prevent body scroll when modal is open
-function disableBodyScroll() {
-    document.body.style.overflow = 'hidden';
-    document.body.style.paddingRight = getScrollbarWidth() + 'px';
-}
-
-function enableBodyScroll() {
-    document.body.style.overflow = '';
-    document.body.style.paddingRight = '';
-}
-
-function getScrollbarWidth() {
-    const outer = document.createElement('div');
-    outer.style.visibility = 'hidden';
-    outer.style.width = '100px';
-    outer.style.msOverflowStyle = 'scrollbar';
-    document.body.appendChild(outer);
-    
-    const widthNoScroll = outer.offsetWidth;
-    outer.style.overflow = 'scroll';
-    
-    const inner = document.createElement('div');
-    inner.style.width = '100%';
-    outer.appendChild(inner);
-    
-    const widthWithScroll = inner.offsetWidth;
-    outer.parentNode.removeChild(outer);
-    
-    return widthNoScroll - widthWithScroll;
-}
-
-// Modal functions - MAKE SURE THESE ARE GLOBAL
 window.showApproveConfirm = function() {
-    console.log('Show approve modal called');
-    disableBodyScroll();
     const modal = document.getElementById('approveModal');
     if (modal) {
         modal.classList.remove('hidden');
         modal.classList.add('flex');
-        console.log('Approve modal shown');
-    } else {
-        console.error('Approve modal element not found!');
+        document.body.style.overflow = 'hidden';
     }
 }
 
 window.closeApproveModal = function() {
-    console.log('Close approve modal called');
-    enableBodyScroll();
     const modal = document.getElementById('approveModal');
     if (modal) {
         modal.classList.add('hidden');
         modal.classList.remove('flex');
+        document.body.style.overflow = '';
     }
 }
 
 window.showRejectModal = function() {
-    console.log('Show reject modal called');
-    disableBodyScroll();
     const modal = document.getElementById('rejectModal');
     if (modal) {
         modal.classList.remove('hidden');
         modal.classList.add('flex');
-        console.log('Reject modal shown');
-    } else {
-        console.error('Reject modal element not found!');
+        document.body.style.overflow = 'hidden';
     }
 }
 
 window.closeRejectModal = function() {
-    console.log('Close reject modal called');
-    enableBodyScroll();
     const modal = document.getElementById('rejectModal');
     if (modal) {
         modal.classList.add('hidden');
         modal.classList.remove('flex');
         document.getElementById('rejectionReason').value = '';
+        document.body.style.overflow = '';
     }
 }
 
-// Process function
 window.processPengajuan = function(action) {
-    console.log('Processing:', action);
-    
     let data = { action: action };
     
     if (action === 'reject') {
@@ -515,61 +562,35 @@ window.processPengajuan = function(action) {
         data.rejection_reason = reason;
     }
     
-    // Show loading state
-    const button = action === 'approve' 
-        ? document.querySelector('button[onclick*="processPengajuan(\'approve\')"]')
-        : document.querySelector('button[onclick*="processPengajuan(\'reject\')"]');
+    fetch('/staff/pengajuan/{{ $pengajuan->id }}/process', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            alert(result.message);
+            window.location.href = '{{ route("staff.pengajuan.index") }}';
+        } else {
+            alert('Error: ' + (result.message || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Terjadi kesalahan: ' + error.message);
+    });
     
-    if (button) {
-        const originalText = button.innerHTML;
-        button.disabled = true;
-        button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
-        
-        fetch('/staff/pengajuan/{{ $pengajuan->id }}/process', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify(data)
-        })
-        .then(response => {
-            console.log('Response status:', response.status);
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-            return response.json();
-        })
-        .then(result => {
-            console.log('Result:', result);
-            
-            if (result.success) {
-                alert(result.message);
-                window.location.href = '{{ route("staff.pengajuan.index") }}';
-            } else {
-                alert('Error: ' + (result.message || 'Unknown error'));
-                button.disabled = false;
-                button.innerHTML = originalText;
-            }
-        })
-        .catch(error => {
-            console.error('Fetch Error:', error);
-            alert('Terjadi kesalahan: ' + error.message);
-            button.disabled = false;
-            button.innerHTML = originalText;
-        });
-    }
-    
-    // Close modals
     if (action === 'approve') closeApproveModal();
     if (action === 'reject') closeRejectModal();
 }
 
-// Close modal on backdrop click
+// Close on backdrop click
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM loaded, setting up modal listeners');
-    
     const approveModal = document.getElementById('approveModal');
     const rejectModal = document.getElementById('rejectModal');
     
@@ -577,41 +598,21 @@ document.addEventListener('DOMContentLoaded', function() {
         approveModal.addEventListener('click', function(e) {
             if (e.target === this) closeApproveModal();
         });
-        console.log('Approve modal listener added');
-    } else {
-        console.error('Approve modal not found in DOM');
     }
     
     if (rejectModal) {
         rejectModal.addEventListener('click', function(e) {
             if (e.target === this) closeRejectModal();
         });
-        console.log('Reject modal listener added');
-    } else {
-        console.error('Reject modal not found in DOM');
     }
 });
 
-// Close modal on Escape key
+// Close on Escape
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
-        const approveModal = document.getElementById('approveModal');
-        const rejectModal = document.getElementById('rejectModal');
-        
-        if (approveModal && !approveModal.classList.contains('hidden')) {
-            closeApproveModal();
-        }
-        if (rejectModal && !rejectModal.classList.contains('hidden')) {
-            closeRejectModal();
-        }
+        closeApproveModal();
+        closeRejectModal();
     }
-});
-
-// Test functions are accessible
-console.log('Functions defined:', {
-    showApproveConfirm: typeof window.showApproveConfirm,
-    showRejectModal: typeof window.showRejectModal,
-    processPengajuan: typeof window.processPengajuan
 });
 </script>
 @endpush
