@@ -27,6 +27,7 @@ return new class extends Migration
                 'rejected_prodi',
                 'approved_fakultas',
                 'rejected_fakultas',
+                'surat_generated',
                 'printed',
                 'completed',
                 'rejected',

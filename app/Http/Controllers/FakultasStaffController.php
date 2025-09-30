@@ -128,7 +128,7 @@ class FakultasStaffController extends Controller
                 'pengantar_generated' => 'bg-blue-100 text-blue-800',
                 'approved_fakultas' => 'bg-green-100 text-green-800',
                 'sedang_ditandatangani' => 'bg-orange-100 text-orange-800',
-                'completed' => 'bg-gray-100 text-gray-800',
+                'completed' => 'bg-green-100 text-green-800',
                 'rejected_fakultas' => 'bg-red-100 text-red-800',
                 default => 'bg-gray-100 text-gray-600'
             };
@@ -243,7 +243,9 @@ public function show($id)
     $pengajuan = PengajuanSurat::with([
         'jenisSurat', 
         'prodi.fakultas',
-        'suratPengantarGeneratedBy',  // Tambahkan ini
+        'mahasiswa',
+        'suratPengantarGeneratedBy',
+        'approvalHistories.performedBy',  // Tambahkan ini
         'trackingHistory'              // Tambahkan ini jika perlu
     ])->find($id);
     
@@ -273,6 +275,8 @@ public function show($id)
         $surat->statusHistories = collect([]);
         $surat->isi_surat = null;
         $surat->original_pengajuan = $pengajuan;
+
+        $surat->approvalHistories = $pengajuan->approvalHistories;
         
         return view('fakultas.surat.show', compact('surat', 'pengajuan'));
     }
@@ -348,7 +352,7 @@ public function processPengajuanFromProdi(Request $request, $id)
         return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
     }
     
-    $pengajuan = PengajuanSurat::with(['prodi', 'jenisSurat'])
+    $pengajuan = PengajuanSurat::with(['prodi', 'jenisSurat', 'mahasiswa']) // ✅ ADD mahasiswa
                                ->forFakultas($user->prodi->fakultas_id)
                                ->where('id', $id)
                                ->first();
@@ -373,9 +377,23 @@ public function processPengajuanFromProdi(Request $request, $id)
         
         if ($request->action === 'approve') {
             $pengajuan->approveByFakultas($user->id);
+            
+            // ✅ NEW: Log to approval_histories
+            $pengajuan->logApproval(
+                action: 'approved_fakultas',
+                notes: 'Disetujui oleh staff fakultas'
+            );
+            
             $message = 'Pengajuan berhasil disetujui fakultas. Siap untuk generate surat.';
         } else {
             $pengajuan->rejectByFakultas($user->id, $request->rejection_reason);
+            
+            // ✅ NEW: Log rejection to approval_histories
+            $pengajuan->logApproval(
+                action: 'rejected_fakultas',
+                notes: $request->rejection_reason
+            );
+            
             $message = 'Pengajuan berhasil ditolak fakultas';
         }
         
@@ -410,7 +428,7 @@ public function generateSuratFromPengajuan(Request $request, $id)
     $user = Auth::user();
     $user->load('prodi.fakultas');
     
-    $pengajuan = PengajuanSurat::with(['prodi.fakultas', 'jenisSurat'])
+    $pengajuan = PengajuanSurat::with(['prodi.fakultas', 'jenisSurat', 'mahasiswa']) // ✅ ADD mahasiswa
                                ->forFakultas($user->prodi->fakultas_id)
                                ->where('id', $id)
                                ->first();
@@ -459,6 +477,16 @@ public function generateSuratFromPengajuan(Request $request, $id)
         
         // Update pengajuan status
         $pengajuan->markSuratGenerated($surat->id, $user->id);
+        
+        // ✅ NEW: Log surat generation to approval_histories
+        $pengajuan->logApproval(
+            action: 'surat_generated',
+            notes: 'Surat berhasil di-generate dengan nomor: ' . $nomorSurat,
+            metadata: [
+                'surat_id' => $surat->id,
+                'nomor_surat' => $nomorSurat,
+            ]
+        );
         
         DB::commit();
         
@@ -830,72 +858,88 @@ private function getRomanMonth($month)
     /**
      * Generate PDF untuk pengajuan dan mark as completed
      */
-    public function generateSuratPDF(Request $request, $id)
-    {
-        $user = Auth::user();
-        $pengajuan = PengajuanSurat::with(['prodi', 'jenisSurat'])->findOrFail($id);
-        
-        if (!in_array($pengajuan->status, ['processed', 'approved_prodi'])) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Pengajuan tidak dapat di-generate PDF. Status: ' . $pengajuan->status
-            ], 400);
-        }
-        
-        try {
-            DB::beginTransaction();
-            
-            // Generate PDF content (simplified for now)
-            $pdfContent = $this->generatePDFContent($pengajuan);
-            
-            // Save PDF file
-            $fileName = "surat_" . $pengajuan->jenisSurat->kode_surat . "_" . $pengajuan->nim . "_" . now()->format('Y-m-d') . ".pdf";
-            $filePath = "surat_generated/" . $fileName;
-            
-            Storage::disk('public')->put($filePath, $pdfContent);
-            
-            // Create SuratGenerated record
-            $suratGenerated = \App\Models\SuratGenerated::create([
-                'pengajuan_id' => $pengajuan->id,
-                'file_path' => $filePath,
-                'original_filename' => $fileName,
-                'file_size' => strlen($pdfContent),
-                'mime_type' => 'application/pdf',
-                'generated_by' => $user->id,
-                'generated_at' => now(),
-                'is_final' => true,
-                'version' => 1
-            ]);
-            
-            // Update pengajuan status to completed
-            $pengajuan->update([
-                'status' => 'completed',
-                'surat_generated_id' => $suratGenerated->id,
-                'completed_by' => $user->id,
-                'completed_at' => now()
-            ]);
-            
-            DB::commit();
-            
-            return response()->json([
-                'success' => true,
-                'message' => 'PDF berhasil di-generate dan pengajuan telah selesai',
-                'download_url' => route('tracking.download', $pengajuan->id)
-            ]);
-            
-        } catch (\Exception $e) {
-            DB::rollback();
-            \Log::error('Error generating PDF', [
-                'pengajuan_id' => $id,
-                'error' => $e->getMessage()
-            ]);
-            
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal generate PDF: ' . $e->getMessage()
-            ], 500);
-        }
+public function generateSuratPDF(Request $request, $id)
+{
+    $user = Auth::user();
+    $pengajuan = PengajuanSurat::with(['prodi', 'jenisSurat', 'mahasiswa'])->findOrFail($id);
+    
+    if (!in_array($pengajuan->status, ['processed', 'approved_prodi', 'approved_fakultas'])) { // ✅ ADD approved_fakultas
+        return response()->json([
+            'success' => false,
+            'message' => 'Pengajuan tidak dapat di-generate PDF. Status: ' . $pengajuan->status
+        ], 400);
     }
+    
+    try {
+        DB::beginTransaction();
+        
+        // Generate PDF content (simplified for now)
+        $pdfContent = $this->generatePDFContent($pengajuan);
+        
+        // Save PDF file
+        $fileName = "surat_" . $pengajuan->jenisSurat->kode_surat . "_" . $pengajuan->nim . "_" . now()->format('Y-m-d') . ".pdf";
+        $filePath = "surat_generated/" . $fileName;
+        
+        \Storage::disk('public')->put($filePath, $pdfContent);
+        
+        // Create SuratGenerated record
+        $suratGenerated = \App\Models\SuratGenerated::create([
+            'pengajuan_id' => $pengajuan->id,
+            'file_path' => $filePath,
+            'original_filename' => $fileName,
+            'file_size' => strlen($pdfContent),
+            'mime_type' => 'application/pdf',
+            'generated_by' => $user->id,
+            'generated_at' => now(),
+            'is_final' => true,
+            'version' => 1
+        ]);
+        
+        // Update pengajuan status to completed
+        $pengajuan->update([
+            'status' => 'completed',
+            'surat_generated_id' => $suratGenerated->id,
+            'completed_by' => $user->id,
+            'completed_at' => now()
+        ]);
+        
+        // ✅ NEW: Log PDF generation
+        $pengajuan->logApproval(
+            action: 'printed',
+            notes: 'PDF surat final berhasil di-generate',
+            metadata: [
+                'file_path' => $filePath,
+                'file_size' => strlen($pdfContent),
+            ]
+        );
+        
+        // ✅ NEW: Log completion
+        $pengajuan->logApproval(
+            action: 'completed',
+            notes: 'Pengajuan selesai diproses, surat siap digunakan'
+        );
+        
+        DB::commit();
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'PDF berhasil di-generate dan pengajuan telah selesai',
+            'download_url' => route('tracking.download', $pengajuan->id)
+        ]);
+        
+    } catch (\Exception $e) {
+        DB::rollback();
+        \Log::error('Error generating PDF', [
+            'pengajuan_id' => $id,
+            'error' => $e->getMessage()
+        ]);
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal generate PDF: ' . $e->getMessage()
+        ], 500);
+    }
+}
     
     /**
      * Generate PDF content (placeholder - replace with actual PDF generation)
@@ -931,58 +975,64 @@ private function getRomanMonth($month)
     /**
      * Kirim surat ke pengaju (mark as completed without PDF generation)
      */
-    public function kirimKePengaju(Request $request, $id)
-    {
-        $user = Auth::user();
-        $pengajuan = PengajuanSurat::with(['prodi', 'jenisSurat'])->findOrFail($id);
-        
-        if (!in_array($pengajuan->status, ['processed', 'approved_prodi'])) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Pengajuan tidak dapat dikirim. Status: ' . $pengajuan->status
-            ], 400);
-        }
-        
-        try {
-            DB::beginTransaction();
-            
-            // Update pengajuan status to completed
-            $pengajuan->update([
-                'status' => 'completed',
-                'completed_by' => $user->id,
-                'completed_at' => now(),
-                'completion_note' => $request->input('note', 'Surat telah selesai dan dapat digunakan')
-            ]);
-            
-            // Log activity
-            \Log::info('Pengajuan sent to applicant', [
-                'pengajuan_id' => $pengajuan->id,
-                'nim' => $pengajuan->nim,
-                'tracking_token' => $pengajuan->tracking_token,
-                'completed_by' => $user->id
-            ]);
-            
-            DB::commit();
-            
-            return response()->json([
-                'success' => true,
-                'message' => 'Surat berhasil dikirim ke pengaju. Status pengajuan telah selesai.',
-                'tracking_url' => route('tracking.show', $pengajuan->tracking_token)
-            ]);
-            
-        } catch (\Exception $e) {
-            DB::rollback();
-            \Log::error('Error sending to applicant', [
-                'pengajuan_id' => $id,
-                'error' => $e->getMessage()
-            ]);
-            
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal mengirim ke pengaju: ' . $e->getMessage()
-            ], 500);
-        }
+public function kirimKePengaju(Request $request, $id)
+{
+    $user = Auth::user();
+    $pengajuan = PengajuanSurat::with(['prodi', 'jenisSurat', 'mahasiswa'])->findOrFail($id);
+    
+    if (!in_array($pengajuan->status, ['processed', 'approved_prodi', 'approved_fakultas'])) { // ✅ ADD approved_fakultas
+        return response()->json([
+            'success' => false,
+            'message' => 'Pengajuan tidak dapat dikirim. Status: ' . $pengajuan->status
+        ], 400);
     }
+    
+    try {
+        DB::beginTransaction();
+        
+        // Update pengajuan status to completed
+        $pengajuan->update([
+            'status' => 'completed',
+            'completed_by' => $user->id,
+            'completed_at' => now(),
+            'completion_note' => $request->input('note', 'Surat telah selesai dan dapat digunakan')
+        ]);
+        
+        // ✅ NEW: Log completion
+        $pengajuan->logApproval(
+            action: 'completed',
+            notes: $request->input('note', 'Surat telah selesai dan dikirim ke pengaju')
+        );
+        
+        // Log activity
+        \Log::info('Pengajuan sent to applicant', [
+            'pengajuan_id' => $pengajuan->id,
+            'nim' => $pengajuan->nim,
+            'tracking_token' => $pengajuan->tracking_token,
+            'completed_by' => $user->id
+        ]);
+        
+        DB::commit();
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Surat berhasil dikirim ke pengaju. Status pengajuan telah selesai.',
+            'tracking_url' => route('tracking.show', $pengajuan->tracking_token)
+        ]);
+        
+    } catch (\Exception $e) {
+        DB::rollback();
+        \Log::error('Error sending to applicant', [
+            'pengajuan_id' => $id,
+            'error' => $e->getMessage()
+        ]);
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal mengirim ke pengaju: ' . $e->getMessage()
+        ], 500);
+    }
+}
 
 /**
  * Preview pengajuan before finalization

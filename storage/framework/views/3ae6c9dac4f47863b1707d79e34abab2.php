@@ -166,19 +166,29 @@
             
             <?php if(Auth::check()): ?>
                 <?php
-                    $user = Auth::user();
-                    $role = $user->role->nama_role ?? '';
-                    $jabatan = $user->jabatan->nama_jabatan ?? '';
+                    $jabatan = Auth::user()->jabatan->nama_jabatan ?? '';
                 ?>
                 
-                <?php if($role === 'admin'): ?>
+                
+                <?php if(Auth::user()->hasRole('admin')): ?>
+                    <a href="<?php echo e(route('admin.dashboard')); ?>" class="nav-item <?php echo e(request()->routeIs('admin.dashboard') ? 'active' : ''); ?>">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Admin Dashboard</span>
+                    </a>
+                    
+                    <a href="<?php echo e(route('admin.pengajuan.index')); ?>" class="nav-item <?php echo e(request()->routeIs('admin.pengajuan.*') ? 'active' : ''); ?>">
+                        <i class="fas fa-folder-open"></i>
+                        <span>Kelola Pengajuan</span>
+                    </a>
+                    
                     <a href="<?php echo e(route('admin.users.index')); ?>" class="nav-item <?php echo e(request()->routeIs('admin.users.*') ? 'active' : ''); ?>">
-                        <i class="fas fa-users"></i>
-                        <span>Kelola Users</span>
+                        <i class="fas fa-users-cog"></i>
+                        <span>Kelola User</span>
                     </a>
                 <?php endif; ?>
                 
-                <?php if(in_array($jabatan, ['Staff Program Studi']) || in_array($role, ['staff_prodi', 'staff_fakultas'])): ?>
+                
+                <?php if(Auth::user()->hasRole('staff_prodi') || $jabatan === 'Staff Program Studi'): ?>
                     <a href="<?php echo e(route('staff.pengajuan.index')); ?>" class="nav-item <?php echo e(request()->routeIs('staff.pengajuan.*') ? 'active' : ''); ?>">
                         <i class="fas fa-inbox"></i>
                         <span>Pengajuan</span>
@@ -188,9 +198,27 @@
                         <i class="fas fa-plus-circle"></i>
                         <span>Buat Surat</span>
                     </a>
+                    
+                    <a href="<?php echo e(route('staff.arsip.index')); ?>" class="nav-item <?php echo e(request()->routeIs('staff.arsip.*') ? 'active' : ''); ?>">
+                        <i class="fas fa-archive"></i>
+                        <span>Arsip Surat</span>
+                    </a>
                 <?php endif; ?>
                 
-                <?php if($jabatan == 'kaprodi' || $role == 'kaprodi'): ?>
+                
+                <?php if(Auth::user()->hasRole('staff_fakultas')): ?>
+                    <a href="<?php echo e(route('fakultas.surat.index')); ?>" class="nav-item <?php echo e(request()->routeIs('fakultas.surat.*') && !request()->routeIs('fakultas.arsip.*') ? 'active' : ''); ?>">
+                        <i class="fas fa-inbox"></i>
+                        <span>Surat Fakultas</span>
+                    </a>
+                    
+                    <a href="<?php echo e(route('fakultas.arsip.index')); ?>" class="nav-item <?php echo e(request()->routeIs('fakultas.arsip.*') ? 'active' : ''); ?>">
+                        <i class="fas fa-archive"></i>
+                        <span>Arsip Surat</span>
+                    </a>
+                <?php endif; ?>
+                
+                <?php if(Auth::user()->hasRole('kaprodi') || $jabatan == 'kaprodi'): ?>
                     <a href="<?php echo e(route('kaprodi.surat.approval')); ?>" class="nav-item <?php echo e(request()->routeIs('kaprodi.surat.approval') ? 'active' : ''); ?>">
                         <i class="fas fa-check-circle"></i>
                         <span>Approval</span>

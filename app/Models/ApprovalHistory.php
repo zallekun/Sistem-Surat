@@ -78,6 +78,7 @@ class ApprovalHistory extends Model
             'rejected_prodi' => 'Ditolak Prodi',
             'approved_fakultas' => 'Disetujui Fakultas',
             'rejected_fakultas' => 'Ditolak Fakultas',
+            'surat_generated' => 'Surat Di-generate',
             'printed' => 'Dicetak',
             'completed' => 'Selesai',
             'rejected' => 'Ditolak',

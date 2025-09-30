@@ -13,6 +13,11 @@ use App\Http\Controllers\PublicSuratController;
 use App\Http\Controllers\SuratFSIController;
 use App\Http\Controllers\FakultasStaffController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\StaffArsipController;
+use App\Http\Controllers\FakultasArsipController;
+use App\Http\Controllers\AdminDashboardController;
+use App\Http\Controllers\AdminPengajuanController;
+use App\Http\Controllers\AdminUserController;
 
 /*
 |--------------------------------------------------------------------------
@@ -273,16 +278,23 @@ Route::get('/debug/approval/{id}', function($id) {
         Route::post('surat/{id}/ttd', [SuratController::class, 'tandaTangan'])->name('surat.ttd.process');
     });
 
-    // Admin Routes
-    Route::middleware(['role:admin,super_admin'])->prefix('admin')->name('admin.')->group(function () {
-        Route::resource('users', UserController::class);
-        Route::resource('fakultas', FakultasController::class);
-        Route::resource('prodi', ProdiController::class);
-        Route::resource('jabatan', JabatanController::class);
-    });
-
-    // General Admin Resources
-    // Route::resource('tracking', TrackingController::class);
+// Admin Routes
+Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function() {
+    
+    // Dashboard
+    Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+    
+    // Pengajuan Management
+    Route::get('/pengajuan', [AdminPengajuanController::class, 'index'])->name('pengajuan.index');
+    Route::get('/pengajuan/{id}', [AdminPengajuanController::class, 'show'])->name('pengajuan.show');
+    Route::delete('/pengajuan/{id}', [AdminPengajuanController::class, 'destroy'])->name('pengajuan.destroy');
+    Route::post('/pengajuan/{id}/restore', [AdminPengajuanController::class, 'restore'])->name('pengajuan.restore');
+    
+    // User Management
+    Route::resource('users', AdminUserController::class);
+    Route::post('/users/{id}/reset-password', [AdminUserController::class, 'resetPassword'])->name('users.reset-password');
+    Route::post('/users/{id}/toggle-status', [AdminUserController::class, 'toggleStatus'])->name('users.toggle-status');
+});
 
 
 Route::get('/debug-route', function() {
@@ -411,7 +423,24 @@ Route::prefix('api')->group(function () {
     Route::get('dosen-wali/{prodiId}', [PublicSuratController::class, 'getDosenWali']);
 });
 
+/*
+|--------------------------------------------------------------------------
+| Arsip Routes
+|--------------------------------------------------------------------------
+*/
+// Staff Prodi - Arsip
+Route::middleware(['auth', 'role:staff_prodi,kaprodi'])->prefix('staff')->name('staff.')->group(function() {
+    Route::get('/arsip', [StaffArsipController::class, 'index'])->name('arsip.index');
+    Route::get('/arsip/{id}', [StaffArsipController::class, 'show'])->name('arsip.show');
+    Route::get('/arsip-export/excel', [StaffArsipController::class, 'exportExcel'])->name('arsip.export');
+});
 
+// Staff Fakultas - Arsip
+Route::middleware(['auth', 'role:staff_fakultas'])->prefix('fakultas')->name('fakultas.')->group(function() {
+    Route::get('/arsip', [FakultasArsipController::class, 'index'])->name('arsip.index');
+    Route::get('/arsip/{id}', [FakultasArsipController::class, 'show'])->name('arsip.show');
+    Route::get('/arsip-export/excel', [FakultasArsipController::class, 'exportExcel'])->name('arsip.export');
+});
 
 /*
 |--------------------------------------------------------------------------

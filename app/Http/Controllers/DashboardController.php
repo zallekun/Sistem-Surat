@@ -14,85 +14,60 @@ class DashboardController extends Controller
     public function index()
     {
         $user = Auth::user();
-        $suratQuery = Surat::query();
-
-        // Apply filtering based on user's role and associated IDs
-        if ($user->hasRole('kaprodi')) {
-            $reviewKaprodiStatus = StatusSurat::where('kode_status', 'review_kaprodi')->first();
-            if ($reviewKaprodiStatus) {
-                $approvedKaprodiStatus = StatusSurat::where('kode_status', 'disetujui_kaprodi')->first();
-                $rejectedKaprodiStatus = StatusSurat::where('kode_status', 'ditolak_kaprodi')->first();
-                
-                $suratQuery->where('prodi_id', $user->prodi_id)
-                    ->whereIn('status_id', [
-                        $reviewKaprodiStatus->id, 
-                        $approvedKaprodiStatus->id ?? 0, 
-                        $rejectedKaprodiStatus->id ?? 0
-                    ]);
-            } else {
-                $suratQuery->whereRaw('0 = 1');
-            }
-        } elseif ($user->hasRole('staff_fakultas') && $user->prodi?->fakultas_id) {
-            // Staff fakultas sees surats from their fakultas
-            $suratQuery->whereHas('prodi', function($q) use ($user) {
-                $q->where('fakultas_id', $user->prodi->fakultas_id);
-            });
-        } elseif ($user->prodi_id) {
-            $suratQuery->where('prodi_id', $user->prodi_id);
+        
+        // ✅ REDIRECT ADMIN KE ADMIN DASHBOARD
+        if ($user->hasRole('admin')) {
+            return redirect()->route('admin.dashboard');
         }
-
-        $stats = [
-            'total_surat' => (clone $suratQuery)->count(),
-            'surat_selesai' => (clone $suratQuery)->whereHas('currentStatus', fn($q) => $q->where('kode_status', 'selesai'))->count(),
-            'surat_proses' => (clone $suratQuery)->whereHas('currentStatus', function ($q) {
-                $q->whereNotIn('kode_status', ['selesai', 'arsip', 'draft']);
-            })->count(),
-            'surat_draft' => (clone $suratQuery)->whereHas('currentStatus', fn($q) => $q->where('kode_status', 'draft'))->count(),
-        ];
-
-        // STATS UNTUK STAFF PRODI - Pengajuan dari mahasiswa
-        $recent_pengajuan = null;
-        if ($user->hasRole('staff_prodi') && $user->prodi_id) {
-            $pengajuanQuery = PengajuanSurat::where('prodi_id', $user->prodi_id);
-            $stats['pengajuan_pending'] = (clone $pengajuanQuery)->where('status', 'pending')->count();
+        
+        // Stats untuk staff prodi/fakultas
+        $stats = [];
+        
+        if ($user->hasRole('staff_fakultas')) {
+            $fakultasId = $user->prodi?->fakultas_id;
             
-            $recent_pengajuan = (clone $pengajuanQuery)
+            $stats = [
+                'total_surat' => PengajuanSurat::whereHas('prodi', function($q) use ($fakultasId) {
+                    $q->where('fakultas_id', $fakultasId);
+                })->count(),
+                'surat_selesai' => PengajuanSurat::whereHas('prodi', function($q) use ($fakultasId) {
+                    $q->where('fakultas_id', $fakultasId);
+                })->where('status', 'completed')->count(),
+                'surat_proses' => PengajuanSurat::whereHas('prodi', function($q) use ($fakultasId) {
+                    $q->where('fakultas_id', $fakultasId);
+                })->whereIn('status', ['approved_prodi', 'approved_fakultas'])->count(),
+                'surat_draft' => 0,
+            ];
+        } 
+        elseif ($user->hasRole(['staff_prodi', 'kaprodi'])) {
+            $stats = [
+                'total_surat' => PengajuanSurat::where('prodi_id', $user->prodi_id)->count(),
+                'surat_selesai' => PengajuanSurat::where('prodi_id', $user->prodi_id)
+                    ->where('status', 'completed')->count(),
+                'surat_proses' => PengajuanSurat::where('prodi_id', $user->prodi_id)
+                    ->whereIn('status', ['pending', 'approved_prodi'])->count(),
+                'surat_draft' => 0,
+                'pengajuan_pending' => PengajuanSurat::where('prodi_id', $user->prodi_id)
+                    ->where('status', 'pending')->count(),
+            ];
+            
+            // Recent pengajuan untuk staff prodi
+            $recent_pengajuan = PengajuanSurat::where('prodi_id', $user->prodi_id)
                 ->where('status', 'pending')
-                ->with('jenisSurat')
                 ->latest()
-                ->take(5)
+                ->limit(5)
                 ->get();
         }
-
-        // STATS UNTUK STAFF FAKULTAS - Pengajuan dari prodi
-        $recent_pengajuan_fakultas = null;
-        if ($user->hasRole('staff_fakultas') && $user->prodi?->fakultas_id) {
-            $fakultasId = $user->prodi->fakultas_id;
-            
-            $pengajuanFakultasQuery = PengajuanSurat::whereHas('prodi', function($q) use ($fakultasId) {
-                $q->where('fakultas_id', $fakultasId);
-            });
-            
-            $stats['pengajuan_fakultas_pending'] = (clone $pengajuanFakultasQuery)
-                ->whereIn('status', ['approved_prodi', 'approved_prodi_direct_fakultas'])
-                ->count();
-            
-            $recent_pengajuan_fakultas = (clone $pengajuanFakultasQuery)
-                ->whereIn('status', ['approved_prodi', 'approved_prodi_direct_fakultas'])
-                ->with(['prodi', 'jenisSurat'])
-                ->latest()
-                ->take(5)
-                ->get();
+        else {
+            // Default stats untuk role lain
+            $stats = [
+                'total_surat' => 0,
+                'surat_selesai' => 0,
+                'surat_proses' => 0,
+                'surat_draft' => 0,
+            ];
         }
-
-        $recent_surat = (clone $suratQuery)->with('currentStatus')->latest()->take(5)->get();
-
-        // PERBAIKAN: Gunakan path view yang benar
-        return view('dashboard.index', compact(
-            'stats', 
-            'recent_surat', 
-            'recent_pengajuan', 
-            'recent_pengajuan_fakultas'
-        ));
+        
+        return view('dashboard.index', compact('stats', 'recent_pengajuan'));
     }
 }

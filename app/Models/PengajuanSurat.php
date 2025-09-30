@@ -9,9 +9,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class PengajuanSurat extends Model
 {
+    use SoftDeletes;
     use HasFactory;
 
     protected $table = 'pengajuan_surats';
@@ -77,6 +79,7 @@ class PengajuanSurat extends Model
         'direct_to_fakultas' => 'boolean',
         'surat_pengantar_generated_at' => 'datetime'
     ];
+     protected $dates = ['deleted_at'];
 
     // Tambah relationship
 public function suratPengantarGeneratedBy()

@@ -164,19 +164,29 @@
             
             @if(Auth::check())
                 @php
-                    $user = Auth::user();
-                    $role = $user->role->nama_role ?? '';
-                    $jabatan = $user->jabatan->nama_jabatan ?? '';
+                    $jabatan = Auth::user()->jabatan->nama_jabatan ?? '';
                 @endphp
                 
-                @if($role === 'admin')
+                {{-- ADMIN MENU --}}
+                @if(Auth::user()->hasRole('admin'))
+                    <a href="{{ route('admin.dashboard') }}" class="nav-item {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Admin Dashboard</span>
+                    </a>
+                    
+                    <a href="{{ route('admin.pengajuan.index') }}" class="nav-item {{ request()->routeIs('admin.pengajuan.*') ? 'active' : '' }}">
+                        <i class="fas fa-folder-open"></i>
+                        <span>Kelola Pengajuan</span>
+                    </a>
+                    
                     <a href="{{ route('admin.users.index') }}" class="nav-item {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
-                        <i class="fas fa-users"></i>
-                        <span>Kelola Users</span>
+                        <i class="fas fa-users-cog"></i>
+                        <span>Kelola User</span>
                     </a>
                 @endif
                 
-                @if(in_array($jabatan, ['Staff Program Studi']) || in_array($role, ['staff_prodi', 'staff_fakultas']))
+                {{-- STAFF PRODI --}}
+                @if(Auth::user()->hasRole('staff_prodi') || $jabatan === 'Staff Program Studi')
                     <a href="{{ route('staff.pengajuan.index') }}" class="nav-item {{ request()->routeIs('staff.pengajuan.*') ? 'active' : '' }}">
                         <i class="fas fa-inbox"></i>
                         <span>Pengajuan</span>
@@ -186,9 +196,27 @@
                         <i class="fas fa-plus-circle"></i>
                         <span>Buat Surat</span>
                     </a>
+                    
+                    <a href="{{ route('staff.arsip.index') }}" class="nav-item {{ request()->routeIs('staff.arsip.*') ? 'active' : '' }}">
+                        <i class="fas fa-archive"></i>
+                        <span>Arsip Surat</span>
+                    </a>
                 @endif
                 
-                @if($jabatan == 'kaprodi' || $role == 'kaprodi')
+                {{-- STAFF FAKULTAS --}}
+                @if(Auth::user()->hasRole('staff_fakultas'))
+                    <a href="{{ route('fakultas.surat.index') }}" class="nav-item {{ request()->routeIs('fakultas.surat.*') && !request()->routeIs('fakultas.arsip.*') ? 'active' : '' }}">
+                        <i class="fas fa-inbox"></i>
+                        <span>Surat Fakultas</span>
+                    </a>
+                    
+                    <a href="{{ route('fakultas.arsip.index') }}" class="nav-item {{ request()->routeIs('fakultas.arsip.*') ? 'active' : '' }}">
+                        <i class="fas fa-archive"></i>
+                        <span>Arsip Surat</span>
+                    </a>
+                @endif
+                
+                @if(Auth::user()->hasRole('kaprodi') || $jabatan == 'kaprodi')
                     <a href="{{ route('kaprodi.surat.approval') }}" class="nav-item {{ request()->routeIs('kaprodi.surat.approval') ? 'active' : '' }}">
                         <i class="fas fa-check-circle"></i>
                         <span>Approval</span>
