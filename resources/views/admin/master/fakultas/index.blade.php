@@ -3,10 +3,23 @@
 
 @section('title', 'Master Data Fakultas')
 
+@section('breadcrumb')
+<li>
+    <div class="flex items-center">
+        <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
+        <a href="#" class="text-sm font-medium text-gray-700 hover:text-blue-600">Master Data</a>
+    </div>
+</li>
+<li>
+    <div class="flex items-center">
+        <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
+        <span class="text-sm font-medium text-gray-500">Fakultas</span>
+    </div>
+</li>
+@endsection
+
 @section('content')
-<div class="py-6 px-4 sm:px-6 lg:px-8">
-    <div class="max-w-full mx-auto">
-        <div class="bg-white/95 backdrop-blur-sm shadow-sm rounded-xl overflow-hidden">
+<div class="bg-white shadow-sm rounded-xl overflow-hidden">
             <!-- Header -->
             <div class="px-6 py-4 border-b border-gray-200">
                 <div class="flex justify-between items-center">
@@ -71,9 +84,9 @@
                                                class="px-3 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 text-xs font-medium">
                                                 <i class="fas fa-edit"></i>
                                             </a>
-                                            <form action="{{ route('admin.fakultas.destroy', $f->id) }}" 
-                                                  method="POST" 
-                                                  onsubmit="return confirm('Yakin hapus fakultas ini?')">
+                                            <form action="{{ route('admin.fakultas.destroy', $f->id) }}"
+                                                  method="POST"
+                                                  onsubmit="return handleDelete(event, 'Yakin hapus fakultas ini?')">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="px-3 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 text-xs font-medium">
@@ -98,7 +111,5 @@
                     <p class="text-gray-500">Tidak ada data fakultas</p>
                 </div>
             @endif
-        </div>
-    </div>
 </div>
 @endsection

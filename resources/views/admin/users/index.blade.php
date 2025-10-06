@@ -3,10 +3,17 @@
 
 @section('title', 'Kelola User')
 
+@section('breadcrumb')
+<li>
+    <div class="flex items-center">
+        <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
+        <span class="text-sm font-medium text-gray-500">Kelola User</span>
+    </div>
+</li>
+@endsection
+
 @section('content')
-<div class="py-6 px-4 sm:px-6 lg:px-8">
-    <div class="max-w-full mx-auto">
-        <div class="bg-white/95 backdrop-blur-sm shadow-sm rounded-xl overflow-hidden">
+<div class="bg-white shadow-sm rounded-xl overflow-hidden">
             <!-- Header -->
             <div class="px-6 py-4 border-b border-gray-200">
                 <div class="flex justify-between items-center">
@@ -173,13 +180,13 @@
                                                             title="Reset Password">
                                                         <i class="fas fa-key"></i>
                                                     </button>
-                                                    <form action="{{ route('admin.users.destroy', $user->id) }}" 
-                                                          method="POST" 
-                                                          onsubmit="return confirm('Yakin ingin menghapus user ini?')"
+                                                    <form action="{{ route('admin.users.destroy', $user->id) }}"
+                                                          method="POST"
+                                                          onsubmit="return handleDelete(event, 'Yakin ingin menghapus user ini?')"
                                                           class="inline">
                                                         @csrf
                                                         @method('DELETE')
-                                                        <button type="submit" 
+                                                        <button type="submit"
                                                                 class="inline-flex items-center px-3 py-1.5 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 text-xs font-medium"
                                                                 title="Hapus">
                                                             <i class="fas fa-trash"></i>
@@ -206,8 +213,6 @@
                     <p class="text-gray-500 text-sm">Belum ada user di sistem</p>
                 </div>
             @endif
-        </div>
-    </div>
 </div>
 
 <!-- Reset Password Modal -->
@@ -241,10 +246,11 @@
 <script>
 let resetUserId = null;
 
-function toggleStatus(userId, currentStatus) {
+async function toggleStatus(userId, currentStatus) {
     const action = currentStatus ? 'menonaktifkan' : 'mengaktifkan';
-    if (!confirm(`Yakin ingin ${action} user ini?`)) return;
-    
+    const confirmed = await confirm(`Yakin ingin ${action} user ini?`);
+    if (!confirmed) return;
+
     fetch(`/admin/users/${userId}/toggle-status`, {
         method: 'POST',
         headers: {
@@ -255,14 +261,15 @@ function toggleStatus(userId, currentStatus) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            location.reload();
+            showSuccess(data.message || 'Status berhasil diubah');
+            setTimeout(() => location.reload(), 1500);
         } else {
-            alert(data.message || 'Gagal mengubah status');
+            showError(data.message || 'Gagal mengubah status');
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Terjadi kesalahan');
+        showError('Terjadi kesalahan');
     });
 }
 
@@ -280,17 +287,17 @@ function closeResetModal() {
 function confirmResetPassword() {
     const newPassword = document.getElementById('newPassword').value;
     const confirmPassword = document.getElementById('confirmPassword').value;
-    
+
     if (newPassword.length < 8) {
-        alert('Password minimal 8 karakter');
+        showError('Password minimal 8 karakter');
         return;
     }
-    
+
     if (newPassword !== confirmPassword) {
-        alert('Password tidak cocok');
+        showError('Password tidak cocok');
         return;
     }
-    
+
     fetch(`/admin/users/${resetUserId}/reset-password`, {
         method: 'POST',
         headers: {
@@ -305,15 +312,15 @@ function confirmResetPassword() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            alert('Password berhasil direset');
+            showSuccess('Password berhasil direset');
             closeResetModal();
         } else {
-            alert(data.message || 'Gagal reset password');
+            showError(data.message || 'Gagal reset password');
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Terjadi kesalahan');
+        showError('Terjadi kesalahan');
     });
 }
 </script>

@@ -183,10 +183,9 @@
                     </a>
                     
                     {{-- Submit button for draft --}}
-                    <form action="{{ route('staff.surat.submit', $surat->id) }}" method="POST" class="inline-block">
+                    <form action="{{ route('staff.surat.submit', $surat->id) }}" method="POST" class="inline-block" onsubmit="return handleDelete(event, 'Kirim surat ini ke Kaprodi untuk review?')">
                         @csrf
-                        <button type="submit" 
-                                onclick="return confirm('Kirim surat ini ke Kaprodi untuk review?')"
+                        <button type="submit"
                                 class="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors">
                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
@@ -198,10 +197,9 @@
                     
                     {{-- Approve/Reject for kaprodi --}}
                     @if(Auth::user()->hasRole('kaprodi') && in_array($surat->currentStatus->kode_status, ['review_kaprodi', 'diajukan']))
-                    <form action="{{ route('staff.surat.approve', $surat->id) }}" method="POST" class="inline-block">
+                    <form action="{{ route('staff.surat.approve', $surat->id) }}" method="POST" class="inline-block" onsubmit="return handleDelete(event, 'Setujui surat ini?')">
                         @csrf
-                        <button type="submit" 
-                                onclick="return confirm('Setujui surat ini?')"
+                        <button type="submit"
                                 class="inline-flex items-center px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors">
                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>

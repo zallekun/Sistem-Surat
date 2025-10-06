@@ -904,10 +904,10 @@
                 
                 try {
                     const csrfToken = document.querySelector('meta[name=csrf-token]')?.content;
-                    
+
                     if (!csrfToken) {
-                        alert('Session expired. Halaman akan di-refresh.');
-                        window.location.reload();
+                        showError('Session expired. Halaman akan di-refresh.');
+                        setTimeout(() => window.location.reload(), 2000);
                         return;
                     }
                     
@@ -1008,8 +1008,8 @@
                     });
                     
                     if (response.status === 419) {
-                        alert('Session telah berakhir. Silakan refresh halaman.');
-                        window.location.reload();
+                        showError('Session telah berakhir. Silakan refresh halaman.');
+                        setTimeout(() => window.location.reload(), 2000);
                         return;
                     }
                     
@@ -1033,21 +1033,21 @@
                             this.resetForm();
                         } else {
                             console.error('Server returned error:', data);
-                            alert(data.message || 'Terjadi kesalahan saat mengirim data');
+                            showError(data.message || 'Terjadi kesalahan saat mengirim data');
                         }
                     } else {
                         try {
                             const errorData = JSON.parse(responseText);
                             console.error('HTTP Error:', errorData);
-                            alert(errorData.message || 'Terjadi kesalahan server (HTTP ' + response.status + ')');
+                            showError(errorData.message || 'Terjadi kesalahan server (HTTP ' + response.status + ')');
                         } catch (e) {
                             console.error('HTTP Error - unable to parse:', responseText);
-                            alert('Terjadi kesalahan server. Silakan coba lagi.');
+                            showError('Terjadi kesalahan server. Silakan coba lagi.');
                         }
                     }
                 } catch (error) {
                     console.error('Network/JS Error:', error);
-                    alert('Terjadi kesalahan jaringan: ' + error.message);
+                    showError('Terjadi kesalahan jaringan: ' + error.message);
                 } finally {
                     this.loading = false;
                 }
@@ -1092,10 +1092,19 @@
     window.copyTrackingNumber = function() {
         const trackingNumber = document.getElementById('trackingNumber').textContent;
         navigator.clipboard.writeText(trackingNumber).then(function() {
-            alert('Nomor tracking berhasil disalin!');
+            showSuccess('Nomor tracking berhasil disalin!');
         }).catch(function(err) {
             console.error('Gagal menyalin: ', err);
-            prompt('Salin nomor tracking ini:', trackingNumber);
+            // Fallback untuk browser lama
+            const el = document.createElement('textarea');
+            el.value = trackingNumber;
+            el.style.position = 'absolute';
+            el.style.left = '-9999px';
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+            showSuccess('Nomor tracking berhasil disalin!');
         });
     }
 

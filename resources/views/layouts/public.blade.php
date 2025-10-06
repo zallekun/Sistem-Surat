@@ -308,8 +308,89 @@
         <i class="fas fa-chevron-up"></i>
     </button>
 
+    <!-- Custom Notification Container -->
+    <div id="customNotification" class="hidden fixed top-4 right-4 z-50 min-w-80 max-w-md animate-slideIn">
+        <div id="notificationContent" class="rounded-lg shadow-lg p-4 flex items-start gap-3"></div>
+    </div>
+
+    <style>
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .animate-slideIn {
+            animation: slideIn 0.3s ease-out;
+        }
+    </style>
+
     <!-- Global Scripts -->
     <script>
+        // Custom Alert Function
+        function alert(message, type = 'info') {
+            const notification = document.getElementById('customNotification');
+            const content = document.getElementById('notificationContent');
+
+            const icons = {
+                success: { icon: 'fa-check-circle', bg: 'bg-green-50', iconColor: 'text-green-600', borderColor: 'border-green-200' },
+                error: { icon: 'fa-exclamation-circle', bg: 'bg-red-50', iconColor: 'text-red-600', borderColor: 'border-red-200' },
+                warning: { icon: 'fa-exclamation-triangle', bg: 'bg-yellow-50', iconColor: 'text-yellow-600', borderColor: 'border-yellow-200' },
+                info: { icon: 'fa-info-circle', bg: 'bg-blue-50', iconColor: 'text-blue-600', borderColor: 'border-blue-200' }
+            };
+
+            const config = icons[type] || icons.info;
+
+            content.className = `rounded-lg shadow-lg p-4 flex items-start gap-3 border-2 ${config.bg} ${config.borderColor}`;
+            content.innerHTML = `
+                <div class="flex-shrink-0">
+                    <i class="fas ${config.icon} ${config.iconColor} text-xl"></i>
+                </div>
+                <div class="flex-1">
+                    <p class="text-sm text-gray-800 font-medium">${message}</p>
+                </div>
+                <button onclick="closeNotification()" class="flex-shrink-0 text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+
+            notification.classList.remove('hidden');
+
+            setTimeout(() => {
+                closeNotification();
+            }, 5000);
+        }
+
+        function closeNotification() {
+            const notification = document.getElementById('customNotification');
+            notification.classList.add('hidden');
+        }
+
+        // Success notification helper
+        window.showSuccess = function(message) {
+            alert(message, 'success');
+        };
+
+        // Error notification helper
+        window.showError = function(message) {
+            alert(message, 'error');
+        };
+
+        // Warning notification helper
+        window.showWarning = function(message) {
+            alert(message, 'warning');
+        };
+
+        // Info notification helper
+        window.showInfo = function(message) {
+            alert(message, 'info');
+        };
+
         // Back to top functionality
         window.addEventListener('scroll', function() {
             const backToTop = document.getElementById('backToTop');
@@ -348,7 +429,7 @@
 
         // CSRF token for AJAX requests
         window.csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-        
+
         // Set default CSRF token for fetch requests
         const originalFetch = window.fetch;
         window.fetch = function(...args) {

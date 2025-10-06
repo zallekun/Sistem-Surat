@@ -9,7 +9,6 @@ use App\Models\StatusSurat;
 use App\Models\PengajuanSurat;
 use Illuminate\Support\Facades\DB;
 
-
 class DashboardController extends Controller
 {
     public function index()
@@ -21,8 +20,9 @@ class DashboardController extends Controller
             return redirect()->route('admin.dashboard');
         }
         
-        // Stats untuk staff prodi/fakultas
+        // Inisialisasi variabel
         $stats = [];
+        $recent_pengajuan = collect(); // Inisialisasi sebagai empty collection
         
         if ($user->hasRole('staff_fakultas')) {
             $fakultasId = $user->prodi?->fakultas_id;

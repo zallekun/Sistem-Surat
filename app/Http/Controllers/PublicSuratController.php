@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\PengajuanSurat;
 use App\Models\Prodi;
 use App\Models\JenisSurat;
+use App\Models\Mahasiswa;
 use App\Models\User;
 use App\Models\Notification;
 use App\Models\TrackingHistory;
@@ -139,6 +140,18 @@ class PublicSuratController extends Controller
         // Validate request
         $validated = $request->validate($rules);
 
+        // Find or create the Mahasiswa record
+        $mahasiswa = Mahasiswa::firstOrCreate(
+            ['nim' => $validated['nim']],
+            [
+                'nama' => $validated['nama_mahasiswa'],
+                'email' => $validated['email'],
+                'phone' => $validated['phone'],
+                'prodi_id' => $validated['prodi_id'],
+                'status' => 'aktif', // Default status for new mahasiswa
+            ]
+        );
+
         // Generate tracking token using PengajuanSurat model method
         $trackingToken = PengajuanSurat::generateTrackingToken();
 
@@ -235,6 +248,7 @@ class PublicSuratController extends Controller
             
             // Simpan ke database
             $pengajuan = PengajuanSurat::create([
+                'mahasiswa_id' => $mahasiswa->id,
                 'tracking_token' => $trackingToken,
                 'nim' => $validated['nim'],
                 'nama_mahasiswa' => $validated['nama_mahasiswa'],

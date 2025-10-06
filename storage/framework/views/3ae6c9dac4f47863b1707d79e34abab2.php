@@ -207,6 +207,11 @@
                         <i class="fas fa-university"></i>
                         <span>Fakultas</span>
                     </a>
+                    
+                    <a href="<?php echo e(route('admin.dosen-wali.index')); ?>" class="nav-item <?php echo e(request()->routeIs('admin.dosen-wali.*') ? 'active' : ''); ?>">
+                        <i class="fas fa-user-tie"></i>
+                        <span>Dosen Wali</span>
+                    </a>
                         <div class="px-4 py-2 mt-2">
                     <p class="text-xs font-semibold text-gray-500 uppercase">Logs & Reports</p>
                     </div>
@@ -214,6 +219,15 @@
                     <a href="<?php echo e(route('admin.audit-trail.index')); ?>" class="nav-item <?php echo e(request()->routeIs('admin.audit-trail.*') ? 'active' : ''); ?>">
                         <i class="fas fa-clipboard-list"></i>
                         <span>Audit Trail</span>
+                    </a>
+
+                    <div class="px-4 py-2 mt-2">
+                        <p class="text-xs font-semibold text-gray-500 uppercase">System</p>
+                    </div>
+
+                    <a href="<?php echo e(route('admin.settings.index')); ?>" class="nav-item <?php echo e(request()->routeIs('admin.settings.*') ? 'active' : ''); ?>">
+                        <i class="fas fa-cog"></i>
+                        <span>Settings</span>
                     </a>
                 <?php endif; ?>
                 
@@ -317,9 +331,29 @@
                     </div>
                 </header>
             <?php endif; ?>
-            
+
             <main class="relative z-10 min-h-screen">
-                <?php echo $__env->yieldContent('content'); ?>
+                <!-- Breadcrumb -->
+                <div class="px-4 sm:px-6 lg:px-8 py-4">
+                    <nav class="flex" aria-label="Breadcrumb">
+                        <ol class="inline-flex items-center space-x-1 md:space-x-3">
+                            <li class="inline-flex items-center">
+                                <a href="<?php echo e(route('dashboard')); ?>" class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600">
+                                    <i class="fas fa-home mr-2"></i>
+                                    Dashboard
+                                </a>
+                            </li>
+                            <?php echo $__env->yieldContent('breadcrumb'); ?>
+                        </ol>
+                    </nav>
+                </div>
+
+                <!-- Content Wrapper -->
+                <div class="px-4 sm:px-6 lg:px-8 pb-8">
+                    <div class="bg-white/80 backdrop-blur-sm rounded-xl shadow-sm p-6">
+                        <?php echo $__env->yieldContent('content'); ?>
+                    </div>
+                </div>
             </main>
         </div>
     </div>
@@ -365,5 +399,172 @@
     <?php echo \Livewire\Mechanisms\FrontendAssets\FrontendAssets::scripts(); ?>
 
     <?php echo $__env->yieldPushContent('scripts'); ?>
+
+    <!-- Custom Notification System -->
+    <div id="customNotification" class="hidden fixed top-4 right-4 z-50 min-w-80 max-w-md animate-slideIn">
+        <div id="notificationContent" class="rounded-lg shadow-lg p-4 flex items-start gap-3"></div>
+    </div>
+
+    <!-- Custom Confirm Dialog -->
+    <div id="customConfirm" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 animate-scaleIn">
+            <div id="confirmContent" class="p-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="flex-shrink-0 w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center">
+                        <i class="fas fa-question-circle text-yellow-600 text-2xl"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="text-lg font-semibold text-gray-900">Konfirmasi</h3>
+                        <p id="confirmMessage" class="text-sm text-gray-600 mt-1"></p>
+                    </div>
+                </div>
+                <div class="flex gap-3 justify-end">
+                    <button onclick="resolveConfirm(false)" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 font-medium">
+                        Batal
+                    </button>
+                    <button onclick="resolveConfirm(true)" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
+                        Ya, Lanjutkan
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes scaleIn {
+            from {
+                transform: scale(0.9);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .animate-slideIn {
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .animate-scaleIn {
+            animation: scaleIn 0.2s ease-out;
+        }
+    </style>
+
+    <script>
+        // Custom Alert Function
+        function alert(message, type = 'info') {
+            const notification = document.getElementById('customNotification');
+            const content = document.getElementById('notificationContent');
+
+            const icons = {
+                success: { icon: 'fa-check-circle', bg: 'bg-green-50', iconColor: 'text-green-600', borderColor: 'border-green-200' },
+                error: { icon: 'fa-exclamation-circle', bg: 'bg-red-50', iconColor: 'text-red-600', borderColor: 'border-red-200' },
+                warning: { icon: 'fa-exclamation-triangle', bg: 'bg-yellow-50', iconColor: 'text-yellow-600', borderColor: 'border-yellow-200' },
+                info: { icon: 'fa-info-circle', bg: 'bg-blue-50', iconColor: 'text-blue-600', borderColor: 'border-blue-200' }
+            };
+
+            const config = icons[type] || icons.info;
+
+            content.className = `rounded-lg shadow-lg p-4 flex items-start gap-3 border-2 ${config.bg} ${config.borderColor}`;
+            content.innerHTML = `
+                <div class="flex-shrink-0">
+                    <i class="fas ${config.icon} ${config.iconColor} text-xl"></i>
+                </div>
+                <div class="flex-1">
+                    <p class="text-sm text-gray-800 font-medium">${message}</p>
+                </div>
+                <button onclick="closeNotification()" class="flex-shrink-0 text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+
+            notification.classList.remove('hidden');
+
+            setTimeout(() => {
+                closeNotification();
+            }, 5000);
+        }
+
+        function closeNotification() {
+            const notification = document.getElementById('customNotification');
+            notification.classList.add('hidden');
+        }
+
+        // Custom Confirm Function
+        let confirmResolver = null;
+
+        function confirm(message) {
+            return new Promise((resolve) => {
+                confirmResolver = resolve;
+                const confirmDialog = document.getElementById('customConfirm');
+                const messageEl = document.getElementById('confirmMessage');
+
+                messageEl.textContent = message;
+                confirmDialog.classList.remove('hidden');
+            });
+        }
+
+        function resolveConfirm(result) {
+            const confirmDialog = document.getElementById('customConfirm');
+            confirmDialog.classList.add('hidden');
+
+            if (confirmResolver) {
+                confirmResolver(result);
+                confirmResolver = null;
+            }
+        }
+
+        // Close confirm dialog when clicking outside
+        document.getElementById('customConfirm')?.addEventListener('click', function(e) {
+            if (e.target === this) {
+                resolveConfirm(false);
+            }
+        });
+
+        // Success notification helper
+        window.showSuccess = function(message) {
+            alert(message, 'success');
+        };
+
+        // Error notification helper
+        window.showError = function(message) {
+            alert(message, 'error');
+        };
+
+        // Warning notification helper
+        window.showWarning = function(message) {
+            alert(message, 'warning');
+        };
+
+        // Info notification helper
+        window.showInfo = function(message) {
+            alert(message, 'info');
+        };
+
+        // Handle delete with async confirm
+        window.handleDelete = function(event, message = 'Apakah Anda yakin ingin menghapus data ini?') {
+            event.preventDefault();
+
+            confirm(message).then(result => {
+                if (result) {
+                    event.target.submit();
+                }
+            });
+
+            return false;
+        };
+    </script>
 </body>
 </html><?php /**PATH C:\laragon\www\sistem-surat\resources\views/layouts/app.blade.php ENDPATH**/ ?>

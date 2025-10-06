@@ -150,39 +150,39 @@
                             <table class="min-w-full">
                                 <thead>
                                     <tr>
-                                        <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase w-16">No</th>
-                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase w-32">Token</th>
-                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase w-48">Mahasiswa</th>
-                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase w-40">Jenis Surat</th>
-                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase w-36">Status</th>
-                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase w-32">Tanggal</th>
-                                        <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase w-52">Aksi</th>
+                                        <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">No</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Token Tracking</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Data Mahasiswa</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Jenis Surat</th>
+                                        <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Status</th>
+                                        <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Tanggal Pengajuan</th>
+                                        <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Aksi</th>
                                     </tr>
                                 </thead>
                             </table>
                         </div>
-                        
+
                         <!-- Scrollable Body -->
                         <div class="overflow-y-auto scroll-smooth" style="max-height: 500px; will-change: scroll-position;">
                             <table class="min-w-full">
                                 <tbody class="bg-white divide-y divide-gray-100">
                                     <?php $__currentLoopData = $pengajuans; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $index => $pengajuan): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                         <tr class="hover:bg-blue-50">
-                                            <td class="px-4 py-4 w-16 text-center">
+                                            <td class="px-4 py-4 text-center">
                                                 <span class="text-sm font-medium text-gray-700"><?php echo e($index + 1); ?></span>
                                             </td>
-                                            <td class="px-4 py-4 w-32">
+                                            <td class="px-4 py-4">
                                                 <span class="text-xs font-mono text-blue-600 font-medium"><?php echo e($pengajuan->tracking_token); ?></span>
                                             </td>
-                                            <td class="px-4 py-4 w-48">
+                                            <td class="px-4 py-4">
                                                 <div class="text-sm font-medium text-gray-900"><?php echo e($pengajuan->nama_mahasiswa); ?></div>
                                                 <div class="text-xs text-gray-500 mt-0.5"><?php echo e($pengajuan->nim); ?></div>
                                             </td>
-                                            <td class="px-4 py-4 w-40">
+                                            <td class="px-4 py-4">
                                                 <div class="text-sm text-gray-900"><?php echo e($pengajuan->jenisSurat->nama_jenis ?? 'N/A'); ?></div>
                                                 <div class="text-xs text-gray-500 mt-0.5"><?php echo e($pengajuan->jenisSurat->kode_surat ?? ''); ?></div>
                                             </td>
-                                            <td class="px-4 py-4 w-36">
+                                            <td class="px-4 py-4 text-center">
                                                 <?php
                                                     $statusConfig = [
                                                         'pending' => ['bg' => 'bg-yellow-100', 'text' => 'text-yellow-800', 'label' => 'Pending'],
@@ -198,11 +198,11 @@
 
                                                 </span>
                                             </td>
-                                            <td class="px-4 py-4 w-32">
+                                            <td class="px-4 py-4 text-center">
                                                 <div class="text-sm text-gray-900"><?php echo e($pengajuan->created_at->format('d/m/Y')); ?></div>
                                                 <div class="text-xs text-gray-500 mt-0.5"><?php echo e($pengajuan->created_at->format('H:i')); ?></div>
                                             </td>
-                                            <td class="px-4 py-4 w-52">
+                                            <td class="px-4 py-4 text-center">
                                                 <div class="flex items-center justify-center gap-2">
                                                     <a href="<?php echo e(route('staff.pengajuan.show', $pengajuan->id)); ?>" 
                                                        class="inline-flex items-center px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 text-xs font-medium">

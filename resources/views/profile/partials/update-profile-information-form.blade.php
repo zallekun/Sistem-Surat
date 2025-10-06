@@ -24,6 +24,12 @@
         </div>
 
         <div>
+            <x-input-label for="nip" :value="__('NIP')" />
+            <x-text-input id="nip" name="nip" type="text" class="mt-1 block w-full" :value="old('nip', $user->nip)" />
+            <x-input-error class="mt-2" :messages="$errors->get('nip')" />
+        </div>
+
+        <div>
             <x-input-label for="email" :value="__('Email')" />
             <x-text-input id="email" name="email" type="email" class="mt-1 block w-full" :value="old('email', $user->email)" required autocomplete="username" />
             <x-input-error class="mt-2" :messages="$errors->get('email')" />
@@ -45,6 +51,21 @@
                     @endif
                 </div>
             @endif
+        </div>
+
+        <div>
+            <x-input-label for="role" :value="__('Role')" />
+            <x-text-input id="role" name="role" type="text" class="mt-1 block w-full bg-gray-100" :value="$user->role?->name" disabled />
+        </div>
+
+        <div>
+            <x-input-label for="jabatan" :value="__('Jabatan')" />
+            <x-text-input id="jabatan" name="jabatan" type="text" class="mt-1 block w-full bg-gray-100" :value="$user->jabatan?->nama" disabled />
+        </div>
+
+        <div>
+            <x-input-label for="prodi" :value="__('Prodi')" />
+            <x-text-input id="prodi" name="prodi" type="text" class="mt-1 block w-full bg-gray-100" :value="$user->prodi?->nama" disabled />
         </div>
 
         <div class="flex items-center gap-4">

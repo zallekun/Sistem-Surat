@@ -78,8 +78,8 @@ class AdminUserController extends Controller
             'nip' => 'nullable|string|unique:users,nip',
             'password' => 'required|string|min:8|confirmed',
             'role' => 'required|exists:roles,name',
-            'prodi_id' => 'nullable|exists:prodis,id',
-            'jabatan_id' => 'nullable|exists:jabatans,id',
+            'prodi_id' => 'nullable|exists:prodi,id',
+            'jabatan_id' => 'nullable|exists:jabatan,id',
         ]);
         
         try {
@@ -93,8 +93,20 @@ class AdminUserController extends Controller
                 'is_active' => true,
             ]);
             
-            // Assign role using Spatie
-            $user->assignRole($request->role);
+            $roleToAssign = $request->role;
+
+            if ($request->jabatan_id) {
+                $jabatan = Jabatan::find($request->jabatan_id);
+                if ($jabatan) {
+                    if ($jabatan->nama_jabatan === 'Staff Program Studi') {
+                        $roleToAssign = 'staff_prodi';
+                    } elseif ($jabatan->nama_jabatan === 'Staff Fakultas') {
+                        $roleToAssign = 'staff_fakultas';
+                    }
+                }
+            }
+
+            $user->assignRole($roleToAssign);
             
             return redirect()->route('admin.users.index')
                 ->with('success', 'User berhasil ditambahkan');
@@ -145,8 +157,20 @@ class AdminUserController extends Controller
                 'jabatan_id' => $request->jabatan_id,
             ]);
             
-            // Sync role
-            $user->syncRoles([$request->role]);
+            $roleToAssign = $request->role;
+
+            if ($request->jabatan_id) {
+                $jabatan = Jabatan::find($request->jabatan_id);
+                if ($jabatan) {
+                    if ($jabatan->nama_jabatan === 'Staff Program Studi') {
+                        $roleToAssign = 'staff_prodi';
+                    } elseif ($jabatan->nama_jabatan === 'Staff Fakultas') {
+                        $roleToAssign = 'staff_fakultas';
+                    }
+                }
+            }
+
+            $user->syncRoles([$roleToAssign]);
             
             return redirect()->route('admin.users.index')
                 ->with('success', 'User berhasil diupdate');

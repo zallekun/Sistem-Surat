@@ -317,51 +317,90 @@
 
 @push('scripts')
 <script>
-function confirmApprove(id) {
-    if (confirm('Apakah Anda yakin ingin menyetujui surat ini?')) {
+async function confirmApprove(id) {
+    const confirmed = await confirm('Apakah Anda yakin ingin menyetujui surat ini?');
+    if (confirmed) {
         window.location.href = `/staff/surat/${id}/approve`;
     }
 }
 
-function confirmSubmit(id) {
-    if (confirm('Apakah Anda yakin ingin mengirim surat ini ke Kaprodi untuk review?')) {
+async function confirmSubmit(id) {
+    const confirmed = await confirm('Apakah Anda yakin ingin mengirim surat ini ke Kaprodi untuk review?');
+    if (confirmed) {
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = `/staff/surat/${id}/submit`;
-        
+
         const token = document.createElement('input');
         token.type = 'hidden';
         token.name = '_token';
         token.value = '{{ csrf_token() }}';
-        
+
         form.appendChild(token);
         document.body.appendChild(form);
         form.submit();
     }
 }
 
-function confirmReject(id) {
-    const reason = prompt('Masukkan alasan penolakan:');
-    if (reason) {
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = `/staff/surat/${id}/reject`;
-        
-        const token = document.createElement('input');
-        token.type = 'hidden';
-        token.name = '_token';
-        token.value = '{{ csrf_token() }}';
-        
-        const reasonInput = document.createElement('input');
-        reasonInput.type = 'hidden';
-        reasonInput.name = 'reason';
-        reasonInput.value = reason;
-        
-        form.appendChild(token);
-        form.appendChild(reasonInput);
-        document.body.appendChild(form);
-        form.submit();
+async function confirmReject(id) {
+    const confirmed = await confirm('Apakah Anda yakin ingin menolak surat ini?');
+    if (!confirmed) return;
+
+    // Show modal for reason input
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center';
+    modal.innerHTML = `
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div class="p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Alasan Penolakan</h3>
+                <textarea id="rejectReason" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Masukkan alasan penolakan..."></textarea>
+                <div class="flex gap-3 mt-4">
+                    <button onclick="closeRejectModal()" class="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">
+                        Batal
+                    </button>
+                    <button onclick="submitReject(${id})" class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+                        Tolak Surat
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    window.rejectModal = modal;
+}
+
+function closeRejectModal() {
+    if (window.rejectModal) {
+        window.rejectModal.remove();
+        window.rejectModal = null;
     }
+}
+
+function submitReject(id) {
+    const reason = document.getElementById('rejectReason').value;
+    if (!reason || reason.trim() === '') {
+        showError('Alasan penolakan harus diisi');
+        return;
+    }
+
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `/staff/surat/${id}/reject`;
+
+    const token = document.createElement('input');
+    token.type = 'hidden';
+    token.name = '_token';
+    token.value = '{{ csrf_token() }}';
+
+    const reasonInput = document.createElement('input');
+    reasonInput.type = 'hidden';
+    reasonInput.name = 'reason';
+    reasonInput.value = reason;
+
+    form.appendChild(token);
+    form.appendChild(reasonInput);
+    document.body.appendChild(form);
+    form.submit();
 }
 </script>
 @endpush

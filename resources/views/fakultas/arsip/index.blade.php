@@ -182,53 +182,48 @@
                             <table class="min-w-full">
                                 <thead>
                                     <tr>
-                                        <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase w-16">No</th>
-                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase w-32">Token</th>
-                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase w-48">Mahasiswa</th>
-                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase w-32">Prodi</th>
-                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase w-40">Jenis Surat</th>
-                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase w-32">Tgl Pengajuan</th>
-                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase w-32">Tgl Selesai</th>
-                                        <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase w-40">Aksi</th>
+                                        <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">No</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Token Tracking</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Data Mahasiswa</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Program Studi</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Jenis Surat</th>
+                                        <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Tanggal Selesai</th>
+                                        <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Aksi</th>
                                     </tr>
                                 </thead>
                             </table>
                         </div>
-                        
+
                         <!-- Scrollable Body -->
                         <div class="overflow-y-auto scroll-smooth" style="max-height: 500px; will-change: scroll-position;">
                             <table class="min-w-full">
                                 <tbody class="bg-white divide-y divide-gray-100">
                                     @foreach($pengajuans as $index => $pengajuan)
                                         <tr class="hover:bg-blue-50">
-                                            <td class="px-4 py-4 w-16 text-center">
+                                            <td class="px-4 py-4 text-center">
                                                 <span class="text-sm font-medium text-gray-700">{{ $pengajuans->firstItem() + $index }}</span>
                                             </td>
-                                            <td class="px-4 py-4 w-32">
+                                            <td class="px-4 py-4">
                                                 <span class="text-xs font-mono text-blue-600 font-medium">{{ $pengajuan->tracking_token }}</span>
                                             </td>
-                                            <td class="px-4 py-4 w-48">
+                                            <td class="px-4 py-4">
                                                 <div class="text-sm font-medium text-gray-900">{{ $pengajuan->mahasiswa->nama ?? $pengajuan->nama_mahasiswa }}</div>
                                                 <div class="text-xs text-gray-500 mt-0.5">{{ $pengajuan->mahasiswa->nim ?? $pengajuan->nim }}</div>
                                             </td>
-                                            <td class="px-4 py-4 w-32">
+                                            <td class="px-4 py-4">
                                                 <span class="px-2 py-1 text-xs bg-gray-100 text-gray-800 rounded-full">
                                                     {{ $pengajuan->prodi->nama_prodi ?? 'N/A' }}
                                                 </span>
                                             </td>
-                                            <td class="px-4 py-4 w-40">
+                                            <td class="px-4 py-4">
                                                 <div class="text-sm text-gray-900">{{ $pengajuan->jenisSurat->nama_jenis ?? 'N/A' }}</div>
                                                 <div class="text-xs text-gray-500 mt-0.5">{{ $pengajuan->jenisSurat->kode_surat ?? '' }}</div>
                                             </td>
-                                            <td class="px-4 py-4 w-32">
-                                                <div class="text-sm text-gray-900">{{ $pengajuan->created_at->format('d/m/Y') }}</div>
-                                                <div class="text-xs text-gray-500 mt-0.5">{{ $pengajuan->created_at->format('H:i') }}</div>
-                                            </td>
-                                            <td class="px-4 py-4 w-32">
+                                            <td class="px-4 py-4 text-center">
                                                 <div class="text-sm text-gray-900">{{ $pengajuan->completed_at?->format('d/m/Y') ?? '-' }}</div>
                                                 <div class="text-xs text-gray-500 mt-0.5">{{ $pengajuan->completed_at?->format('H:i') ?? '' }}</div>
                                             </td>
-                                            <td class="px-4 py-4 w-40">
+                                            <td class="px-4 py-4 text-center">
                                                 <div class="flex items-center justify-center gap-2">
                                                     <a href="{{ route('fakultas.arsip.show', $pengajuan->id) }}" 
                                                        class="inline-flex items-center px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 text-xs font-medium">

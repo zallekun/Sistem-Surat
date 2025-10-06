@@ -5,30 +5,131 @@
 
 @push('head')
 <style>
-:root {
-    --primary-gradient: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-    --success-gradient: linear-gradient(135deg, #10b981 0%, #34d399 100%);
-    --info-gradient: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
-    --warning-gradient: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
-    --danger-gradient: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+.main-container {
+    background: #f8fafc;
+    min-height: 100vh;
+    padding: 2rem 1rem;
 }
 
-.gradient-bg {
-    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+.content-wrapper {
+    max-width: 1200px;
+    margin: 0 auto;
 }
 
-.tracking-card {
+.card {
     background: white;
-    border-radius: 20px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     overflow: hidden;
+    margin-bottom: 1.5rem;
 }
 
-.tracking-card:hover {
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
-    transform: translateY(-2px);
+.card-header {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    padding: 2rem;
+    color: white;
 }
+
+.card-body {
+    padding: 2rem;
+}
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.status-completed { background: #10b981; color: white; }
+.status-signing { background: #f59e0b; color: white; }
+.status-approved { background: #3b82f6; color: white; }
+.status-pending { background: #f59e0b; color: white; }
+.status-rejected { background: #ef4444; color: white; }
+
+.progress-bar {
+    height: 6px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 0.5rem;
+}
+
+.progress-fill {
+    height: 100%;
+    background: white;
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+}
+
+.info-item {
+    display: flex;
+    align-items: start;
+    gap: 0.75rem;
+}
+
+.info-icon {
+    color: #3b82f6;
+    width: 20px;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.info-label {
+    font-size: 0.875rem;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.info-value {
+    color: #111827;
+    margin-top: 0.25rem;
+}
+
+.alert {
+    padding: 1.5rem;
+    border-radius: 8px;
+    border-left: 4px solid;
+    margin-bottom: 1.5rem;
+}
+
+.alert-success {
+    background: #f0fdf4;
+    border-color: #10b981;
+}
+
+.alert-info {
+    background: #eff6ff;
+    border-color: #3b82f6;
+}
+
+.alert-error {
+    background: #fef2f2;
+    border-color: #ef4444;
+}
+
+.alert-title {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.alert-success .alert-title { color: #065f46; }
+.alert-info .alert-title { color: #1e40af; }
+.alert-error .alert-title { color: #991b1b; }
+
+.alert-success p { color: #047857; }
+.alert-info p { color: #1e40af; }
+.alert-error p { color: #991b1b; }
 
 .timeline {
     position: relative;
@@ -38,209 +139,168 @@
 .timeline::before {
     content: '';
     position: absolute;
-    left: 1rem;
+    left: 0.75rem;
     top: 0;
     bottom: 0;
-    width: 4px;
-    background: var(--primary-gradient);
-    border-radius: 2px;
+    width: 2px;
+    background: #e5e7eb;
 }
 
 .timeline-item {
     position: relative;
-    padding-left: 2.5rem;
+    padding-left: 2rem;
     margin-bottom: 2rem;
 }
 
 .timeline-marker {
     position: absolute;
-    left: -12px;
-    top: 8px;
-    width: 20px;
-    height: 20px;
+    left: -0.5rem;
+    top: 0.25rem;
+    width: 14px;
+    height: 14px;
     border-radius: 50%;
     background: white;
-    border: 4px solid #3b82f6;
-    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+    border: 3px solid #3b82f6;
     z-index: 2;
-    transition: all 0.3s ease;
-}
-
-.timeline-marker.active {
-    background: var(--primary-gradient);
-    border-color: white;
-    animation: pulse 2s infinite;
 }
 
 .timeline-marker.completed {
-    background: var(--success-gradient);
-    border-color: white;
-    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.2);
-}
-
-@keyframes pulse {
-    0% { box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2); }
-    50% { box-shadow: 0 0 0 8px rgba(59, 130, 246, 0.1); }
-    100% { box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2); }
+    background: #10b981;
+    border-color: #10b981;
 }
 
 .timeline-content {
-    background: white;
-    padding: 1.5rem;
-    border-radius: 15px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    border-left: 5px solid #3b82f6;
-    transition: all 0.3s ease;
+    background: #f9fafb;
+    padding: 1rem;
+    border-radius: 8px;
+    border-left: 3px solid #3b82f6;
 }
 
-.timeline-content:hover {
-    transform: translateX(5px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-}
-
-.timeline-content.active {
+.timeline-content.completed {
     border-left-color: #10b981;
-    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
 }
 
-.timeline-content.current {
-    border-left-color: #3b82f6;
-    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+.timeline-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    gap: 1rem;
 }
 
-.status-badge {
+.timeline-title {
+    font-weight: 600;
+    color: #111827;
+    margin-bottom: 0.25rem;
+}
+
+.timeline-meta {
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+
+.timeline-time {
+    font-size: 0.875rem;
+    color: #9ca3af;
+    white-space: nowrap;
+}
+
+.btn {
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.75rem 1rem;
-    border-radius: 9999px;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
     font-weight: 600;
-    font-size: 0.875rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    position: relative;
-    overflow: hidden;
+    text-decoration: none;
+    transition: all 0.2s;
+    border: none;
+    cursor: pointer;
 }
 
-.status-badge::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-    transition: left 0.8s;
-}
-
-.status-badge:hover::before {
-    left: 100%;
-}
-
-.status-completed {
-    background: var(--success-gradient);
+.btn-primary {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
     color: white;
 }
 
-.status-signing {
-    background: var(--warning-gradient);
+.btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.btn-secondary {
+    background: white;
+    color: #374151;
+    border: 1px solid #d1d5db;
+}
+
+.btn-secondary:hover {
+    background: #f9fafb;
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
     color: white;
 }
 
-.status-approved {
-    background: var(--info-gradient);
-    color: white;
+.btn-success:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
 }
 
-.status-pending {
-    background: var(--warning-gradient);
-    color: white;
+.text-center {
+    text-align: center;
 }
 
-.status-rejected {
-    background: var(--danger-gradient);
-    color: white;
-}
-
-.icon-circle {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
+.badge {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    transition: all 0.3s ease;
-}
-
-.icon-circle:hover {
-    transform: scale(1.1);
-}
-
-.btn-enhanced {
+    padding: 0.25rem 0.75rem;
     border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.badge-blue {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.badge-green {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.note-box {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-top: 1rem;
+}
+
+.note-title {
     font-weight: 600;
-    padding: 0.75rem 2rem;
-    transition: all 0.3s ease;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    position: relative;
-    overflow: hidden;
+    color: #111827;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
 }
 
-.btn-enhanced::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-    transition: left 0.5s;
+.note-content {
+    color: #4b5563;
+    font-size: 0.875rem;
 }
 
-.btn-enhanced:hover::before {
-    left: 100%;
-}
-
-.btn-enhanced:hover {
-    transform: translateY(-2px);
-}
-
-.progress-custom {
-    height: 8px;
-    border-radius: 4px;
-    background: rgba(255, 255, 255, 0.2);
-    overflow: hidden;
-}
-
-.progress-bar-custom {
-    height: 100%;
-    border-radius: 4px;
-    background: var(--success-gradient);
-    transition: width 0.6s ease;
-}
-
-.fade-in {
-    animation: fadeIn 0.6s ease-in;
-}
-
-.slide-in-up {
-    animation: slideInUp 0.6s ease-out;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes slideInUp {
-    from {
-        opacity: 0;
-        transform: translateY(30px);
+@media (max-width: 768px) {
+    .info-grid {
+        grid-template-columns: 1fr;
     }
-    to {
-        opacity: 1;
-        transform: translateY(0);
+    
+    .card-header {
+        padding: 1.5rem;
+    }
+    
+    .card-body {
+        padding: 1.5rem;
     }
 }
 </style>
@@ -248,50 +308,38 @@
 
 @section('content')
 @if(!isset($pengajuan))
-<div class="gradient-bg min-h-screen py-8">
-    <div class="max-w-4xl mx-auto px-4">
-        <div class="bg-red-50 border-l-4 border-red-400 p-6 rounded-lg">
-            <div class="flex items-center">
-                <div class="flex-shrink-0">
-                    <i class="fas fa-exclamation-triangle text-red-400 text-2xl"></i>
-                </div>
-                <div class="ml-4">
-                    <h3 class="text-lg font-semibold text-red-800">Data Tidak Ditemukan</h3>
-                    <p class="mt-2 text-red-700">Data pengajuan tidak ditemukan. Silakan coba lagi atau hubungi administrator.</p>
-                    <div class="mt-4">
-                        <a href="{{ route('tracking.public') }}" 
-                           class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-full text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
-                            <i class="fas fa-arrow-left mr-2"></i>
-                            Kembali ke Tracking
-                        </a>
-                    </div>
-                </div>
+<div class="main-container">
+    <div class="content-wrapper">
+        <div class="alert alert-error">
+            <h3 class="alert-title">Data Tidak Ditemukan</h3>
+            <p>Data pengajuan tidak ditemukan. Silakan coba lagi atau hubungi administrator.</p>
+            <div style="margin-top: 1rem;">
+                <a href="{{ route('tracking.public') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i>
+                    Kembali ke Tracking
+                </a>
             </div>
         </div>
     </div>
 </div>
 @else
-<div class="gradient-bg min-h-screen py-8">
-    <div class="max-w-6xl mx-auto px-4">
+<div class="main-container">
+    <div class="content-wrapper">
         
         <!-- Header Card -->
-        <div class="tracking-card fade-in mb-8">
-            <!-- Header dengan gradient -->
-            <div class="bg-gradient-to-r from-blue-600 to-purple-600 p-6">
-                <div class="flex items-center justify-between text-white">
-                    <div class="flex items-center">
-                        <div class="icon-circle bg-white bg-opacity-20 border-3 border-white border-opacity-30 text-white mr-4">
-                            <i class="fas fa-file-alt text-2xl"></i>
-                        </div>
-                        <div>
-                            <h2 class="text-2xl font-bold">Status Pengajuan Surat</h2>
-                            <p class="text-white text-opacity-75">
-                                <strong>Token:</strong> {{ $pengajuan->tracking_token ?? 'N/A' }} | 
-                                <strong>NIM:</strong> {{ $pengajuan->nim ?? 'N/A' }}
-                            </p>
-                        </div>
+        <div class="card">
+            <div class="card-header">
+                <div style="display: flex; justify-content: space-between; align-items: start; gap: 1rem; flex-wrap: wrap;">
+                    <div>
+                        <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem;">
+                            Status Pengajuan Surat
+                        </h2>
+                        <p style="opacity: 0.9; font-size: 0.875rem;">
+                            <strong>Token:</strong> {{ $pengajuan->tracking_token ?? 'N/A' }} | 
+                            <strong>NIM:</strong> {{ $pengajuan->nim ?? 'N/A' }}
+                        </p>
                     </div>
-                    <div class="text-right">
+                    <div>
                         <span class="status-badge status-{{ 
                             $pengajuan->status == 'completed' ? 'completed' : 
                             ($pengajuan->status == 'sedang_ditandatangani' ? 'signing' : 
@@ -307,204 +355,158 @@
                             {{ $pengajuan->status_label ?? ucfirst($pengajuan->status ?? 'Unknown') }}
                         </span>
                         
-                        <!-- Progress Indicator -->
                         @php
                             $progressSteps = ['pending', 'processed', 'approved_prodi', 'approved_fakultas', 'sedang_ditandatangani', 'completed'];
                             $currentStep = array_search($pengajuan->status, $progressSteps);
                             $progress = $currentStep !== false ? (($currentStep + 1) / count($progressSteps)) * 100 : 10;
                         @endphp
-                        <div class="mt-2">
-                            <div class="text-sm text-white text-opacity-75 mb-1">Progress: {{ number_format($progress, 0) }}%</div>
-                            <div class="progress-custom w-32">
-                                <div class="progress-bar-custom" style="width: {{ $progress }}%;"></div>
+                        <div style="margin-top: 0.75rem; min-width: 200px;">
+                            <div style="font-size: 0.75rem; opacity: 0.9; margin-bottom: 0.25rem;">
+                                Progress: {{ number_format($progress, 0) }}%
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: {{ $progress }}%;"></div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Body dengan info detail -->
-            <div class="p-6">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="space-y-4">
-                        <div class="flex items-center">
-                            <i class="fas fa-user text-blue-500 w-6 mr-3"></i>
-                            <div>
-                                <div class="text-sm font-medium text-gray-500">Nama</div>
-                                <div class="text-gray-900">{{ $pengajuan->nama_mahasiswa ?? 'N/A' }}</div>
-                            </div>
-                        </div>
-                        <div class="flex items-center">
-                            <i class="fas fa-graduation-cap text-blue-500 w-6 mr-3"></i>
-                            <div>
-                                <div class="text-sm font-medium text-gray-500">Program Studi</div>
-                                <div class="text-gray-900">{{ $pengajuan->prodi->nama_prodi ?? 'N/A' }}</div>
-                            </div>
-                        </div>
-                        <div class="flex items-center">
-                            <i class="fas fa-envelope text-blue-500 w-6 mr-3"></i>
-                            <div>
-                                <div class="text-sm font-medium text-gray-500">Email</div>
-                                <div class="text-gray-900">{{ $pengajuan->email ?? 'N/A' }}</div>
-                            </div>
+            <div class="card-body">
+                <div class="info-grid">
+                    <div class="info-item">
+                        <i class="fas fa-user info-icon"></i>
+                        <div>
+                            <div class="info-label">Nama</div>
+                            <div class="info-value">{{ $pengajuan->nama_mahasiswa ?? 'N/A' }}</div>
                         </div>
                     </div>
-                    <div class="space-y-4">
-                        <div class="flex items-center">
-                            <i class="fas fa-file-alt text-blue-500 w-6 mr-3"></i>
-                            <div>
-                                <div class="text-sm font-medium text-gray-500">Jenis Surat</div>
-                                <div class="text-gray-900">{{ $pengajuan->jenisSurat->nama_jenis ?? 'N/A' }}</div>
-                            </div>
+                    <div class="info-item">
+                        <i class="fas fa-file-alt info-icon"></i>
+                        <div>
+                            <div class="info-label">Jenis Surat</div>
+                            <div class="info-value">{{ $pengajuan->jenisSurat->nama_jenis ?? 'N/A' }}</div>
                         </div>
-                        <div class="flex items-center">
-                            <i class="fas fa-calendar text-blue-500 w-6 mr-3"></i>
-                            <div>
-                                <div class="text-sm font-medium text-gray-500">Tanggal Pengajuan</div>
-                                <div class="text-gray-900">{{ $pengajuan->created_at ? $pengajuan->created_at->format('d M Y H:i') : 'N/A' }}</div>
-                            </div>
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-graduation-cap info-icon"></i>
+                        <div>
+                            <div class="info-label">Program Studi</div>
+                            <div class="info-value">{{ $pengajuan->prodi->nama_prodi ?? 'N/A' }}</div>
                         </div>
-                        <div class="flex items-center">
-                            <i class="fas fa-phone text-blue-500 w-6 mr-3"></i>
-                            <div>
-                                <div class="text-sm font-medium text-gray-500">Telepon</div>
-                                <div class="text-gray-900">{{ $pengajuan->phone ?? 'N/A' }}</div>
-                            </div>
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-calendar info-icon"></i>
+                        <div>
+                            <div class="info-label">Tanggal Pengajuan</div>
+                            <div class="info-value">{{ $pengajuan->created_at ? $pengajuan->created_at->format('d M Y H:i') : 'N/A' }}</div>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-envelope info-icon"></i>
+                        <div>
+                            <div class="info-label">Email</div>
+                            <div class="info-value">{{ $pengajuan->email ?? 'N/A' }}</div>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-phone info-icon"></i>
+                        <div>
+                            <div class="info-label">Telepon</div>
+                            <div class="info-value">{{ $pengajuan->phone ?? 'N/A' }}</div>
                         </div>
                     </div>
                 </div>
                 
                 @if($pengajuan->keperluan)
-                <div class="mt-6 p-4 bg-gray-50 rounded-lg">
-                    <h4 class="text-sm font-medium text-gray-900 mb-2">
-                        <i class="fas fa-info-circle text-blue-500 mr-2"></i>
+                <div class="note-box">
+                    <div class="note-title">
+                        <i class="fas fa-info-circle" style="color: #3b82f6;"></i>
                         Keperluan
-                    </h4>
-                    <p class="text-gray-700">{{ $pengajuan->keperluan }}</p>
+                    </div>
+                    <div class="note-content">{{ $pengajuan->keperluan }}</div>
                 </div>
                 @endif
             </div>
         </div>
 
         <!-- Completed Alert -->
-@if($pengajuan->status == 'completed' && $pengajuan->suratGenerated)
-<div class="bg-green-50 border-l-4 border-green-400 p-6 rounded-lg mb-8 slide-in-up">
-    <div class="flex items-center justify-between">
-        <div class="flex items-center">
-            <div class="flex-shrink-0">
-                <i class="fas fa-check-circle text-green-400 text-3xl"></i>
-            </div>
-            <div class="ml-4">
-                <h3 class="text-lg font-semibold text-green-800">🎉 Surat Telah Selesai!</h3>
-                <p class="text-green-700">Surat Anda telah selesai ditandatangani dan siap untuk didownload.</p>
-                @if($pengajuan->suratGenerated->signed_at ?? $pengajuan->completed_at)
-                <p class="text-sm text-green-600 mt-1">
-                    <i class="fas fa-clock mr-1"></i>
-                    Selesai pada: {{ ($pengajuan->suratGenerated->signed_at ?? $pengajuan->completed_at)->format('d M Y H:i') }}
-                </p>
-                @endif
-                
-                {{-- NEW: Show completion note if exists --}}
-                @if($pengajuan->suratGenerated->notes)
-                <div class="mt-3 p-3 bg-green-100 rounded-lg border border-green-200">
-                    <p class="text-sm text-green-800">
-                        <i class="fas fa-sticky-note mr-2"></i>
-                        <strong>Catatan dari Fakultas:</strong> {{ $pengajuan->suratGenerated->notes }}
+        @if($pengajuan->status == 'completed' && $pengajuan->suratGenerated)
+        <div class="alert alert-success">
+            <div style="display: flex; justify-content: space-between; align-items: start; gap: 1rem; flex-wrap: wrap;">
+                <div style="flex: 1;">
+                    <h3 class="alert-title">Surat Telah Selesai!</h3>
+                    <p>Surat Anda telah selesai ditandatangani dan siap untuk didownload.</p>
+                    @if($pengajuan->suratGenerated->signed_at ?? $pengajuan->completed_at)
+                    <p style="font-size: 0.875rem; margin-top: 0.5rem;">
+                        <i class="fas fa-clock"></i>
+                        Selesai pada: {{ ($pengajuan->suratGenerated->signed_at ?? $pengajuan->completed_at)->format('d M Y H:i') }}
                     </p>
+                    @endif
+                    
+                    @if($pengajuan->suratGenerated->notes)
+                    <div style="margin-top: 0.75rem; padding: 0.75rem; background: #d1fae5; border-radius: 6px;">
+                        <strong>Catatan:</strong> {{ $pengajuan->suratGenerated->notes }}
+                    </div>
+                    @endif
                 </div>
-                @endif
-            </div>
-        </div>
-        <div class="flex flex-col space-y-2">
-            @php
-                $downloadUrl = null;
-                $isExternalLink = false;
-                if ($pengajuan->suratGenerated) {
-                    if ($pengajuan->suratGenerated->signed_url) {
-                        $downloadUrl = $pengajuan->suratGenerated->signed_url;
-                        $isExternalLink = true;
-                    } elseif ($pengajuan->suratGenerated->file_path) {
-                        $downloadUrl = route('tracking.download', $pengajuan->id);
-                    }
-                }
-            @endphp
-            
-            @if($downloadUrl)
-                @if($isExternalLink)
-                {{-- External link (Google Drive, etc.) --}}
-                <a href="{{ $downloadUrl }}" target="_blank" 
-                   class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-full text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200 hover:scale-105">
-                    <i class="fas fa-external-link-alt mr-2"></i>
-                    Buka Surat (Google Drive)
-                </a>
-                <p class="text-xs text-green-600 text-center">
-                    <i class="fas fa-info-circle mr-1"></i>
-                    Link aman dari fakultas
-                </p>
-                @else
-                {{-- Local file download --}}
-                <a href="{{ $downloadUrl }}" target="_blank" 
-                   class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-full text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
-                    <i class="fas fa-download mr-2"></i>
-                    Download Surat (PDF)
-                </a>
-                @endif
-            @endif
-        </div>
-    </div>
-</div>
-@endif
-
-        <!-- In Progress Alert -->
-        @if($pengajuan->status == 'sedang_ditandatangani')
-        <div class="bg-blue-50 border-l-4 border-blue-400 p-6 rounded-lg mb-8 slide-in-up">
-            <div class="flex items-center">
-                <div class="flex-shrink-0">
-                    <i class="fas fa-signature text-blue-400 text-2xl"></i>
-                </div>
-                <div class="ml-4">
-                    <h3 class="text-lg font-semibold text-blue-800">Sedang Proses Tanda Tangan</h3>
-                    <p class="text-blue-700">Surat Anda sedang dalam proses tanda tangan fisik oleh pejabat fakultas.</p>
-                    @if($pengajuan->printed_at)
-                    <p class="text-sm text-blue-600 mt-1">
-                        <i class="fas fa-print mr-1"></i>
-                        Dicetak untuk TTD pada: {{ $pengajuan->printed_at->format('d M Y H:i') }}
-                    </p>
+                <div>
+                    @php
+                        $downloadUrl = null;
+                        if ($pengajuan->suratGenerated) {
+                            if ($pengajuan->suratGenerated->signed_url) {
+                                $downloadUrl = $pengajuan->suratGenerated->signed_url;
+                            } elseif ($pengajuan->suratGenerated->file_path) {
+                                $downloadUrl = route('tracking.download', $pengajuan->id);
+                            }
+                        }
+                    @endphp
+                    
+                    @if($downloadUrl)
+                    <a href="{{ $downloadUrl }}" target="_blank" class="btn btn-success">
+                        <i class="fas fa-download"></i>
+                        Download Surat
+                    </a>
                     @endif
                 </div>
             </div>
         </div>
         @endif
 
+        <!-- In Progress Alert -->
+        @if($pengajuan->status == 'sedang_ditandatangani')
+        <div class="alert alert-info">
+            <h3 class="alert-title">Sedang Proses Tanda Tangan</h3>
+            <p>Surat Anda sedang dalam proses tanda tangan fisik oleh pejabat fakultas.</p>
+            @if($pengajuan->printed_at)
+            <p style="font-size: 0.875rem; margin-top: 0.5rem;">
+                <i class="fas fa-print"></i>
+                Dicetak untuk TTD pada: {{ $pengajuan->printed_at->format('d M Y H:i') }}
+            </p>
+            @endif
+        </div>
+        @endif
+
         <!-- Rejected Alert -->
         @if(str_contains($pengajuan->status ?? '', 'rejected'))
-        <div class="bg-red-50 border-l-4 border-red-400 p-6 rounded-lg mb-8 slide-in-up">
-            <div class="flex items-center">
-                <div class="flex-shrink-0">
-                    <i class="fas fa-times-circle text-red-400 text-2xl"></i>
-                </div>
-                <div class="ml-4">
-                    <h3 class="text-lg font-semibold text-red-800">Pengajuan Ditolak</h3>
-                    <p class="text-red-700">
-                        <strong>Alasan:</strong> 
-                        {{ $pengajuan->rejection_reason_fakultas ?? $pengajuan->rejection_reason_prodi ?? $pengajuan->rejection_reason ?? 'Tidak ada alasan yang tercatat' }}
-                    </p>
-                </div>
-            </div>
+        <div class="alert alert-error">
+            <h3 class="alert-title">Pengajuan Ditolak</h3>
+            <p>
+                <strong>Alasan:</strong> 
+                {{ $pengajuan->rejection_reason_fakultas ?? $pengajuan->rejection_reason_prodi ?? $pengajuan->rejection_reason ?? 'Tidak ada alasan yang tercatat' }}
+            </p>
         </div>
         @endif
 
         <!-- Timeline Card -->
-        <div class="tracking-card slide-in-up mb-8">
-            <div class="bg-gradient-to-r from-cyan-500 to-blue-500 p-6">
-                <div class="flex items-center text-white">
-                    <div class="icon-circle bg-white bg-opacity-20 border-3 border-white border-opacity-30 text-white mr-4">
-                        <i class="fas fa-history text-2xl"></i>
-                    </div>
-                    <h3 class="text-xl font-bold">Riwayat Pengajuan</h3>
-                </div>
+        <div class="card">
+            <div class="card-header">
+                <h3 style="font-size: 1.25rem; font-weight: 700;">
+                    <i class="fas fa-history"></i>
+                    Riwayat Pengajuan
+                </h3>
             </div>
-            <div class="p-6">
+            <div class="card-body">
                 <div class="timeline">
                     @php
                         $histories = collect();
@@ -517,47 +519,46 @@
                     
                     @forelse($histories as $history)
                     <div class="timeline-item">
-                        <div class="timeline-marker {{ $loop->first ? 'active' : 'completed' }}"></div>
-                        <div class="timeline-content {{ $loop->first ? 'current' : 'active' }}">
-                            <div class="flex justify-between items-start">
-                                <div class="flex-1">
-                                    <h4 class="font-semibold text-gray-900 mb-1">{{ $history->description ?? $history->status ?? 'Update Status' }}</h4>
+                        <div class="timeline-marker {{ $loop->first ? '' : 'completed' }}"></div>
+                        <div class="timeline-content {{ $loop->first ? '' : 'completed' }}">
+                            <div class="timeline-header">
+                                <div style="flex: 1;">
+                                    <div class="timeline-title">{{ $history->description ?? $history->status ?? 'Update Status' }}</div>
                                     @if($history->notes ?? '' !== '')
-                                    <p class="text-gray-600 text-sm mb-2">{{ $history->notes }}</p>
+                                    <p class="timeline-meta" style="margin-top: 0.25rem;">{{ $history->notes }}</p>
                                     @endif
-                                    <div class="text-sm text-gray-500">
+                                    <div class="timeline-meta" style="margin-top: 0.5rem;">
                                         @if(isset($history->createdBy) && $history->createdBy)
-                                            <i class="fas fa-user mr-1"></i>
-                                            oleh {{ $history->createdBy->nama ?? $history->createdBy->name ?? 'System' }}
+                                            <i class="fas fa-user"></i>
+                                            {{ $history->createdBy->nama ?? $history->createdBy->name ?? 'System' }}
                                         @else
-                                            <i class="fas fa-robot mr-1"></i>
+                                            <i class="fas fa-robot"></i>
                                             System
                                         @endif
                                     </div>
                                 </div>
-                                <div class="text-sm text-gray-400 ml-4">
-                                    <i class="fas fa-clock mr-1"></i>
+                                <div class="timeline-time">
+                                    <i class="fas fa-clock"></i>
                                     {{ $history->created_at ? $history->created_at->format('d M Y H:i') : 'N/A' }}
                                 </div>
                             </div>
                         </div>
                     </div>
                     @empty
-                    <!-- Default timeline if no tracking history -->
                     <div class="timeline-item">
-                        <div class="timeline-marker active"></div>
-                        <div class="timeline-content current">
-                            <div class="flex justify-between items-start">
-                                <div class="flex-1">
-                                    <h4 class="font-semibold text-gray-900 mb-1">Pengajuan Diterima</h4>
-                                    <p class="text-gray-600 text-sm mb-2">Pengajuan berhasil diterima sistem dan sedang menunggu proses review</p>
-                                    <div class="text-sm text-gray-500">
-                                        <i class="fas fa-robot mr-1"></i>
+                        <div class="timeline-marker"></div>
+                        <div class="timeline-content">
+                            <div class="timeline-header">
+                                <div style="flex: 1;">
+                                    <div class="timeline-title">Pengajuan Diterima</div>
+                                    <p class="timeline-meta" style="margin-top: 0.25rem;">Pengajuan berhasil diterima sistem dan sedang menunggu proses review</p>
+                                    <div class="timeline-meta" style="margin-top: 0.5rem;">
+                                        <i class="fas fa-robot"></i>
                                         System
                                     </div>
                                 </div>
-                                <div class="text-sm text-gray-400 ml-4">
-                                    <i class="fas fa-clock mr-1"></i>
+                                <div class="timeline-time">
+                                    <i class="fas fa-clock"></i>
                                     {{ $pengajuan->created_at ? $pengajuan->created_at->format('d M Y H:i') : 'N/A' }}
                                 </div>
                             </div>
@@ -569,128 +570,94 @@
         </div>
 
         <!-- Additional Info Card -->
-@if($pengajuan->suratGenerated || $pengajuan->notes)
-<div class="tracking-card slide-in-up mb-8">
-    <div class="bg-gradient-to-r from-green-500 to-green-600 p-6">
-        <div class="flex items-center text-white">
-            <div class="icon-circle bg-white bg-opacity-20 border-3 border-white border-opacity-30 text-white mr-4">
-                <i class="fas fa-info-circle text-2xl"></i>
+        @if($pengajuan->suratGenerated)
+        <div class="card">
+            <div class="card-header">
+                <h3 style="font-size: 1.25rem; font-weight: 700;">
+                    <i class="fas fa-info-circle"></i>
+                    Informasi Surat
+                </h3>
             </div>
-            <h3 class="text-xl font-bold">Informasi Surat</h3>
-        </div>
-    </div>
-    <div class="p-6">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            @if($pengajuan->suratGenerated)
-            <div class="space-y-4">
-                @if($pengajuan->suratGenerated->nomor_surat ?? '' !== '')
-                <div class="flex items-center">
-                    <i class="fas fa-file-contract text-blue-500 w-6 mr-3"></i>
-                    <div>
-                        <div class="text-sm font-medium text-gray-500">Nomor Surat</div>
-                        <div class="text-gray-900">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                {{ $pengajuan->suratGenerated->nomor_surat }}
-                            </span>
+            <div class="card-body">
+                <div class="info-grid">
+                    @if($pengajuan->suratGenerated->nomor_surat ?? '' !== '')
+                    <div class="info-item">
+                        <i class="fas fa-file-contract info-icon"></i>
+                        <div>
+                            <div class="info-label">Nomor Surat</div>
+                            <div class="info-value">
+                                <span class="badge badge-blue">{{ $pengajuan->suratGenerated->nomor_surat }}</span>
+                            </div>
                         </div>
                     </div>
-                </div>
-                @endif
-                
-                @if($pengajuan->suratGenerated->signed_by ?? '' !== '')
-                <div class="flex items-center">
-                    <i class="fas fa-user-tie text-blue-500 w-6 mr-3"></i>
-                    <div>
-                        <div class="text-sm font-medium text-gray-500">Ditandatangani Oleh</div>
-                        <div class="text-gray-900">{{ $pengajuan->suratGenerated->signed_by }}</div>
-                    </div>
-                </div>
-                @endif
-                
-                {{-- NEW: Show link info --}}
-                @if($pengajuan->suratGenerated->signed_url)
-                <div class="flex items-start">
-                    <i class="fas fa-link text-green-500 w-6 mr-3 mt-1"></i>
-                    <div class="flex-1">
-                        <div class="text-sm font-medium text-gray-500">Link Surat Final</div>
-                        <div class="text-gray-900 mb-2">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                <i class="fas fa-check-circle mr-1"></i>
-                                Tersedia
-                            </span>
+                    @endif
+                    
+                    @if($pengajuan->suratGenerated->signed_by ?? '' !== '')
+                    <div class="info-item">
+                        <i class="fas fa-user-tie info-icon"></i>
+                        <div>
+                            <div class="info-label">Ditandatangani Oleh</div>
+                            <div class="info-value">{{ $pengajuan->suratGenerated->signed_by }}</div>
                         </div>
-                        <a href="{{ $pengajuan->suratGenerated->signed_url }}" target="_blank"
-                           class="inline-flex items-center px-3 py-1.5 border border-green-300 text-xs font-medium rounded-md text-green-700 bg-green-50 hover:bg-green-100 transition-colors">
-                            <i class="fas fa-external-link-alt mr-1"></i>
-                            Buka Link
-                        </a>
-                        <p class="text-xs text-gray-500 mt-1">
-                            <i class="fas fa-shield-alt mr-1"></i>
-                            Link aman yang disediakan oleh staff fakultas
-                        </p>
                     </div>
-                </div>
-                @endif
-            </div>
-            @endif
-            
-            {{-- RIGHT COLUMN --}}
-            <div class="space-y-4">
-                @if($pengajuan->suratGenerated && $pengajuan->suratGenerated->signed_at)
-                <div class="flex items-center">
-                    <i class="fas fa-calendar-check text-green-500 w-6 mr-3"></i>
-                    <div>
-                        <div class="text-sm font-medium text-gray-500">Tanggal Selesai</div>
-                        <div class="text-gray-900">{{ $pengajuan->suratGenerated->signed_at->format('d M Y H:i') }}</div>
+                    @endif
+                    
+                    @if($pengajuan->suratGenerated->signed_at)
+                    <div class="info-item">
+                        <i class="fas fa-calendar-check info-icon"></i>
+                        <div>
+                            <div class="info-label">Tanggal Selesai</div>
+                            <div class="info-value">{{ $pengajuan->suratGenerated->signed_at->format('d M Y H:i') }}</div>
+                        </div>
                     </div>
+                    @endif
+                    
+                    @if($pengajuan->suratGenerated->signed_url)
+                    <div class="info-item">
+                        <i class="fas fa-link info-icon"></i>
+                        <div>
+                            <div class="info-label">Link Surat Final</div>
+                            <div class="info-value">
+                                <span class="badge badge-green">Tersedia</span>
+                            </div>
+                        </div>
+                    </div>
+                    @endif
                 </div>
-                @endif
                 
-                @if($pengajuan->suratGenerated && ($pengajuan->suratGenerated->notes || $pengajuan->notes))
-                <div class="p-4 bg-gray-50 rounded-lg">
-                    <h4 class="font-semibold text-gray-900 mb-2">
-                        <i class="fas fa-sticky-note text-yellow-500 mr-2"></i>
+                @if($pengajuan->suratGenerated->notes)
+                <div class="note-box">
+                    <div class="note-title">
+                        <i class="fas fa-sticky-note" style="color: #f59e0b;"></i>
                         Catatan dari Fakultas
-                    </h4>
-                    <p class="text-gray-700 text-sm">
-                        {{ $pengajuan->suratGenerated->notes ?? $pengajuan->notes ?? 'Tidak ada catatan tambahan.' }}
-                    </p>
+                    </div>
+                    <div class="note-content">{{ $pengajuan->suratGenerated->notes }}</div>
                 </div>
                 @endif
             </div>
         </div>
-    </div>
-</div>
-@endif
+        @endif
 
         <!-- Action Buttons -->
-        <div class="text-center slide-in-up">
-            <a href="{{ route('tracking.public') }}" 
-               class="btn-enhanced inline-flex items-center px-6 py-3 mr-4 border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                <i class="fas fa-arrow-left mr-2"></i>
+        <div class="text-center">
+            <a href="{{ route('tracking.public') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i>
                 Kembali ke Tracking
             </a>
             
-            @if($pengajuan->status == 'completed')
+            @if($pengajuan->status == 'completed' && $pengajuan->suratGenerated)
                 @php
-                    $hasDownload = false;
                     $downloadUrl = null;
-                    
-                    if ($pengajuan->suratGenerated) {
-                        if ($pengajuan->suratGenerated->signed_url) {
-                            $hasDownload = true;
-                            $downloadUrl = $pengajuan->suratGenerated->signed_url;
-                        } elseif ($pengajuan->suratGenerated->file_path) {
-                            $hasDownload = true;
-                            $downloadUrl = route('tracking.download', $pengajuan->id);
-                        }
+                    if ($pengajuan->suratGenerated->signed_url) {
+                        $downloadUrl = $pengajuan->suratGenerated->signed_url;
+                    } elseif ($pengajuan->suratGenerated->file_path) {
+                        $downloadUrl = route('tracking.download', $pengajuan->id);
                     }
                 @endphp
                 
-                @if($hasDownload)
-                <a href="{{ $downloadUrl }}" target="_blank" 
-                   class="btn-enhanced inline-flex items-center px-6 py-3 border border-transparent text-white bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
-                    <i class="fas fa-download mr-2"></i>
+                @if($downloadUrl)
+                <a href="{{ $downloadUrl }}" target="_blank" class="btn btn-success">
+                    <i class="fas fa-download"></i>
                     Download Surat
                 </a>
                 @endif
@@ -700,79 +667,3 @@
 </div>
 @endif
 @endsection
-
-@push('scripts')
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Enhanced animations
-    const observerOptions = {
-        threshold: 0.1,
-        rootMargin: '0px 0px -50px 0px'
-    };
-
-    const observer = new IntersectionObserver(function(entries) {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.classList.add('fade-in');
-            }
-        });
-    }, observerOptions);
-
-    // Observe all cards
-    document.querySelectorAll('.tracking-card').forEach(card => {
-        observer.observe(card);
-    });
-
-    // Timeline items animation
-    document.querySelectorAll('.timeline-item').forEach((item, index) => {
-        item.style.animationDelay = `${index * 0.2}s`;
-        item.classList.add('slide-in-up');
-    });
-
-    // Enhanced hover effects
-    document.querySelectorAll('.timeline-content').forEach(content => {
-        content.addEventListener('mouseenter', function() {
-            this.style.transform = 'translateX(5px) scale(1.02)';
-        });
-        
-        content.addEventListener('mouseleave', function() {
-            this.style.transform = 'translateX(0) scale(1)';
-        });
-    });
-
-    // Progress bar animation
-    const progressBar = document.querySelector('.progress-bar-custom');
-    if (progressBar) {
-        setTimeout(() => {
-            const width = progressBar.style.width;
-            progressBar.style.width = '0%';
-            setTimeout(() => {
-                progressBar.style.width = width;
-            }, 100);
-        }, 500);
-    }
-
-    // Button enhanced effects
-    document.querySelectorAll('.btn-enhanced').forEach(btn => {
-        btn.addEventListener('mouseenter', function() {
-            this.style.transform = 'translateY(-3px) scale(1.05)';
-        });
-        
-        btn.addEventListener('mouseleave', function() {
-            this.style.transform = 'translateY(0) scale(1)';
-        });
-    });
-
-    // Status badge pulse effect for active status
-    const activeBadge = document.querySelector('.status-badge.status-pending, .status-badge.status-signing');
-    if (activeBadge) {
-        setInterval(() => {
-            activeBadge.style.transform = 'scale(1.05)';
-            setTimeout(() => {
-                activeBadge.style.transform = 'scale(1)';
-            }, 200);
-        }, 3000);
-    }
-});
-</script>
-@endpush

@@ -82,7 +82,7 @@
                                                     <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                                                 </button>
                                             </form>
-                                            <form action="{{ route('kaprodi.surat.reject', $surat->id) }}" method="POST" class="inline-block" onsubmit="return confirm('Apakah Anda yakin ingin menolak surat ini?');">
+                                            <form action="{{ route('kaprodi.surat.reject', $surat->id) }}" method="POST" class="inline-block" onsubmit="return handleDelete(event, 'Apakah Anda yakin ingin menolak surat ini?')">
                                                 @csrf
                                                 <button type="submit" class="text-red-600 hover:text-red-900 p-1 rounded-md hover:bg-gray-100 transition duration-150 ease-in-out" title="Tolak">
                                                     <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>

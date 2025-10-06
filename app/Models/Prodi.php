@@ -32,4 +32,9 @@ class Prodi extends Model
     {
         return $this->belongsTo(User::class, 'kaprodi_id');
     }
+
+    public function pengajuanSurats()
+    {
+        return $this->hasMany(PengajuanSurat::class, 'prodi_id');
+    }
 }
