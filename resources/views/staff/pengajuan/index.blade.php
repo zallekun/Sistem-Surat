@@ -2,6 +2,21 @@
 
 @section('title', 'Daftar Pengajuan Surat')
 
+@section('breadcrumb')
+    <li>
+        <div class="flex items-center">
+            <i class="fas fa-chevron-right text-gray-400 mx-1"></i>
+            <a href="#" class="text-sm font-medium text-gray-700 hover:text-blue-600">Staff</a>
+        </div>
+    </li>
+    <li aria-current="page">
+        <div class="flex items-center">
+            <i class="fas fa-chevron-right text-gray-400 mx-1"></i>
+            <span class="text-sm font-medium text-gray-500">Pengajuan</span>
+        </div>
+    </li>
+@endsection
+
 @section('content')
 <div class="py-6 px-4 sm:px-6 lg:px-8">
     <div class="max-w-full mx-auto">

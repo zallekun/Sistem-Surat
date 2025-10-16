@@ -25,7 +25,7 @@
             width: 260px;
             background: white;
             box-shadow: 2px 0 8px rgba(0,0,0,0.1);
-            z-index: 40;
+            z-index: 50;
             overflow-y: auto;
         }
         
@@ -100,13 +100,14 @@
             }
             
             .sidebar.open {
-                transform: translateX(0);
+                transform: translateX(0) !important;
             }
             
             .main-content {
                 margin-left: 0;
+                transition: margin-left 0.3s;
             }
-            
+
             .bg-image-wrapper {
                 left: 0;
             }
@@ -128,7 +129,7 @@
 <body class="antialiased bg-gray-50" x-data="{ sidebarOpen: false }">
     
     <!-- Sidebar -->
-    <div class="sidebar z-40" :class="{ 'open': sidebarOpen }">
+    <div class="sidebar" :class="{ 'open': sidebarOpen }">
         <!-- Logo -->
         <div class="p-4 border-b border-gray-200">
             <a href="{{ route('dashboard') }}" class="flex items-center">

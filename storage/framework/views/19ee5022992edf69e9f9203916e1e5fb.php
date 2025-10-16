@@ -568,4 +568,4 @@
         };
     </script>
 </body>
-</html><?php /**PATH C:\laragon\www\sistem-surat\resources\views/layouts/app.blade.php ENDPATH**/ ?>
+</html><?php /**PATH /home/rezal-suryadi-putra/Documents/KULIAH/SEMESTER 7/KP/sistem-surat/resources/views/layouts/app.blade.php ENDPATH**/ ?>
