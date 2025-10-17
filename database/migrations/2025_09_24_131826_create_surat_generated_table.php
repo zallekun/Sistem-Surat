@@ -11,7 +11,7 @@ class CreateSuratGeneratedTable extends Migration
         if (!Schema::hasTable('surat_generated')) {
             Schema::create('surat_generated', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('pengajuan_id')->constrained('pengajuan_surat');
+                $table->foreignId('pengajuan_id')->constrained('pengajuan_surats');
                 $table->string('nomor_surat')->unique();
                 $table->foreignId('barcode_signature_id')->nullable();
                 $table->string('file_path')->nullable();
