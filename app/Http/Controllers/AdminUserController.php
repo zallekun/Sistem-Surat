@@ -18,7 +18,14 @@ class AdminUserController extends Controller
      */
     public function index(Request $request)
     {
-        $query = User::with(['prodi', 'jabatan', 'roles']);
+        $query = User::query();
+
+        // Filter by role
+        if ($request->role) {
+            $query->whereHas('roles', function ($q) use ($request) {
+                $q->where('name', $request->role);
+            });
+        }
         
         // Search
         if ($request->search) {
@@ -29,24 +36,17 @@ class AdminUserController extends Controller
             });
         }
         
-        // Filter by role
-        if ($request->role) {
-            $query->whereHas('roles', function($q) use ($request) {
-                $q->where('name', $request->role);
-            });
-        }
-        
         // Filter by prodi
-        if ($request->prodi_id) {
+        if ($request->filled('prodi_id')) {
             $query->where('prodi_id', $request->prodi_id);
         }
         
         // Filter by status
-        if ($request->has('is_active')) {
+        if ($request->filled('is_active')) {
             $query->where('is_active', $request->is_active);
         }
         
-        $users = $query->latest()->paginate(20);
+        $users = $query->orderBy('id', 'desc')->paginate(20);
         
         // Data for filters
         $roles = Role::all();
@@ -106,7 +106,14 @@ class AdminUserController extends Controller
                 }
             }
 
+            // Assign role using Spatie's method
             $user->assignRole($roleToAssign);
+
+            // Also sync the prodi_id if the role is staff_prodi or staff_fakultas
+            if (($roleToAssign === 'staff_prodi' || $roleToAssign === 'staff_fakultas') && $request->prodi_id) {
+                $user->prodi_id = $request->prodi_id;
+                $user->save();
+            }
             
             return redirect()->route('admin.users.index')
                 ->with('success', 'User berhasil ditambahkan');
@@ -170,7 +177,14 @@ class AdminUserController extends Controller
                 }
             }
 
-            $user->syncRoles([$roleToAssign]);
+            // Sync roles using Spatie's method
+            $user->syncRoles($roleToAssign);
+
+            // Also sync the prodi_id if the role is staff_prodi or staff_fakultas
+            if (($roleToAssign === 'staff_prodi' || $roleToAssign === 'staff_fakultas') && $request->prodi_id) {
+                $user->prodi_id = $request->prodi_id;
+                $user->save();
+            }
             
             return redirect()->route('admin.users.index')
                 ->with('success', 'User berhasil diupdate');

@@ -641,7 +641,6 @@ public function downloadSurat($id)
         return redirect()->route('tracking.public')
                        ->with('error', 'Gagal mendownload surat: ' . $e->getMessage());
     }
-}
         
         if (!$pengajuan->suratGenerated) {
             return redirect()->route('tracking.public')

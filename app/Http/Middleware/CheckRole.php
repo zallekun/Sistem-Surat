@@ -19,14 +19,14 @@ class CheckRole
 
         $user = Auth::user();
 
-        if (!$user || !$user->role) {
-            return redirect()->route('login');
+        // Use Spatie's hasRole method to check for roles
+        foreach ($roles as $role) {
+            if ($user->hasRole($role)) {
+                return $next($request);
+            }
         }
 
-        if (in_array($user->role->name, $roles)) {
-            return $next($request);
-        }
-
+        // If no role matches, abort with 403
         abort(403, 'Unauthorized action.');
     }
 }

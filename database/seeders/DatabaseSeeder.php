@@ -12,6 +12,7 @@ class DatabaseSeeder extends Seeder
             FakultasSeeder::class,
             ProdiSeeder::class,
             RoleSeeder::class,
+            PermissionSeeder::class, // Added PermissionSeeder
             JabatanSeeder::class,
             UserSeeder::class,
             StatusSuratSeeder::class,

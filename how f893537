@@ -1,0 +1,5 @@
+[33mcommit f8935379e602edcf6f6d4e0b0380562a51692947[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfeature/add-normalisasi-and-styling[m[33m)[m
+Author: Rezal Suryadi Putra <suryadirezal@gmail.com>
+Date:   Fri Oct 17 13:14:05 2025 +0700
+
+    fix: update .gitignore and clean tracked cache files

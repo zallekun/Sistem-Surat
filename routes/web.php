@@ -93,26 +93,11 @@ Route::middleware('web')->group(function () {
             Route::post('/{id}/reject', [SuratController::class, 'reject'])->name('reject');
             Route::post('/{id}/submit', [SuratController::class, 'submit'])->name('submit');
             Route::get('/{id}/tracking', [SuratController::class, 'tracking'])->name('tracking');
-            Route::get('/{id}/download', [SuratController::class, 'download'])->name('download');
+            Route::get('/surat/{id}/download', [SuratController::class, 'download'])->name('surat.download');
         });
 
-        // Staff Routes (Prodi & Fakultas)
-        Route::middleware(['role:staff_prodi,staff_fakultas'])->prefix('staff')->name('staff.')->group(function () {
-            Route::resource('surat', SuratController::class)->except(['index']);
-            Route::get('surat', [SuratController::class, 'staffIndex'])->name('surat.index');
 
-            // Routes untuk surat pengantar
-            Route::get('/{id}/pengantar/preview', [StaffPengajuanController::class, 'previewPengantar'])
-                ->name('pengantar.preview');
-            Route::post('/{id}/pengantar/store', [StaffPengajuanController::class, 'storePengantar'])
-                ->name('pengantar.store');
-
-            // Staff Prodi only - Create from pengajuan
-            Route::middleware(['role:staff_prodi'])->group(function () {
-                Route::get('surat/create-from-pengajuan/{id}', [SuratController::class, 'createFromPengajuan'])
-                    ->name('surat.create-from-pengajuan');
-            });
-        });
+ 
 
         // Kaprodi Routes
         Route::middleware(['role:kaprodi'])->prefix('kaprodi')->name('kaprodi.')->group(function () {

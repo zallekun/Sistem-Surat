@@ -127,6 +127,11 @@
     @livewireStyles
 </head>
 <body class="antialiased bg-gray-50" x-data="{ sidebarOpen: false }">
+    @if (session('error'))
+        <div style="background-color: red; color: white; padding: 10px;">
+            {{ session('error') }}
+        </div>
+    @endif
     
     <!-- Sidebar -->
     <div class="sidebar" :class="{ 'open': sidebarOpen }">

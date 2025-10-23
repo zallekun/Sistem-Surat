@@ -13,6 +13,7 @@ class UserSeeder extends Seeder
 {
     public function run()
     {
+        // Get roles
         $adminRole = Role::where('name', 'admin')->first();
         $dekanRole = Role::where('name', 'dekan')->first();
         $wadekRole = Role::where('name', 'wadek')->first(); // Generic wadek role, might be removed later
@@ -21,6 +22,7 @@ class UserSeeder extends Seeder
         $staffFakultasRole = Role::where('name', 'staff_fakultas')->first();
         $staffProdiRole = Role::where('name', 'staff_prodi')->first();
 
+        // Get jabatan
         $dekanJabatan = Jabatan::where('kode_jabatan', 'DEKAN')->first();
         $wadek1Jabatan = Jabatan::where('kode_jabatan', 'WADEK1')->first();
         $wadek2Jabatan = Jabatan::where('kode_jabatan', 'WADEK2')->first();
@@ -31,6 +33,7 @@ class UserSeeder extends Seeder
         $staffProdiJabatan = Jabatan::where('kode_jabatan', 'STAFF_PRODI')->first();
         $adminJabatan = Jabatan::where('kode_jabatan', 'ADMIN')->first();
 
+        // Get prodi
         $informatikaProdi = Prodi::where('kode_prodi', 'IF')->first();
         $sistemInformasiProdi = Prodi::where('kode_prodi', 'SI')->first();
         $kimiaProdi = Prodi::where('kode_prodi', 'KIM')->first();
@@ -154,8 +157,19 @@ class UserSeeder extends Seeder
         ];
 
         foreach ($users as $userData) {
-            User::firstOrCreate(['email' => $userData['email']], $userData);
+            $user = User::firstOrCreate(['email' => $userData['email']], $userData);
+            
+            // Assign role using Spatie's method
+            if (isset($userData['role_id'])) {
+                $role = Role::find($userData['role_id']);
+                if ($role) {
+                    $user->assignRole($role->name);
+                } else {
+                    dump('UserSeeder: Role not found for ID: ' . $userData['role_id']);
+                }
+            } else {
+                dump('UserSeeder: role_id not set for user: ' . $userData['email']);
+            }
         }
     }
 }
-

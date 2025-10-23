@@ -16,7 +16,6 @@ class User extends Authenticatable
         'nama',
         'email',
         'password',
-        'role_id',
         'jabatan_id',
         'prodi_id',
         'nip',
@@ -33,11 +32,6 @@ class User extends Authenticatable
         'is_active' => 'boolean',
         'email_verified_at' => 'datetime',
     ];
-
-    public function role()
-    {
-        return $this->belongsTo(Role::class);
-    }
 
     public function jabatan()
     {

@@ -24,25 +24,25 @@
                         </x-nav-link>
                     @endif
                     
-                    @if(auth()->user()->role->nama_role === 'admin')
+                    @if(Auth::user()->hasRole('admin'))
                         <x-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">
                             {{ __('Users') }}
                         </x-nav-link>
                     @endif
                     
-                    @if(auth()->user()->jabatan?->nama_jabatan == 'Staff Program Studi' || auth()->user()->jabatan?->nama_jabatan == 'Staff Fakultas')
+                    @if(Auth::user()->hasRole(['staff_prodi', 'staff_fakultas']))
                         <x-nav-link :href="route('staff.surat.create')" :active="request()->routeIs('staff.surat.create')">
                             {{ __('Buat Surat') }}
                         </x-nav-link>
                     @endif
                     
-                    @if(auth()->user()->jabatan?->nama_jabatan == 'kaprodi')
+                    @if(Auth::user()->hasRole('kaprodi'))
                         <x-nav-link :href="route('kaprodi.surat.approval')" :active="request()->routeIs('kaprodi.surat.approval')">
                             {{ __('Approval') }}
                         </x-nav-link>
                     @endif
                     
-                    @if(in_array(auth()->user()->jabatan?->nama_jabatan, ['dekan', 'wd1', 'wd2', 'wd3']))
+                    @if(Auth::user()->hasRole(['dekan', 'wadek']))
                         <x-nav-link :href="route('pimpinan.surat.disposisi')" :active="request()->routeIs('pimpinan.surat.disposisi')">
                             {{ __('Disposisi') }}
                         </x-nav-link>
@@ -121,25 +121,25 @@
                 </x-responsive-nav-link>
             @endif
 
-            @if(auth()->user()->role->nama_role === 'admin')
+            @if(Auth::user()->hasRole('admin'))
                 <x-responsive-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">
                     {{ __('Users') }}
                 </x-responsive-nav-link>
             @endif
             
-            @if(auth()->user()->jabatan?->nama_jabatan == 'Staff Program Studi' || auth()->user()->jabatan?->nama_jabatan == 'Staff Fakultas')
+            @if(Auth::user()->hasRole(['staff_prodi', 'staff_fakultas']))
                 <x-responsive-nav-link :href="route('staff.surat.create')" :active="request()->routeIs('staff.surat.create')">
                     {{ __('Buat Surat') }}
                 </x-responsive-nav-link>
             @endif
             
-            @if(auth()->user()->jabatan?->nama_jabatan == 'kaprodi')
+            @if(Auth::user()->hasRole('kaprodi'))
                 <x-responsive-nav-link :href="route('kaprodi.surat.approval')" :active="request()->routeIs('kaprodi.surat.approval')">
                     {{ __('Approval') }}
                 </x-responsive-nav-link>
             @endif
             
-            @if(in_array(auth()->user()->jabatan?->nama_jabatan, ['dekan', 'wd1', 'wd2', 'wd3']))
+            @if(Auth::user()->hasRole(['dekan', 'wadek']))
                 <x-responsive-nav-link :href="route('pimpinan.surat.disposisi')" :active="request()->routeIs('pimpinan.surat.disposisi')">
                     {{ __('Disposisi') }}
                 </x-responsive-nav-link>
