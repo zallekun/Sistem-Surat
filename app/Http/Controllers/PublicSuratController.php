@@ -118,8 +118,8 @@ class PublicSuratController extends Controller
             }
 
             // validate each mahasiswa entry
-            foreach ($mahasiswaKP as $index => $mahasiswa) {
-                if (empty($mahasiswa['nama']) || empty($mahasiswa['nim'])) {
+            foreach ($mahasiswaKP as $index => $mahasiswa_data) {
+                if (empty($mahasiswa_data['nama']) || empty($mahasiswa_data['nim'])) {
                     return response()->json([
                         'success' => false,
                         'message' => "Data mahasiswa ke-" . ($index + 1) . " tidak lengkap"
@@ -192,8 +192,8 @@ class PublicSuratController extends Controller
                 ], 400);
             }
             
-            foreach ($mahasiswaKP as $index => $mahasiswa) {
-                if (empty($mahasiswa['nama']) || empty($mahasiswa['nim'])) {
+            foreach ($mahasiswaKP as $index => $mahasiswa_data) {
+                if (empty($mahasiswa_data['nama']) || empty($mahasiswa_data['nim'])) {
                     return response()->json([
                         'success' => false,
                         'message' => "Data mahasiswa ke-" . ($index + 1) . " tidak lengkap"
@@ -221,8 +221,8 @@ class PublicSuratController extends Controller
                 ], 400);
             }
             
-            foreach ($mahasiswaTA as $index => $mahasiswa) {
-                if (empty($mahasiswa['nama']) || empty($mahasiswa['nim'])) {
+            foreach ($mahasiswaTA as $index => $mahasiswa_data) {
+                if (empty($mahasiswa_data['nama']) || empty($mahasiswa_data['nim'])) {
                     return response()->json([
                         'success' => false,
                         'message' => "Data mahasiswa ke-" . ($index + 1) . " tidak lengkap"
