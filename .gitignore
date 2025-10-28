@@ -51,3 +51,17 @@ auth.json
 
 # === Temporary ===
 /tmp
+
+# Unnecessary files
+*.backup*
+*.txt
+*.php
+alur_aplikasi_surat_md.md
+presentasi_sistem_surat.md
+project_progress.md
+TODO.md
+usecase_pengajuan_mahasiswa.svg
+docker-compose.yml
+how f893537
+load('role'
+sudo
