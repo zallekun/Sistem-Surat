@@ -202,10 +202,7 @@
                         <span>Prodi</span>
                     </a>
                     
-                    <a href="{{ route('admin.jenis-surat.index') }}" class="nav-item {{ request()->routeIs('admin.jenis-surat.*') ? 'active' : '' }}">
-                        <i class="fas fa-file-alt"></i>
-                        <span>Jenis Surat</span>
-                    </a>
+                    
                     
                     <a href="{{ route('admin.fakultas.index') }}" class="nav-item {{ request()->routeIs('admin.fakultas.*') ? 'active' : '' }}">
                         <i class="fas fa-university"></i>
@@ -285,7 +282,7 @@
                     </a>
                 @endif
                 
-                <a href="#" class="nav-item">
+                <a href="{{ route('tracking.public') }}" class="nav-item">
                     <i class="fas fa-search"></i>
                     <span>Tracking Surat</span>
                 </a>
