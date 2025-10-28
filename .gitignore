@@ -25,7 +25,7 @@ Homestead.json
 /docker-compose.override.yml
 /.docker
 /.env.docker
-Dockerfile
+
 *.pid
 
 # === IDE / Editor ===
